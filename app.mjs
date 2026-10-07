@@ -1,53 +1,232 @@
-import {COLS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled,validSave} from './engine.mjs';
-import {round} from './round.mjs';
-const $=id=>document.getElementById(id),NS='http://www.w3.org/2000/svg',KEY='gregor-puzzles:'+round.id;
-let state=newState(),selected=null,timed=false,peek=false,hinted=null,order=shuffled(Array.from({length:SIZE},(_,i)=>i)),drag=null;
-let active=false,lastTick=performance.now(),lastCount=-1;
-try{const save=JSON.parse(localStorage.getItem(KEY));if(validSave(save?.state)){state=save.state;timed=save.timed===true;}}catch{}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({state,timed}));}catch{}}
-function svgEl(tag,attrs={}){const node=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>node.setAttribute(k,v));return node;}
-function artworkPiece(id,prefix){
- const g=svgEl('g'),clip=svgEl('clipPath',{id:prefix+id});clip.append(svgEl('path',{d:pathFor(id)}));const defs=svgEl('defs');defs.append(clip);g.append(defs);
- g.append(svgEl('image',{href:'./artwork.svg',width:W,height:H,'clip-path':`url(#${prefix+id})`}));g.append(svgEl('path',{d:pathFor(id),class:'piece-outline'}));return g;
+import {COLS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled} from './engine.mjs';
+import {round,checkpoints,textCards,pieceDescriptions,diagramDescription} from './round.mjs';
+import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,advanceTextCard,roundComplete} from './session.mjs';
+
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg', KEY = 'gregor-puzzles:' + round.id;
+let stored;
+try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
+let {state,timed,route} = restoreSession(stored);
+let selected = null, hinted = null, peek = false, drag = null, reviewId = null;
+let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
+let lastCount = -1, renderedCheck = null, renderedText = null;
+const board = $('puzzle');
+const currentCheck = () => reviewId ?? pendingCheckpoint(state);
+const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed,route}));} catch {} };
+const announce = text => {$('status').textContent = text;};
+const focus = id => $(id).focus({preventScroll:false});
+function start(useRoute = route) { startRound(state,timed,useRoute); save(); updateMode(); }
+function svgEl(tag,attrs={}) { const node=document.createElementNS(NS,tag); Object.entries(attrs).forEach(([k,v])=>node.setAttribute(k,v)); return node; }
+function artworkPiece(id,prefix) {
+  const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
+  clip.append(svgEl('path',{d:pathFor(id)})); const defs=svgEl('defs'); defs.append(clip); g.append(defs);
+  g.append(svgEl('image',{href:'./artwork.svg',width:W,height:H,'clip-path':`url(#${prefix+id})`}));
+  g.append(svgEl('path',{d:pathFor(id),class:'piece-outline'})); return g;
 }
-const board=$('puzzle');
-function buildBoard(){board.replaceChildren();for(let i=0;i<SIZE;i++){const g=svgEl('g',{'data-slot':i});const slot=svgEl('path',{d:pathFor(i),class:'slot',tabindex:'0',role:'button','aria-label':`Board position, row ${Math.floor(i/COLS)+1}, column ${i%COLS+1}`});slot.addEventListener('click',()=>attempt(i));slot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();attempt(i);}});g.append(slot);board.append(g);}}
-function buildTray(){const tray=$('tray');tray.replaceChildren();order.forEach((id,index)=>{const b=document.createElement('button');b.className='piece';b.dataset.piece=id;b.setAttribute('aria-label',`Piece ${String.fromCharCode(65+index)}`);b.setAttribute('aria-pressed','false');const x=id%COLS*CW,y=Math.floor(id/COLS)*CH;const svg=svgEl('svg',{viewBox:`${x-48} ${y-48} ${CW+96} ${CH+96}`,'aria-hidden':'true'});svg.append(artworkPiece(id,'tray-'));b.append(svg);b.addEventListener('click',()=>{if(b.dataset.suppress==='1'){delete b.dataset.suppress;return;}select(id);});b.addEventListener('pointerdown',e=>startDrag(e,id,b));tray.append(b);});}
-function select(id){if(complete(state))return;active=true;selected=selected===id?null:id;updateSelection();announce(selected===null?'Selection cleared.':`Piece selected. Choose a place on the board.`);}
-function updateSelection(){document.querySelectorAll('.piece').forEach(b=>{b.setAttribute('aria-pressed',String(Number(b.dataset.piece)===selected));b.classList.toggle('hinted',Number(b.dataset.piece)===hinted);});document.querySelectorAll('.slot').forEach((slot,i)=>slot.classList.toggle('hinted',i===hinted));}
-function announce(text){$('status').textContent=text;}
-function attempt(slot){if(selected===null){announce('First select a piece from the tray below.');return;}const id=selected;if(!place(state,id,slot)){announce('That connection doesn’t fit yet. Try another place.');return;}selected=null;hinted=null;active=true;render();save();const count=state.placed.length;const unlocked=round.clues.find(c=>c.at===count);announce(complete(state)?'Picture complete. Your gene and condition are revealed.':`${count} of ${SIZE} pieces placed.${unlocked?' New discovery: '+unlocked.title+'.':''}`);const next=$('tray').querySelector('.piece:not(.placed)');if(document.activeElement?.closest('#tray')||document.activeElement?.closest('#puzzle'))(next||$('learnButton')).focus({preventScroll:true});}
-function startDrag(e,id,b){if(e.button!==0||state.placed.includes(id))return;drag={id,b,x:e.clientX,y:e.clientY,moved:false,pointer:e.pointerId};b.setPointerCapture(e.pointerId);}
-window.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.pointer)return;const d=drag;if(!d.moved&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<7)return;if(!d.moved){d.moved=true;active=true;selected=d.id;d.b.classList.add('dragging');d.ghost=d.b.querySelector('svg').cloneNode(true);d.ghost.querySelectorAll('[id]').forEach(el=>el.id='drag-'+el.id);d.ghost.querySelectorAll('[clip-path]').forEach(el=>el.setAttribute('clip-path',el.getAttribute('clip-path').replace('#','#drag-')));d.ghost.classList.add('drag-ghost');const rect=board.getBoundingClientRect();d.width=rect.width*(CW+96)/W;d.height=rect.height*(CH+96)/H;Object.assign(d.ghost.style,{width:d.width+'px',height:d.height+'px'});document.body.append(d.ghost);updateSelection();}d.ghost.style.left=e.clientX-d.width/2+'px';d.ghost.style.top=e.clientY-d.height/2+'px';});
-function endDrag(e,cancelled=false){if(!drag||e.pointerId!==drag.pointer)return;const d=drag;drag=null;d.b.classList.remove('dragging');d.ghost?.remove();if(d.moved){d.b.dataset.suppress='1';// A pointer cancellation may not dispatch click; clear after the event cycle.
-setTimeout(()=>delete d.b.dataset.suppress,0);
-if(!cancelled){const rect=board.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*W,y=(e.clientY-rect.top)/rect.height*H;const cx=(d.id%COLS+.5)*CW,cy=(Math.floor(d.id/COLS)+.5)*CH;if(Math.hypot(x-cx,y-cy)<Math.min(CW,CH)*.57)attempt(d.id);else announce('Bring the center of the piece closer to its place. You can also click to place it.');}}}
-window.addEventListener('pointerup',e=>endDrag(e));window.addEventListener('pointercancel',e=>endDrag(e,true));
-function render(){
- const n=state.placed.length,done=complete(state);$('board').classList.toggle('started',n>0||peek);$('board').classList.toggle('completed',done);
- for(let i=0;i<SIZE;i++){const slot=board.querySelector(`[data-slot="${i}"]`),isPlaced=state.placed.includes(i),button=slot.querySelector('.slot');button.style.display=isPlaced?'none':'';if(isPlaced&&!slot.querySelector('.piece-on-board')){const g=artworkPiece(i,'board-');g.setAttribute('class','piece-on-board');slot.append(g);}}
- document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed;});
- $('remainingCount').textContent=`${SIZE-n} remaining`;$('pieceBank').hidden=done;
- $('progressText').textContent=`${n} of ${SIZE} pieces`;$('progressPercent').textContent=Math.round(n/SIZE*100)+'%';$('progressFill').style.width=n/SIZE*100+'%';document.querySelector('.progress-track').setAttribute('aria-valuenow',n);
- if(n!==lastCount){$('clues').replaceChildren();round.clues.forEach((clue,i)=>{const open=n>=clue.at,li=document.createElement('li');li.className=`clue ${open?'unlocked':'locked'} ${i>=4?'final':''}`;li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;$('clues').append(li);});lastCount=n;}
- $('completion').hidden=!done;$('discoveryDetail').hidden=!done;$('guessForm').hidden=done;$('tray').hidden=done;document.querySelector('.tray-heading').hidden=done;
- $('hint').disabled=done;$('peek').disabled=done;if(done){peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('completionText').textContent=state.solvedByGuess?'You identified the gene. Review its function, inheritance, and associated condition below.':`You assembled all 12 pieces${timed?' in '+formatTime(state.seconds):''}. Review the gene–condition summary below.`;}
- $('clock').hidden=!timed;$('calm').setAttribute('aria-pressed',String(!timed));$('timed').setAttribute('aria-pressed',String(timed));updateClock();updateSelection();
+function buildBoard() {
+  board.replaceChildren();
+  for(let i=0;i<SIZE;i++) {
+    const g=svgEl('g',{'data-slot':i});
+    const slot=svgEl('path',{d:pathFor(i),class:'slot',tabindex:'0',role:'button','aria-label':`Board position, row ${Math.floor(i/COLS)+1}, column ${i%COLS+1}`});
+    slot.addEventListener('click',()=>attempt(i));
+    slot.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();attempt(i);}});
+    g.append(slot); board.append(g);
+  }
 }
-function formatTime(s){return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
-function updateClock(){$('clock').textContent=formatTime(state.seconds);}
-setInterval(()=>{const now=performance.now(),delta=(now-lastTick)/1000;lastTick=now;if(active&&!complete(state)&&!document.hidden&&!document.querySelector('dialog[open]')){state.seconds+=Math.min(delta,2);updateClock();save();}},1000);
-$('calm').onclick=()=>{timed=false;render();save();};$('timed').onclick=()=>{timed=true;render();save();};
-$('peek').onclick=()=>{peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);announce(peek?'Reference image is visible. Select Reference image again to hide it.':'Reference image hidden.');save();};
-$('hint').onclick=()=>{hinted=selected??order.find(id=>!state.placed.includes(id));selected=hinted;state.hints++;active=true;updateSelection();announce(`Hint: place the highlighted piece in row ${Math.floor(hinted/COLS)+1}, column ${hinted%COLS+1}.`);save();};
-$('guessForm').onsubmit=e=>{e.preventDefault();if(!$('geneGuess').value.trim()){$('guessFeedback').textContent='Enter a gene symbol first.';return;}if(guess(state,$('geneGuess').value,round.gene)){selected=null;hinted=null;render();save();announce('You recognized the gene. The picture and field notes are complete.');$('learnButton').focus({preventScroll:true});}else{$('guessFeedback').textContent='That isn’t the gene for this round. Keep exploring the clues.';$('geneGuess').setAttribute('aria-invalid','true');}};
-$('geneGuess').addEventListener('input',()=>{$('geneGuess').removeAttribute('aria-invalid');});
+function buildTray() {
+  const tray=$('tray'); tray.replaceChildren();
+  order.forEach((id,index)=>{
+    const b=document.createElement('button'); b.className='piece'; b.dataset.piece=id;
+    b.setAttribute('aria-label',`Piece ${String.fromCharCode(65+index)}: ${pieceDescriptions[id]}`);
+    b.setAttribute('aria-pressed','false');
+    const x=id%COLS*CW, y=Math.floor(id/COLS)*CH;
+    const svg=svgEl('svg',{viewBox:`${x-48} ${y-48} ${CW+96} ${CH+96}`,'aria-hidden':'true'});
+    svg.append(artworkPiece(id,'tray-')); b.append(svg);
+    b.addEventListener('click',()=>{if(b.dataset.suppress==='1'){delete b.dataset.suppress;return;}select(id);});
+    b.addEventListener('pointerdown',e=>startDrag(e,id,b)); tray.append(b);
+  });
+}
+function select(id) {
+  if(complete(state))return;
+  if(currentCheck()){focus('checkpointTitle');return;}
+  start(); ({selected,hinted}=choosePiece(selected,id)); updateSelection();
+  announce(selected===null?'Selection cleared.':`Selected ${pieceDescriptions[id]}. Choose its place on the board.`);
+}
+function updateSelection() {
+  $('board').classList.toggle('started',state.placed.length>0||peek||selected!==null);
+  document.querySelectorAll('.piece').forEach(b=>{
+    b.setAttribute('aria-pressed',String(Number(b.dataset.piece)===selected));
+    b.classList.toggle('hinted',Number(b.dataset.piece)===hinted);
+  });
+  document.querySelectorAll('.slot').forEach((slot,i)=>slot.classList.toggle('hinted',i===hinted));
+}
+function progressMessage(before) {
+  const unlocked=round.clues.filter(c=>c.at>before&&c.at<=state.placed.length);
+  return `${state.placed.length} of ${SIZE} pieces. `+unlocked.map(c=>`${c.label}: ${c.title}. ${c.body}`).join(' ');
+}
+function afterProgress(before) {
+  finishRound(state); render(); save();
+  announce(progressMessage(before)+(currentCheck()?' Connect the clues in the learning question.':roundComplete(state)?' Round complete.':''));
+  if(currentCheck()) focus('checkpointTitle');
+  else if(roundComplete(state)) focus('learnButton');
+  else if(route==='text') focus('textTitle');
+  else $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
+}
+function attempt(slot) {
+  if(currentCheck()){focus('checkpointTitle');return;}
+  if(selected===null){announce('First select a piece from the tray.');return;}
+  start(); const before=state.placed.length;
+  if(!place(state,selected,slot)){announce('That connection does not fit yet. Try another place.');return;}
+  selected=null; hinted=null; afterProgress(before);
+}
+function startDrag(e,id,b) {
+  if(e.button!==0||state.placed.includes(id)||currentCheck())return;
+  drag={id,b,x:e.clientX,y:e.clientY,moved:false,pointer:e.pointerId}; b.setPointerCapture(e.pointerId);
+}
+window.addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.pointer)return;
+  const d=drag; if(!d.moved&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<7)return;
+  if(!d.moved){
+    d.moved=true; start(); selected=d.id; hinted=null; d.b.classList.add('dragging');
+    d.ghost=d.b.querySelector('svg').cloneNode(true);
+    d.ghost.querySelectorAll('[id]').forEach(el=>el.id='drag-'+el.id);
+    d.ghost.querySelectorAll('[clip-path]').forEach(el=>el.setAttribute('clip-path',el.getAttribute('clip-path').replace('#','#drag-')));
+    d.ghost.classList.add('drag-ghost'); const rect=board.getBoundingClientRect();
+    d.width=rect.width*(CW+96)/W; d.height=rect.height*(CH+96)/H;
+    Object.assign(d.ghost.style,{width:d.width+'px',height:d.height+'px'}); document.body.append(d.ghost); updateSelection();
+  }
+  d.ghost.style.left=e.clientX-d.width/2+'px'; d.ghost.style.top=e.clientY-d.height/2+'px';
+});
+function endDrag(e,cancelled=false) {
+  if(!drag||e.pointerId!==drag.pointer)return;
+  const d=drag; drag=null; d.b.classList.remove('dragging'); d.ghost?.remove();
+  if(!d.moved)return;
+  d.b.dataset.suppress='1'; setTimeout(()=>delete d.b.dataset.suppress,0);
+  if(!cancelled){
+    const rect=board.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*W,y=(e.clientY-rect.top)/rect.height*H;
+    const cx=(d.id%COLS+.5)*CW,cy=(Math.floor(d.id/COLS)+.5)*CH;
+    if(Math.hypot(x-cx,y-cy)<Math.min(CW,CH)*.57)attempt(d.id);
+    else announce('Bring the center of the piece closer to its place. You can also click to place it.');
+  }
+}
+window.addEventListener('pointerup',e=>endDrag(e));
+window.addEventListener('pointercancel',e=>endDrag(e,true));
+function answerButtons(container,options,handler) {
+  container.replaceChildren();
+  options.forEach((text,i)=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.dataset.option=i;b.onclick=()=>handler(i,b);container.append(b);});
+}
+function renderCheckpoint() {
+  const id=currentCheck(); $('checkpoint').hidden=!id;
+  if(!id){renderedCheck=null;return;}
+  const q=checkpoints[id], answered=state.answers.includes(id);
+  if(renderedCheck!==id){
+    renderedCheck=id; $('checkpointTitle').textContent=q.title; $('checkpointContext').textContent=q.context;
+    $('checkpointQuestion').textContent=q.question; $('checkpointSource').href=q.source; $('checkpointFeedback').textContent='';
+    answerButtons($('checkpointOptions'),q.options,(answer,b)=>{
+      start(); const right=answerCheckpoint(state,id,answer,q);
+      $('checkpointFeedback').textContent=(right?'Correct. ':'Not quite. ')+q.explanation+(right?'':' Choose the answer that follows this explanation.');
+      if(right){reviewId=id;finishRound(state);save();render();focus('checkpointContinue');}
+      else {b.setAttribute('aria-pressed','true');}
+    });
+  }
+  $('checkpointContinue').hidden=!answered;
+  $('checkpointOptions').querySelectorAll('button').forEach((b,i)=>{b.disabled=answered;b.classList.toggle('correct',answered&&i===q.correct);});
+}
+function renderText() {
+  $('textPuzzle').hidden=route!=='text'||complete(state)||Boolean(currentCheck());
+  if($('textPuzzle').hidden)return;
+  const card=textCards.find(c=>c.at>state.placed.length);
+  if(renderedText===card)return;
+  renderedText=card; $('textTitle').textContent=card.title; $('textContext').textContent=card.context;
+  $('textQuestion').textContent=card.question; $('textFeedback').textContent='';
+  answerButtons($('textOptions'),card.options,(answer,b)=>{
+    start(); const before=state.placed.length;
+    if(advanceTextCard(state,card,answer)){afterProgress(before);announce('Correct. '+card.explanation+' '+progressMessage(before));}
+    else {$('textFeedback').textContent='Not quite. '+card.explanation+' Try the matching answer.';b.setAttribute('aria-pressed','true');}
+  });
+}
+function updateMode() {
+  $('calm').setAttribute('aria-pressed',String(!timed)); $('timed').setAttribute('aria-pressed',String(timed));
+  $('calm').disabled=state.started; $('timed').disabled=state.started;
+  $('timerPolicy').textContent=timed?'Elapsed time includes reloads, background tabs, and instructions. Finish the picture and both questions to stop it.':state.started?'Practice mode · take your time. Restart to choose a timed round.':'Practice at your own pace. Choose a mode before you begin.';
+  $('clock').hidden=!timed; $('clock').textContent=formatTime(elapsedSeconds(state));
+  $('imageMode').setAttribute('aria-pressed',String(route==='image')); $('textMode').setAttribute('aria-pressed',String(route==='text'));
+}
+function render() {
+  const n=state.placed.length, pictureDone=complete(state), done=roundComplete(state)&&!reviewId;
+  $('board').classList.toggle('started',n>0||peek); $('board').classList.toggle('completed',pictureDone);
+  for(let i=0;i<SIZE;i++){
+    const slot=board.querySelector(`[data-slot="${i}"]`),isPlaced=state.placed.includes(i),button=slot.querySelector('.slot');
+    button.style.display=isPlaced?'none':''; button.setAttribute('aria-disabled',String(Boolean(currentCheck())));
+    if(isPlaced&&!slot.querySelector('.piece-on-board')){const g=artworkPiece(i,'board-');g.setAttribute('class','piece-on-board');g.setAttribute('aria-hidden','true');slot.append(g);}
+  }
+  if(pictureDone)board.setAttribute('aria-label','Completed diagram. '+diagramDescription);
+  document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed||Boolean(currentCheck());});
+  $('imagePuzzle').hidden=route==='text';
+  $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=pictureDone;
+  $('progressText').textContent=`${n} of ${SIZE} pieces`; $('progressPercent').textContent=Math.round(n/SIZE*100)+'%';
+  $('progressFill').style.width=n/SIZE*100+'%'; document.querySelector('.progress-track').setAttribute('aria-valuenow',n);
+  if(n!==lastCount){
+    $('clues').replaceChildren();
+    round.clues.forEach((clue,i)=>{
+      const open=n>=clue.at,li=document.createElement('li'); li.className=`clue ${open?'unlocked':'locked'} ${i>=4?'final':''}`;
+      li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;
+      $('clues').append(li);
+    });lastCount=n;
+  }
+  $('completion').hidden=!done; $('discoveryDetail').hidden=!pictureDone; $('guessForm').hidden=pictureDone;
+  $('hint').disabled=pictureDone||Boolean(currentCheck()); $('peek').disabled=pictureDone;
+  $('learningStatus').textContent=`${state.answers.length} of 2 learning questions completed.`;
+  if(pictureDone){peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');}
+  if(done){
+    $('completionText').textContent='You completed the picture and both learning questions. Review how the channel, inheritance, and muscle behavior connect.';
+    const routeLabel=state.solvedByGuess?'Gene recognition':state.usedRoutes.includes('image')&&state.usedRoutes.includes('text')?'Image + text':state.usedRoutes.includes('text')?'Text puzzle':'Image puzzle';
+    $('roundResults').replaceChildren();
+    for(const [label,value] of [['Mode',timed?'Timed · '+formatTime(elapsedSeconds(state)):'Practice'],['Route',routeLabel],['Hints',String(state.hints)],['Image reveals',String(state.peeks)]]){
+      const group=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;group.append(dt,dd);$('roundResults').append(group);
+    }
+  }
+  updateMode();updateSelection();renderCheckpoint();renderText();
+}
+function formatTime(s) {return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
+setInterval(()=>{if(timed)$('clock').textContent=formatTime(elapsedSeconds(state));},1000);
+$('calm').onclick=()=>{if(!state.started){timed=false;render();save();}};
+$('timed').onclick=()=>{if(!state.started){timed=true;render();save();}};
+for(const [id,value] of [['imageMode','image'],['textMode','text']])$(id).onclick=()=>{
+  route=value;selected=null;hinted=null;renderedText=null;render();save();
+  announce(value==='text'?'Text puzzle selected. Solve the word connections to reveal the same clues.':'Image puzzle selected. Select a piece and place it on the board.');
+  if(currentCheck())focus('checkpointTitle');else if(value==='text'&&!complete(state))focus('textTitle');
+};
+$('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);announce(peek?'Reference image visible. '+diagramDescription:'Reference image hidden.');save();};
+$('hint').onclick=()=>{start('image');hinted=selected??order.find(id=>!state.placed.includes(id));selected=hinted;state.hints++;updateSelection();announce(`Hint: place the highlighted piece in row ${Math.floor(hinted/COLS)+1}, column ${hinted%COLS+1}.`);save();};
+$('guessForm').onsubmit=e=>{
+  e.preventDefault();if(!$('geneGuess').value.trim()){$('guessFeedback').textContent='Enter a gene symbol first.';return;}
+  start('guess');const before=state.placed.length;
+  if(guess(state,$('geneGuess').value,round.gene)){selected=null;hinted=null;afterProgress(before);}
+  else {$('guessFeedback').textContent='That is not the gene for this round. Keep exploring the clues.';$('geneGuess').setAttribute('aria-invalid','true');}
+};
+$('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
+$('checkpointContinue').onclick=()=>{
+  reviewId=null;render();save();
+  if(currentCheck())focus('checkpointTitle');else if(roundComplete(state))focus('learnButton');else if(route==='text')focus('textTitle');else $('tray').querySelector('.piece:not(.placed)')?.focus();
+};
 $('helpButton').onclick=()=>$('helpDialog').showModal();$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('.dialog-close').onclick=()=>$('helpDialog').close();
-$('restart').onclick=()=>$('restartDialog').showModal();$('cancelRestart').onclick=()=>$('restartDialog').close();$('confirmRestart').onclick=()=>{state=newState();selected=null;hinted=null;peek=false;active=false;lastCount=-1;order=shuffled(order);$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');$('guessFeedback').textContent='A correct answer completes the puzzle.';$('checkFeedback').textContent='';document.querySelectorAll('[data-answer]').forEach(b=>{b.classList.remove('correct');b.disabled=false;});buildBoard();buildTray();render();save();$('restartDialog').close();announce('Drag a piece onto the board, or select it and click a position.');};
+$('restart').onclick=()=>$('restartDialog').showModal();$('cancelRestart').onclick=()=>$('restartDialog').close();
+$('confirmRestart').onclick=()=>{
+  state=newState();selected=null;hinted=null;peek=false;reviewId=null;renderedCheck=null;renderedText=null;lastCount=-1;order=shuffled(order);
+  $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
+  $('guessFeedback').textContent='A correct answer completes the picture. Finish both questions to complete the round.';
+  board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();
+  announce('New round. Choose Practice or Timed, then begin.');focus('calm');
+};
 window.addEventListener('keydown',e=>{if(e.key==='Escape'){selected=null;hinted=null;updateSelection();}});
-$('learnButton').onclick=()=>{const el=$('discoveryDetail');el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});$('discoveryTitle').setAttribute('tabindex','-1');$('discoveryTitle').focus({preventScroll:true});};
+$('learnButton').onclick=()=>{$('discoveryTitle').setAttribute('tabindex','-1');focus('discoveryTitle');};
 $('discoveryTitle').textContent=round.gene;$('conditionName').textContent=round.condition;$('otherName').textContent=round.otherName;$('nuance').textContent=round.nuance;
+$('diagramDescription').textContent=diagramDescription;$('checkedDate').textContent='Sources checked '+round.checked+'.';
+$('guessFeedback').textContent='A correct answer completes the picture. Finish both questions to complete the round.';
 round.phenotypes.forEach(([title,body])=>{const el=document.createElement('div');el.className='phenotype';el.innerHTML=`<h4>${title}</h4><p>${body}</p>`;$('phenotypes').append(el);});
-round.sources.forEach(([title,url])=>{const a=document.createElement('a');a.textContent=title+' ↗';a.href=url;a.target='_blank';a.rel='noopener noreferrer';$('sources').append(a);});$('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
-document.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>{const right=b.dataset.answer==='right';$('checkFeedback').textContent=right?'Exactly. Chloride conductance helps keep muscle-cell electrical activity stable.':'Try again. Think about how charged ions affect a cell.';if(right){b.classList.add('correct');document.querySelectorAll('[data-answer]').forEach(button=>button.disabled=true);}});
-buildBoard();buildTray();render();if(state.placed.length&&!complete(state))announce('Your progress is saved on this device. Pick up where you left off.');
+round.sources.forEach(([title,url])=>{const a=document.createElement('a');a.textContent=title+' ↗';a.href=url;a.target='_blank';a.rel='noopener noreferrer';$('sources').append(a);});
+$('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
+buildBoard();buildTray();render();save();
+if(roundComplete(state))announce('Round complete. Your diagram, learning answers, and results are saved.');
+else if(state.started)announce('Your progress is restored.'+(timed?' Elapsed time continues.':'')+(currentCheck()?' A learning question is ready.':''));

@@ -8,9 +8,10 @@ Run `python3 -m http.server 4173` in this directory, then open http://localhost:
 
 - Assemble 12 interlocking pieces by dragging, or select a piece and select its board position.
 - Biology clues appear at 2, 4, 6, and 8 pieces. The gene appears at 11; the condition at 12.
-- A correct gene symbol completes the puzzle. This route is recorded separately from assembly.
-- Optional timer, image reference, hints, keyboard controls, reduced-motion support, and device-local progress.
-- A short learning check and condition/community links appear after completion.
+- A correct gene symbol completes the picture. Both learning questions are still required to finish the round. This route is recorded separately from assembly.
+- Choose Image puzzle or Text puzzle. The text route uses standard buttons and word connections, reaching the same clue milestones without image matching. Both routes support keyboard controls, reduced motion, and device-local progress.
+- Optional elapsed timer, image reference, hints, descriptive piece labels, and a full diagram description. Changing a selected piece clears the old hint.
+- Learning questions at six and eight pieces connect channel conductance to muscle behavior and inheritance to the condition. Incorrect answers receive explanations; correct answers unlock continued play. Condition/community links appear when the picture is complete.
 
 `npm test` runs the state/geometry tests. `npm run build` creates a static `dist/` copy. Any static host can serve that directory. Runtime code is plain HTML, CSS, JavaScript, and original SVG; no application framework or backend is required. The interface uses system sans-serif fonts and makes no font-service requests.
 
@@ -21,16 +22,21 @@ The supplied workbook is a slim six-column gene/condition export, not the wider 
 - [OMIM, autosomal recessive myotonia congenita, 255700](https://omim.org/entry/255700): condition reference. The matching link is independently supplied by MedlinePlus. Direct automated retrieval of the OMIM entry was unavailable; the prototype does **not** claim its phenotype prose was extracted from OMIM.
 - [MedlinePlus Genetics, myotonia congenita](https://medlineplus.gov/genetics/condition/myotonia-congenita/): accessible source for the paraphrased channel, inheritance, and phenotype content.
 - [GeneReviews, Myotonia Congenita](https://www.ncbi.nlm.nih.gov/books/NBK1355/): further clinical reading.
+- [Wang et al., PLOS Biology (2019), Structure of the human ClC-1 chloride channel](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000218): basis for the two-subunit illustration, with a separate chloride pathway in each subunit.
 - [Muscular Dystrophy Association](https://www.mda.org/disease/myotonia-congenita): relevant community resource, not a disease-specific foundation or a donation request.
 
 Sources checked 7 October 2026. Content is an educational prototype pending scientific and community review before conference use. Symptoms differ among people. CLCN1 also has a dominant association: this round concerns the recessive condition only. The original illustration is conceptual and is not an atomic structure, experimentally determined topology, patient image, or model of a specific variant. No binding partners or unverified protein interactions are invented.
 
 ## Add the next round
 
-`round.mjs` contains the content; `engine.mjs` contains puzzle geometry and state; `app.mjs` renders and handles input. Curate one verified gene–condition pair at a time in original table order, deduplicating repeated pairs. Keep any extraction outside the repository and never commit the workbook. This release has **one playable round**. A round selector, additional content, and shared leaderboard are deliberately future features. Client-side answers are inspectable; this prototype is not a secure competition system. The timer measures active visible play after the first interaction, pauses while instructions are open, and is not a clinical or educational score.
+`round.mjs` contains the content; `engine.mjs` contains puzzle geometry and state; `app.mjs` renders and handles input; `session.mjs` manages restored progress, timing, and learning milestones. Curate one verified gene–condition pair at a time in original table order, deduplicating repeated pairs. Keep any extraction outside the repository and never commit the workbook. This release has **one playable round**. A round selector, additional content, and shared leaderboard are deliberately future features. Client-side answers are inspectable; this prototype is not a secure competition system. Timed mode measures wall-clock elapsed time from the first puzzle action until the picture and both questions are complete. It continues across reloads, background tabs, and dialogs. Mode selection locks after play begins; restart to change it. Results report format, hints, reference-image reveals, and gene recognition separately. Practice never starts the clock. Legacy saves resume from their stored elapsed time; time spent away before their first upgrade cannot be reconstructed. This device-local timer is not tamper-resistant and is not a clinical or educational score.
 
 Progress is stored only in the browser's local storage. There is no analytics, account system, or external submission of guesses. Restart clears the saved round. Scientific references and community pages open only when selected. Branding is provisional and does not imply official Stanford endorsement.
 
 ## Visual design
 
 Cardinal accents, white panels, neutral grays, system sans-serif typography, and a compact learning workspace take inspiration from [Stanford’s primary color palette](https://identity.stanford.edu/design-elements/color/primary-colors/). The interface retains its own GREGoR Puzzles wordmark and does not display the Stanford seal or university wordmark. The membrane drawing is an original schematic with flat scientific labels, not a protein structure model.
+
+## Verification after review fixes
+
+Fourteen automated tests cover shared piece geometry, invalid placements, final reveals, gene recognition, save validation, hint selection, elapsed-time restoration, legacy saves, learning gates, timer completion, the text route, and switching formats. Browser checks cover keyboard assembly, wrong and correct learning answers, a complete text round at 320 CSS pixels, completion restoration, hint clearing, and responsive layouts at 320 and 768 CSS pixels. Essential empty-slot outlines use #687888 against #edf0f4 (over 3:1 contrast); clue body text is 15px, and small-screen piece buttons are at least 48px high. This is not a full screen-reader or real-device accessibility audit.
