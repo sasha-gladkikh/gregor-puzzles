@@ -16,8 +16,8 @@ test('gene recognition is case-insensitive and tracked separately',()=>{const s=
 test('corrupt saved progress rejected',()=>{assert.ok(validSave(newState()));assert.ok(!validSave({...newState(),placed:[0,0]}));assert.ok(!validSave({...newState(),seconds:-1}));assert.ok(!validSave({...newState(),placed:[12]}));});
 test('shuffle retains every piece exactly once',()=>assert.deepEqual(shuffled(Array.from({length:SIZE},(_,i)=>i)).sort((a,b)=>a-b),Array.from({length:SIZE},(_,i)=>i)));
 
-import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,advanceTextCard,roundComplete} from './session.mjs';
-import {checkpoints,textCards} from './round.mjs';
+import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from './session.mjs';
+import {checkpoints} from './round.mjs';
 test('a new selection always clears the old hint',()=>{
  assert.deepEqual(choosePiece(4,0),{selected:0,hinted:null});
  assert.deepEqual(choosePiece(4,4),{selected:null,hinted:null});
@@ -29,7 +29,7 @@ test('timed progress continues through reload and inactive intervals',()=>{
  assert.equal(elapsedSeconds(resumed.state,700000),600);
 });
 test('practice does not create a clock and legacy saves migrate',()=>{
- const state=newState();startRound(state,false,'text',100000);assert.equal(elapsedSeconds(state,200000),0);
+ const state=newState();startRound(state,false,'image',100000);assert.equal(elapsedSeconds(state,200000),0);
  const resumed=restoreSession({timed:true,state:{placed:[0],hints:1,peeks:0,seconds:20,solvedByGuess:false}},100000);
  assert.equal(resumed.state.startedAt,80000);assert.equal(elapsedSeconds(resumed.state,110000),30);
  assert.deepEqual(resumed.state.answers,[]);
@@ -52,18 +52,9 @@ test('timer ends only when both picture and learning are complete',()=>{
  finishRound(s,190000);assert.equal(s.finishedAt,120000);
  const resumed=restoreSession({state:s,timed:true},200000);assert.equal(elapsedSeconds(resumed.state,220000),20);
 });
-test('the text route completes the same milestones and enforces checkpoints',()=>{
- const s=newState();
- for(const card of textCards){
-  const gate=pendingCheckpoint(s);
-  if(gate){assert.equal(advanceTextCard(s,card,card.correct),false);answerCheckpoint(s,gate,checkpoints[gate].correct,checkpoints[gate]);}
-  assert.equal(advanceTextCard(s,card,(card.correct+1)%3),false);
-  assert.equal(advanceTextCard(s,card,card.correct),true);assert.equal(s.placed.length,card.at);
- }
- assert.equal(roundComplete(s),true);
-});
-test('switching from arbitrary image placements to text retains all prior pieces',()=>{
- const s=newState();place(s,11,11);place(s,8,8);place(s,5,5);
- assert.ok(advanceTextCard(s,textCards[1],textCards[1].correct));assert.equal(s.placed.length,4);
- assert.ok([11,8,5].every(i=>s.placed.includes(i)));assert.equal(new Set(s.placed).size,4);
+test('old format preferences cannot hide the image puzzle or discard progress',()=>{
+ const saved={state:{...newState(),placed:[0,4],usedRoutes:['text'],answers:[]},timed:false,route:'text'};
+ const restored=restoreSession(saved);
+ assert.deepEqual(restored.state.placed,[0,4]);assert.deepEqual(restored.state.usedRoutes,['legacy']);
+ assert.equal('route' in restored,false);
 });

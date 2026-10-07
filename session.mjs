@@ -1,4 +1,4 @@
-import {newState, validSave, complete, place, SIZE} from './engine.mjs';
+import {newState, validSave, complete} from './engine.mjs';
 
 export const CHECKPOINTS = ['mechanism', 'inheritance'];
 export const hasLearned = state => CHECKPOINTS.every(id => state.answers.includes(id));
@@ -28,17 +28,12 @@ export function answerCheckpoint(state, id, answer, question) {
   state.answers.push(id);
   return true;
 }
-export function advanceTextCard(state, card, answer) {
-  if (pendingCheckpoint(state) || answer !== card.correct || state.placed.length >= card.at) return false;
-  for (let i = 0; i < SIZE && state.placed.length < card.at; i++) place(state, i, i);
-  return true;
-}
 export function restoreSession(save, now = Date.now()) {
-  if (!validSave(save?.state)) return {state: newState(), timed: false, route: 'image'};
+  if (!validSave(save?.state)) return {state: newState(), timed: false};
   const raw = save.state;
   const state = {...newState(), ...raw};
   state.answers = Array.isArray(raw.answers) ? [...new Set(raw.answers.filter(id => CHECKPOINTS.includes(id)))] : [];
-  state.usedRoutes = Array.isArray(raw.usedRoutes) ? [...new Set(raw.usedRoutes.filter(id => ['image', 'text', 'guess'].includes(id)))] : [];
+  state.usedRoutes = Array.isArray(raw.usedRoutes) ? [...new Set(raw.usedRoutes.map(id => id === 'text' ? 'legacy' : id).filter(id => ['image', 'legacy', 'guess'].includes(id)))] : [];
   state.started = raw.started === true || raw.placed.length > 0 || raw.seconds > 0 || raw.hints > 0 || raw.peeks > 0;
   state.startedAt = Number.isFinite(raw.startedAt) && raw.startedAt >= 0 ? raw.startedAt : null;
   state.finishedAt = Number.isFinite(raw.finishedAt) && raw.finishedAt >= (state.startedAt ?? 0) ? raw.finishedAt : null;
@@ -48,5 +43,5 @@ export function restoreSession(save, now = Date.now()) {
   if (timed && state.started && state.startedAt === null) state.startedAt = now - state.seconds * 1000;
   if (!timed) state.startedAt = null;
   if (roundComplete(state) && state.finishedAt === null) finishRound(state, now);
-  return {state, timed, route: save.route === 'text' ? 'text' : 'image'};
+  return {state, timed};
 }

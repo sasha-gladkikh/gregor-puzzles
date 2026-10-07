@@ -1,21 +1,21 @@
 import {COLS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled} from './engine.mjs';
-import {round,checkpoints,textCards,pieceDescriptions,diagramDescription} from './round.mjs';
-import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,advanceTextCard,roundComplete} from './session.mjs';
+import {round,checkpoints,pieceDescriptions,diagramDescription} from './round.mjs';
+import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from './session.mjs';
 
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg', KEY = 'gregor-puzzles:' + round.id;
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
-let {state,timed,route} = restoreSession(stored);
+let {state,timed} = restoreSession(stored);
 let selected = null, hinted = null, peek = false, drag = null, reviewId = null;
 let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
-let lastCount = -1, renderedCheck = null, renderedText = null;
+let lastCount = -1, renderedCheck = null;
 const board = $('puzzle');
 const currentCheck = () => reviewId ?? pendingCheckpoint(state);
-const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed,route}));} catch {} };
+const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed}));} catch {} };
 const announce = text => {$('status').textContent = text;};
 const focus = id => $(id).focus({preventScroll:false});
-function start(useRoute = route) { startRound(state,timed,useRoute); save(); updateMode(); }
+function start(useRoute = 'image') { startRound(state,timed,useRoute); save(); updateMode(); }
 function svgEl(tag,attrs={}) { const node=document.createElementNS(NS,tag); Object.entries(attrs).forEach(([k,v])=>node.setAttribute(k,v)); return node; }
 function artworkPiece(id,prefix) {
   const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
@@ -69,7 +69,6 @@ function afterProgress(before) {
   announce(progressMessage(before)+(currentCheck()?' Connect the clues in the learning question.':roundComplete(state)?' Round complete.':''));
   if(currentCheck()) focus('checkpointTitle');
   else if(roundComplete(state)) focus('learnButton');
-  else if(route==='text') focus('textTitle');
   else $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
 }
 function attempt(slot) {
@@ -132,25 +131,11 @@ function renderCheckpoint() {
   $('checkpointContinue').hidden=!answered;
   $('checkpointOptions').querySelectorAll('button').forEach((b,i)=>{b.disabled=answered;b.classList.toggle('correct',answered&&i===q.correct);});
 }
-function renderText() {
-  $('textPuzzle').hidden=route!=='text'||complete(state)||Boolean(currentCheck());
-  if($('textPuzzle').hidden)return;
-  const card=textCards.find(c=>c.at>state.placed.length);
-  if(renderedText===card)return;
-  renderedText=card; $('textTitle').textContent=card.title; $('textContext').textContent=card.context;
-  $('textQuestion').textContent=card.question; $('textFeedback').textContent='';
-  answerButtons($('textOptions'),card.options,(answer,b)=>{
-    start(); const before=state.placed.length;
-    if(advanceTextCard(state,card,answer)){afterProgress(before);announce('Correct. '+card.explanation+' '+progressMessage(before));}
-    else {$('textFeedback').textContent='Not quite. '+card.explanation+' Try the matching answer.';b.setAttribute('aria-pressed','true');}
-  });
-}
 function updateMode() {
   $('calm').setAttribute('aria-pressed',String(!timed)); $('timed').setAttribute('aria-pressed',String(timed));
   $('calm').disabled=state.started; $('timed').disabled=state.started;
   $('timerPolicy').textContent=timed?'Elapsed time includes reloads, background tabs, and instructions. Finish the picture and both questions to stop it.':state.started?'Practice mode · take your time. Restart to choose a timed round.':'Practice at your own pace. Choose a mode before you begin.';
   $('clock').hidden=!timed; $('clock').textContent=formatTime(elapsedSeconds(state));
-  $('imageMode').setAttribute('aria-pressed',String(route==='image')); $('textMode').setAttribute('aria-pressed',String(route==='text'));
 }
 function render() {
   const n=state.placed.length, pictureDone=complete(state), done=roundComplete(state)&&!reviewId;
@@ -162,7 +147,6 @@ function render() {
   }
   if(pictureDone)board.setAttribute('aria-label','Completed diagram. '+diagramDescription);
   document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed||Boolean(currentCheck());});
-  $('imagePuzzle').hidden=route==='text';
   $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=pictureDone;
   $('progressText').textContent=`${n} of ${SIZE} pieces`; $('progressPercent').textContent=Math.round(n/SIZE*100)+'%';
   $('progressFill').style.width=n/SIZE*100+'%'; document.querySelector('.progress-track').setAttribute('aria-valuenow',n);
@@ -180,23 +164,18 @@ function render() {
   if(pictureDone){peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');}
   if(done){
     $('completionText').textContent='You completed the picture and both learning questions. Review how the channel, inheritance, and muscle behavior connect.';
-    const routeLabel=state.solvedByGuess?'Gene recognition':state.usedRoutes.includes('image')&&state.usedRoutes.includes('text')?'Image + text':state.usedRoutes.includes('text')?'Text puzzle':'Image puzzle';
+    const routeLabel=state.solvedByGuess?'Gene recognition':state.usedRoutes.includes('legacy')?'Restored progress':'Image puzzle';
     $('roundResults').replaceChildren();
     for(const [label,value] of [['Mode',timed?'Timed · '+formatTime(elapsedSeconds(state)):'Practice'],['Route',routeLabel],['Hints',String(state.hints)],['Image reveals',String(state.peeks)]]){
       const group=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;group.append(dt,dd);$('roundResults').append(group);
     }
   }
-  updateMode();updateSelection();renderCheckpoint();renderText();
+  updateMode();updateSelection();renderCheckpoint();
 }
 function formatTime(s) {return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
 setInterval(()=>{if(timed)$('clock').textContent=formatTime(elapsedSeconds(state));},1000);
 $('calm').onclick=()=>{if(!state.started){timed=false;render();save();}};
 $('timed').onclick=()=>{if(!state.started){timed=true;render();save();}};
-for(const [id,value] of [['imageMode','image'],['textMode','text']])$(id).onclick=()=>{
-  route=value;selected=null;hinted=null;renderedText=null;render();save();
-  announce(roundComplete(state)?'Round complete. Explore the diagram and review your results below.':value==='text'?'Text puzzle selected. Solve the word connections to reveal the same clues.':'Image puzzle selected. Select a piece and place it on the board.');
-  if(currentCheck())focus('checkpointTitle');else if(value==='text'&&!complete(state))focus('textTitle');
-};
 $('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);announce(peek?'Reference image visible. '+diagramDescription:'Reference image hidden.');save();};
 $('hint').onclick=()=>{start('image');hinted=selected??order.find(id=>!state.placed.includes(id));selected=hinted;state.hints++;updateSelection();announce(`Hint: place the highlighted piece in row ${Math.floor(hinted/COLS)+1}, column ${hinted%COLS+1}.`);save();};
 $('guessForm').onsubmit=e=>{
@@ -208,12 +187,12 @@ $('guessForm').onsubmit=e=>{
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
 $('checkpointContinue').onclick=()=>{
   reviewId=null;render();save();
-  if(currentCheck())focus('checkpointTitle');else if(roundComplete(state))focus('learnButton');else if(route==='text')focus('textTitle');else $('tray').querySelector('.piece:not(.placed)')?.focus();
+  if(currentCheck())focus('checkpointTitle');else if(roundComplete(state))focus('learnButton');else $('tray').querySelector('.piece:not(.placed)')?.focus();
 };
 $('helpButton').onclick=()=>$('helpDialog').showModal();$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('.dialog-close').onclick=()=>$('helpDialog').close();
 $('restart').onclick=()=>$('restartDialog').showModal();$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
-  state=newState();selected=null;hinted=null;peek=false;reviewId=null;renderedCheck=null;renderedText=null;lastCount=-1;order=shuffled(order);
+  state=newState();selected=null;hinted=null;peek=false;reviewId=null;renderedCheck=null;lastCount=-1;order=shuffled(order);
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
   $('guessFeedback').textContent='A correct answer completes the picture. Finish both questions to complete the round.';
   board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();
