@@ -1,13 +1,13 @@
 // Public educational content only. No workbook rows, variants, or family data.
 export const round={
- id:'clcn1-recessive-v1',number:'01',title:'The art of letting go',
- subtitle:'Explore the quiet electrical balance behind every movement.',
+ id:'clcn1-recessive-v1',number:'01',title:'Muscle-cell electrical balance',
+ subtitle:'Discover how ion transport regulates skeletal muscle-cell excitability.',
  gene:'CLCN1',condition:'Recessive myotonia congenita',otherName:'Also known as Becker myotonia',
  clues:[
- {at:2,label:'Location',title:'At the muscle-cell boundary',body:'This protein works in the membrane of skeletal muscle cells.',source:'MedlinePlus'},
- {at:4,label:'Function',title:'A passage for chloride',body:'It forms an ion channel: a selective pathway for negatively charged chloride ions.',source:'MedlinePlus'},
- {at:6,label:'Mechanism',title:'Keeping signals in balance',body:'Chloride conductance helps stabilize electrical excitability so muscle activation stays controlled.',source:'MedlinePlus'},
- {at:8,label:'Inheritance',title:'A recessive association',body:'This round concerns a condition associated with disease-causing variants in both copies of the gene.',source:'MedlinePlus'},
+ {at:2,label:'Location',title:'Skeletal muscle-cell membrane',body:'This protein works in the membrane of skeletal muscle cells.',source:'MedlinePlus'},
+ {at:4,label:'Function',title:'Chloride ion channel',body:'It forms an ion channel: a selective pathway for negatively charged chloride ions.',source:'MedlinePlus'},
+ {at:6,label:'Mechanism',title:'Electrical excitability',body:'Chloride conductance helps stabilize electrical excitability so muscle activation stays controlled.',source:'MedlinePlus'},
+ {at:8,label:'Inheritance',title:'Autosomal recessive',body:'This round concerns a condition associated with disease-causing variants in both copies of the gene.',source:'MedlinePlus'},
  {at:11,label:'The gene',title:'CLCN1',body:'The instructions for the ClC-1 chloride channel.',source:'MedlinePlus'},
  {at:12,label:'The condition',title:'Recessive myotonia congenita',body:'Delayed relaxation of skeletal muscles can cause stiffness after movement.',source:'MedlinePlus'}
  ],
