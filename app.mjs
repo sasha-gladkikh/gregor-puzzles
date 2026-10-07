@@ -194,7 +194,7 @@ $('calm').onclick=()=>{if(!state.started){timed=false;render();save();}};
 $('timed').onclick=()=>{if(!state.started){timed=true;render();save();}};
 for(const [id,value] of [['imageMode','image'],['textMode','text']])$(id).onclick=()=>{
   route=value;selected=null;hinted=null;renderedText=null;render();save();
-  announce(value==='text'?'Text puzzle selected. Solve the word connections to reveal the same clues.':'Image puzzle selected. Select a piece and place it on the board.');
+  announce(roundComplete(state)?'Round complete. Explore the diagram and review your results below.':value==='text'?'Text puzzle selected. Solve the word connections to reveal the same clues.':'Image puzzle selected. Select a piece and place it on the board.');
   if(currentCheck())focus('checkpointTitle');else if(value==='text'&&!complete(state))focus('textTitle');
 };
 $('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);announce(peek?'Reference image visible. '+diagramDescription:'Reference image hidden.');save();};
