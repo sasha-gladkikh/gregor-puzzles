@@ -4,7 +4,7 @@ Ten playable image-jigsaw rounds about rare disease gene–condition relationshi
 
 ## Game guide and branding
 
-[Read the game explanation and selection rationale](docs/Game-design-and-selection.pdf) for all ten conditions, their educational purpose, and the review questions for Matt. [Compare three logo and name directions](branding/GSS-game-branding-concepts.png); editable SVG logos are in `branding/`. These concepts do not replace the current game branding.
+[Read the game explanation and selection rationale](docs/Game-design-and-selection.pdf) for all ten conditions, their educational purpose, and the review questions for Matt. The confirmed game name is **GREGoR Puzzles**. Earlier [logo and name explorations](branding/GSS-game-branding-concepts.png) are retained for reference; they are not the selected branding. Editable SVGs are in `branding/`.
 
 ## Play or review
 
@@ -14,7 +14,7 @@ npm run build
 python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 ```
 
-Open http://127.0.0.1:4173. No dependency installation is needed. `review.html` presents all content, illustrations, answer explanations, and references without requiring puzzle completion. Serve over HTTP; ES modules do not reliably run from a file URL. Any static host can serve `dist/`.
+Open http://127.0.0.1:4173. No dependency installation is needed. The **Play puzzle** and **Editorial review** tabs connect the game and `review.html`. Review presents all content, illustrations, answer explanations, and references without requiring puzzle completion. Returning through the Play puzzle tab preserves the selected round and its saved progress. Serve over HTTP; ES modules do not reliably run from a file URL. Any static host can serve `dist/`.
 
 - Choose any of 10 rounds from the library. Each round has 12 interlocking image pieces and two learning questions.
 - On iPhone, tap a piece and then its board position. With a mouse, drag or click to place. Keyboard users can Tab and Enter; Escape clears a selection.
@@ -54,7 +54,7 @@ Scientific distinctions preserved include dominant versus recessive associations
 
 ## Design and branding
 
-Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/default/files/2022-08/GSS_Logo_Primary.png): royal blue `#0043fd`, navy `#0c063f`, and cyan `#00a9f2`. [GREGoR Stanford Site](https://gregor.stanford.edu/) provides the institutional context. The temporary GSS text badge and GREGoR Puzzles wordmark await Jimmy's branding input. No Stanford seal or university wordmark is recreated. Typography uses system fonts; assets are local SVGs.
+Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/default/files/2022-08/GSS_Logo_Primary.png): royal blue `#0043fd`, navy `#0c063f`, and cyan `#00a9f2`. [GREGoR Stanford Site](https://gregor.stanford.edu/) provides the institutional context. The confirmed game name is GREGoR Puzzles; the temporary GSS text badge and wordmark styling await Jimmy's visual branding input. No Stanford seal or university wordmark is recreated. Typography uses system fonts; assets are local SVGs.
 
 ## Project structure
 

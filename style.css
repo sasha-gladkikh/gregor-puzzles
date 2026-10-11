@@ -31,3 +31,14 @@ dialog{border:1px solid var(--line);border-top:4px solid var(--accent);border-ra
 @media(max-width:600px){.tray{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.piece{min-height:90px}.touch-instruction{display:inline}.tray-help{font-size:13px}.board-watermark{top:30%;padding:8px 6px}.board-watermark p{margin-top:0}.identity-bar,.site-header{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}main{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}footer{padding-bottom:max(24px,env(safe-area-inset-bottom))}}
 @media(pointer:coarse){.tool,.nav-arrow,.text-button{min-height:48px}.touch-instruction{display:inline}}
 @media(forced-colors:active){.piece .piece-outline{stroke:CanvasText}.piece[aria-pressed=true] .piece-outline{stroke:Highlight}}
+
+/* Shared page navigation, with an explicit current-page indicator. */
+.site-tabs{background:#fff;border-bottom:1px solid var(--line)}
+.site-tabs-inner{max-width:1416px;margin:auto;padding:0 28px;display:flex;gap:28px}
+.site-tab{display:inline-flex;align-items:center;justify-content:center;min-height:52px;padding:12px 2px 10px;border-bottom:3px solid transparent;text-decoration:none;font-size:14px;font-weight:600;color:var(--muted)}
+.site-tab:hover{color:var(--accent);border-bottom-color:#becfff}
+.site-tab[aria-current="page"]{color:var(--accent);border-bottom-color:var(--accent)}
+.site-tab:focus-visible{outline-offset:-3px;border-radius:3px}
+@media(max-width:600px){.site-tabs-inner{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));gap:26px}.site-tab{min-height:50px}}
+@media(forced-colors:active){.site-tab[aria-current="page"]{color:LinkText;border-bottom-color:LinkText}}
+@media print{.site-tabs{display:none!important}}

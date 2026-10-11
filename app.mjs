@@ -6,6 +6,8 @@ const {checkpoints,pieces:pieceDescriptions,description:diagramDescription}=roun
 import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from './session.mjs';
 
 const $ = id => document.getElementById(id);
+$('playTab').href = `./?level=${round.number}`;
+for (const id of ['editorialTab','editorialFooter']) $(id).href = `./review.html?level=${round.number}`;
 const PIECE_PAD=44;
 const NS = 'http://www.w3.org/2000/svg', KEY = saveKey(round);
 let stored;

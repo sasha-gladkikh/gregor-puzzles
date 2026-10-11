@@ -1,4 +1,7 @@
-import {rounds} from './rounds.mjs';
+import {rounds,findRound} from './rounds.mjs';
+const returnRound=findRound(new URLSearchParams(location.search).get('level') ?? '01');
+for (const id of ['playTab','playFooter']) document.getElementById(id).href=`./?level=${returnRound.number}`;
+document.getElementById('editorialTab').href=`./review.html?level=${returnRound.number}`;
 const el=(tag,text,className)=>{const n=document.createElement(tag);if(text)n.textContent=text;if(className)n.className=className;return n;};
 const link=(title,url)=>{const a=el('a',title+' ↗');a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;};
 for(const round of rounds){
