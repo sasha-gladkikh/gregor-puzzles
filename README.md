@@ -24,6 +24,15 @@ Open http://127.0.0.1:4173. No dependency installation is needed. The **Play puz
 - Progress is stored separately for each round in this browser. Restart affects only the current round. Existing CLCN1 saves retain their original storage key.
 - Piece silhouettes use dark non-scaling outlines, contrasting tray cards, subtle shadows, and letter labels. The phone layout uses three larger pieces per row, keeps page scrolling available, and brings the board into view after selection. Hints, reference images, reduced-motion support, descriptive piece labels, and full diagram descriptions are available. A storage warning appears if local saving is blocked.
 - Completion includes a next-round action, a biology summary, phenotype descriptions, inheritance, general variant classes, OMIM and supporting references, and a community resource.
+- Each completed picture reveals three numbered landmarks and a short **From image to idea** guide. The same guide is visible in Editorial review. Images remain free of labels during assembly.
+
+## Illustration edition
+
+All ten rounds now use the chosen clean scientific illustration style: broad silhouettes, restrained depth, blue/teal structures, and selective amber accents. The 1200 × 900 WebP images total about 934 KiB. Images depict concepts rather than measured molecular structures, complete pathways, or diagnostic thresholds. The STING scene distinguishes a signaling adaptor from an ion channel; splicing captions distinguish assembly from catalytic stages; repeat counts are explicitly symbolic.
+
+`artwork-data.mjs` records the scene description, twelve piece descriptions, three landmark coordinates and explanations, one visual takeaway, and sources for each image. `artwork-ui.mjs` shares the guide and numbered overlay between play and review. `artwork/prompts.json` records the final prompt set and built-in image-generation provenance. All illustrations still require scientific review. The earlier SVGs and generator are retained as design history and no longer supply the runtime puzzle images.
+
+`artwork-study.html` preserves the simplified/detailed synapse comparison. Its optional play previews have independent save keys and do not alter progress in the main collection. The simplified direction is selected for the main game.
 
 ## Clinical education edition
 
@@ -33,7 +42,7 @@ Every round has one learning objective, a clinical pattern unlocked at six piece
 
 The review page can be searched by gene, condition, clinical term, or HPO identifier. Clinical profiles open by default; molecular interpretation, answer rationales, references, and editorial notes are expandable. Notes are saved in this browser only and do not change the pending scientific review status. Printing expands educational sections and excludes personal notes. The linked PDF explains the original selection rationale; the web review contains the expanded clinical edition.
 
-Save migration preserves placed pieces and assistance counts while asking returning players to complete the updated questions. Completed timers resume from their former finish instead of including the intervening period. This changes educational content, not the save-key identity. Static builds add a shared content hash to local module and stylesheet URLs so cached pages do not mix releases.
+Save migration preserves placed pieces and assistance counts while asking returning players to complete the updated questions. Completed timers resume from their former finish instead of including the intervening period. This changes educational content, not the save-key identity. Static builds hash both runtime files and artwork, adding a shared revision to module, stylesheet, and runtime image URLs so cached pages do not mix releases.
 
 The content is designed to support explanation, application, and recall. Its effects on learning or retention have not been evaluated. Team review and a small learner pilot remain appropriate before conference use.
 
@@ -66,7 +75,7 @@ Scientific distinctions preserved include dominant versus recessive associations
 
 ## Design and branding
 
-Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/default/files/2022-08/GSS_Logo_Primary.png): royal blue `#0043fd`, navy `#0c063f`, and cyan `#00a9f2`. [GREGoR Stanford Site](https://gregor.stanford.edu/) provides the institutional context. The confirmed game name is GREGoR Puzzles; the temporary GSS text badge and wordmark styling await Jimmy's visual branding input. No Stanford seal or university wordmark is recreated. Typography uses system fonts; assets are local SVGs.
+Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/default/files/2022-08/GSS_Logo_Primary.png): royal blue `#0043fd`, navy `#0c063f`, and cyan `#00a9f2`. [GREGoR Stanford Site](https://gregor.stanford.edu/) provides the institutional context. The confirmed game name is GREGoR Puzzles; the temporary GSS text badge and wordmark styling await Jimmy's visual branding input. No Stanford seal or university wordmark is recreated. Typography uses system fonts; illustrations are local WebP files and interface icons use SVG.
 
 ## Project structure
 
@@ -75,13 +84,14 @@ Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/d
 - `session.mjs`: learning gates, save restoration, and wall-clock timing.
 - `collection.mjs`: progress across independently saved rounds and anonymous numbered URLs.
 - `app.mjs`, `index.html`, `style.css`: game, library, and completion flow.
-- `artwork/01.svg` through `10.svg`: original conceptual illustrations.
-- `scripts/generate-artwork.py`: regenerates SVGs using Python's standard library; `artwork.svg` is the original source for the first illustration.
+- `artwork/01.webp` through `10.webp`: current conceptual illustrations; matching SVGs retain the earlier designs.
+- `artwork-data.mjs`, `artwork-ui.mjs`, `artwork.css`: image descriptions, sourced landmark guides, and rendering.
+- `scripts/generate-artwork.py`: regenerates the historical SVG designs only; `artwork.svg` is the original first-round source.
 - `review.html`, `review.mjs`, `review.css`: reviewer view with all answers.
 - `test.mjs`: geometry, learning, timing, migration, catalog, and collection regression tests.
 
 ## Validation and limitations
 
-21 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, round reset, and corrupt/blocked storage. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. The responsive layout was checked at 320 and 375 CSS pixels, including piece selection, placement, the library, and save restoration. A physical iPhone/Safari test is still recommended; browser viewport checks do not emulate the iOS engine. This is not a complete screen-reader or real-device accessibility audit.
+22 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, preview-save isolation, round reset, and corrupt/blocked storage. The catalog check also verifies WebP signatures, landmark coordinates, and illustration references. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. Earlier checks covered 320 and 375 CSS pixels; the illustration edition also verifies full puzzle completion and the image guide at 390 pixels, all ten review images and overflow at 320 pixels, and hiding the guide again after restart. A physical iPhone/Safari test is still recommended; browser viewport checks do not emulate the iOS engine. This is not a complete screen-reader or real-device accessibility audit.
 
 This is a static game with no account system, analytics, data collection, external guess submission, or shared leaderboard. Answers are inspectable in client source. Timing is local, not tamper-resistant, and is not a clinical or educational score. Clearing browser data removes progress; progress does not sync between devices. Timed rounds continue while another round is open. Scientific review and final branding remain human review tasks, not completed approvals.

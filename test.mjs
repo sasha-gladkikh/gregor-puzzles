@@ -1,6 +1,23 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints} from './engine.mjs';
 import {round} from './round.mjs';
+import {applyArtworkStudy,studySaveKey} from './artwork-studies.mjs';
+test('art previews keep collection progress and other rounds unchanged',()=>{
+ const original=rounds[5],keys=new Set([saveKey(original)]);
+ for(const variant of ['clean','detailed']){
+  const preview=applyArtworkStudy(original,variant);
+  keys.add(studySaveKey(preview,saveKey(preview)));
+  assert.equal(preview.pieces.length,SIZE);
+  assert.equal(preview.checkpoints,original.checkpoints);
+  const bytes=readFileSync(new URL(preview.artwork,import.meta.url));
+  assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');
+  assert.equal(applyArtworkStudy(rounds[0],variant),rounds[0]);
+ }
+ assert.equal(keys.size,3);
+ for(const value of [null,'unknown','__proto__','constructor'])assert.equal(applyArtworkStudy(original,value),original);
+ assert.equal(studySaveKey(original,saveKey(original)),saveKey(original));
+ assert.match(original.artwork,/06\.webp$/);
+});
 test('every internal boundary is shared and outside boundaries are flat',()=>{for(let i=0;i<SIZE;i++){const e=edges(i);if(i%4<3)assert.equal(e.right,edges(i+1).left);else assert.equal(e.right,0);if(i<8)assert.equal(e.bottom,edges(i+4).top);else assert.equal(e.bottom,0);if(i%4===0)assert.equal(e.left,0);if(i<4)assert.equal(e.top,0);assert.match(pathFor(i),/^M .* Z$/);assert.ok(!pathFor(i).includes('NaN'));}});
 test('shared tab curves coincide when traversed in reverse',()=>{
  const segments=(x,y,dx,dy,sign)=>{let start=[x,y];return edgePoints(x,y,dx,dy,sign).map(s=>{const out={...s,start};start=s.p.slice(-2);return out;}).filter(s=>s.op==='C');};
@@ -72,8 +89,12 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
   assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
   assert.equal(r.pieces.length,SIZE);assert.ok(r.clinical.features.length>=6&&r.clinical.features.length<=8);
   for(const q of Object.values(r.checkpoints)){assert.ok(q.correct>=0&&q.correct<q.options.length);assert.ok(q.explanation&&q.source.startsWith('https://'));}
-  const svg=readFileSync(new URL(r.artwork,import.meta.url),'utf8');
-  assert.match(svg,/viewBox="0 0 800 600"/);assert.ok(!svg.includes(r.gene));
+  const bytes=readFileSync(new URL(r.artwork,import.meta.url));
+  assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');
+  assert.equal(r.illustration.landmarks.length,3);assert.ok(r.illustration.takeaway&&r.illustration.note);
+  assert.ok(r.sources.some(([,url])=>url===r.illustration.source));
+  for(const point of r.illustration.landmarks){assert.ok(point.x>0&&point.x<100&&point.y>0&&point.y<100);assert.ok(point.title&&point.text);}
+  assert.ok(!r.description.includes(r.gene));
  }
 });
 test('all ten image puzzles and recognition routes complete with both questions',()=>{

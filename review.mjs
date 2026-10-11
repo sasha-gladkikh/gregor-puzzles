@@ -1,5 +1,6 @@
 import {hpoTerms} from './hpo-terms.mjs';
 import {rounds,findRound} from './rounds.mjs';
+import {artworkMarkers,artworkGuide} from './artwork-ui.mjs';
 import {node,citation,renderClinicalProfile,renderPearls,renderMemory} from './clinical-ui.mjs';
 const returnRound=findRound(new URLSearchParams(location.search).get('level') ?? '01');
 for(const id of ['playTab','playFooter'])document.getElementById(id).href=`./?level=${returnRound.number}`;
@@ -13,7 +14,8 @@ for(const round of rounds){
  const head=node('header');head.append(node('span',`ROUND ${round.number} · ${round.topic.toUpperCase()}`,'eyebrow'),node('h2',round.gene),node('p',round.condition),node('span',round.reviewStatus,'review-badge'));
  const objective=node('div',null,'learning-objective');objective.append(node('strong','Learning objective'),node('p',p.objective));head.append(objective,node('p',p.overview,'clinical-overview'));card.append(head);
  const body=node('div',null,'review-columns'),visual=node('div',null,'review-visual');
- const img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';visual.append(img,node('p',round.description,'small'));
+ const figure=node('div',null,'artwork-figure');
+ const img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';figure.append(img,artworkMarkers(round));visual.append(figure,artworkGuide(round));
  const play=node('a','Open playable round →','primary');play.href=`./?level=${round.number}`;visual.append(play);renderMemory(round,visual);
  const facts=node('dl',null,'gene-facts');for(const [label,text] of [['Condition identifier',`OMIM ${round.omim}`],['Inheritance for this relationship',round.inheritance],['Relevant variant classes',round.variant]]){const d=node('div');d.append(node('dt',label),node('dd',text));facts.append(d);}visual.append(facts);
  const content=node('div');

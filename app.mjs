@@ -2,7 +2,10 @@ import {node as clinicalNode,citation,renderClinicalProfile,renderPearls,renderM
 import {COLS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled} from './engine.mjs';
 import {rounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink} from './collection.mjs';
-const round=findRound(new URLSearchParams(location.search).get('level') ?? '01');
+import {applyArtworkStudy,studySaveKey} from './artwork-studies.mjs';
+import {artworkMarkers,artworkGuide} from './artwork-ui.mjs';
+const params=new URLSearchParams(location.search);
+const round=applyArtworkStudy(findRound(params.get('level') ?? '01'),params.get('art'));
 const {checkpoints,pieces:pieceDescriptions,description:diagramDescription}=round;
 import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from './session.mjs';
 
@@ -10,7 +13,17 @@ const $ = id => document.getElementById(id);
 $('playTab').href = `./?level=${round.number}`;
 for (const id of ['editorialTab','editorialFooter']) $(id).href = `./review.html?level=${round.number}`;
 const PIECE_PAD=44;
-const NS = 'http://www.w3.org/2000/svg', KEY = saveKey(round);
+const NS = 'http://www.w3.org/2000/svg', KEY = studySaveKey(round,saveKey(round));
+if(round.study){
+ const banner=clinicalNode('aside',null,'study-banner');
+ banner.append(clinicalNode('strong','Artwork preview · '+round.label));
+ const back=clinicalNode('a','Compare illustrations →');back.href='./artwork-study.html';banner.append(back);
+ document.querySelector('.collection-bar').before(banner);
+ $('playTab').href=`./?level=06&art=${round.study}`;
+}
+const imageMarkers=artworkMarkers(round);imageMarkers.hidden=true;$('board').append(imageMarkers);
+const imageGuide=artworkGuide(round);imageGuide.id='artworkGuide';imageGuide.hidden=true;
+document.querySelector('.diagram-description').before(imageGuide);
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
 let {state,timed,upgraded} = restoreSession(stored);
@@ -171,6 +184,7 @@ function render() {
   }
   $('memoryTakeaway').hidden=!done;
   $('completion').hidden=!done; $('discoveryDetail').hidden=!pictureDone; $('guessForm').hidden=pictureDone;
+  imageGuide.hidden=!pictureDone;imageMarkers.hidden=!pictureDone;
   $('hint').disabled=pictureDone||Boolean(currentCheck()); $('peek').disabled=pictureDone;
   $('learningStatus').textContent=`${state.answers.length} of 2 learning questions completed.`;
   if(pictureDone){peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');}

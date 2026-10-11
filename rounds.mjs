@@ -1,4 +1,5 @@
 import {clinicalProfiles} from './clinical.mjs';
+import {illustrations} from './artwork-data.mjs';
 import {round as first, checkpoints as firstChecks, diagramDescription as firstDescription, pieceDescriptions as firstPieces} from './round.mjs';
 
 const med = path => `https://medlineplus.gov/genetics/${path}/`;
@@ -150,7 +151,10 @@ const introductoryRounds=[base,...entries.map((r,index)=>({...r,
 
 export const rounds=introductoryRounds.map(r=>{
  const clinical=clinicalProfiles[r.gene];
+ const illustration=illustrations[r.number];
  const sources=new Map(r.sources.map(([label,url])=>[url,label]));
+ if(!sources.has(illustration.source))sources.set(illustration.source,'Illustration · mechanistic reference');
+ if(illustration.noteSource&&!sources.has(illustration.noteSource))sources.set(illustration.noteSource,'Spliceosome · assembly and activation');
  const referenceNames={
   'https://www.ncbi.nlm.nih.gov/books/NBK1124/':'GeneReviews · Noonan syndrome',
   'https://www.nature.com/articles/s41591-024-03085-5':'Greene et al. · RNU4-2 phenotype and discovery (2024)',
@@ -165,7 +169,8 @@ export const rounds=introductoryRounds.map(r=>{
  };
  const urls=[clinical.patternSource,...clinical.features.map(f=>f.source),...clinical.pearls.map(p=>p.source),...clinical.questions.map(q=>q.source)];
  for(const url of urls) if(!sources.has(url)) sources.set(url,referenceNames[url]??(url.includes('ncbi.nlm.nih.gov/books')?'GeneReviews · clinical and molecular reference':url.includes('medlineplus')?'MedlinePlus Genetics · clinical reference':'Primary research · clinical and molecular evidence'));
- return {...r,clinical,phenotypes:clinical.features.map(f=>[f.title,f.text]),
+ return {...r,clinical,illustration,artwork:`./artwork/${r.number}.webp${new URL(import.meta.url).search}`,description:illustration.description,pieces:illustration.pieces,phenotypes:clinical.features.map(f=>[f.title,f.text]),
+  sourceNote:r.sourceNote+' New conceptual artwork was generated with AI and simplified for learning. Scientific review is pending.',
   sources:[...sources].map(([url,label])=>[label,url]),
   clues:r.clues.map(c=>c.at===6?{at:6,label:'Clinical pattern',title:'Connect the clinical findings',body:clinical.pattern,sourceUrl:clinical.patternSource}:c),
   checkpoints:{mechanism:clinical.questions[0],inheritance:clinical.questions[1]}
