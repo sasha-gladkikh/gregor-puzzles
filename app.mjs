@@ -1,3 +1,4 @@
+import {node as clinicalNode,citation,renderClinicalProfile,renderPearls,renderMemory} from './clinical-ui.mjs';
 import {COLS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled} from './engine.mjs';
 import {rounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink} from './collection.mjs';
@@ -12,7 +13,8 @@ const PIECE_PAD=44;
 const NS = 'http://www.w3.org/2000/svg', KEY = saveKey(round);
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
-let {state,timed} = restoreSession(stored);
+let {state,timed,upgraded} = restoreSession(stored);
+$('learningUpdate').hidden=!upgraded;
 let selected = null, hinted = null, peek = false, drag = null, reviewId = null;
 let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
 let lastCount = -1, renderedCheck = null;
@@ -131,7 +133,7 @@ function renderCheckpoint() {
     $('checkpointQuestion').textContent=q.question; $('checkpointSource').href=q.source; $('checkpointFeedback').textContent='';
     answerButtons($('checkpointOptions'),q.options,(answer,b)=>{
       start(); const right=answerCheckpoint(state,id,answer,q);
-      $('checkpointFeedback').textContent=(right?'Correct. ':'Not quite. ')+q.explanation+(right?'':' Choose the answer that follows this explanation.');
+      $('checkpointFeedback').textContent=(right?'Correct. ':'Not quite. ')+q.rationales[answer]+(right?'':' Compare the remaining options and try again.');
       if(right){reviewId=id;finishRound(state);save();render();focus('checkpointContinue');}
       else {b.setAttribute('aria-pressed','true');}
     });
@@ -163,9 +165,11 @@ function render() {
     round.clues.forEach((clue,i)=>{
       const open=n>=clue.at,li=document.createElement('li'); li.className=`clue ${open?'unlocked':'locked'} ${i>=4?'final':''}`;
       li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;
+      if(open&&clue.sourceUrl){const a=citation(clue.sourceUrl,'Clinical reference');a.classList.add('clinical-clue-source');li.querySelector('.clue-content').append(a);}
       $('clues').append(li);
     });lastCount=n;
   }
+  $('memoryTakeaway').hidden=!done;
   $('completion').hidden=!done; $('discoveryDetail').hidden=!pictureDone; $('guessForm').hidden=pictureDone;
   $('hint').disabled=pictureDone||Boolean(currentCheck()); $('peek').disabled=pictureDone;
   $('learningStatus').textContent=`${state.answers.length} of 2 learning questions completed.`;
@@ -204,6 +208,7 @@ $('helpButton').onclick=()=>$('helpDialog').showModal();$('startButton').onclick
 $('restart').onclick=()=>$('restartDialog').showModal();$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
   state=newState();selected=null;hinted=null;peek=false;reviewId=null;renderedCheck=null;lastCount=-1;order=shuffled(order);
+  $('learningUpdate').hidden=true;
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
   $('guessFeedback').textContent='A correct answer completes the picture. Finish both questions to complete the round.';
   board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();
@@ -224,7 +229,11 @@ $('inheritanceText').textContent=round.inheritance;
 $('discoveryTitle').textContent=round.gene;$('conditionName').textContent=round.condition;$('otherName').textContent=round.otherName;$('nuance').textContent=round.nuance;
 $('diagramDescription').textContent=diagramDescription;$('checkedDate').textContent='Sources checked '+round.checked+'.';
 $('guessFeedback').textContent='A correct answer completes the picture. Finish both questions to complete the round.';
-round.phenotypes.forEach(([title,body])=>{const el=document.createElement('div');el.className='phenotype';el.innerHTML=`<h4>${title}</h4><p>${body}</p>`;$('phenotypes').append(el);});
+$('learningObjective').append(clinicalNode('strong','Learning objective'),clinicalNode('p',round.clinical.objective));
+$('clinicalOverview').textContent=round.clinical.overview;
+renderClinicalProfile(round,$('phenotypes'));
+renderPearls(round,$('interpretationPearls'));
+renderMemory(round,$('memoryTakeaway'));
 round.sources.forEach(([title,url])=>{const a=document.createElement('a');a.textContent=title+' ↗';a.href=url;a.target='_blank';a.rel='noopener noreferrer';$('sources').append(a);});
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
 buildBoard();buildTray();render();save();

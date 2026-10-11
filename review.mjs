@@ -1,21 +1,49 @@
+import {hpoTerms} from './hpo-terms.mjs';
 import {rounds,findRound} from './rounds.mjs';
+import {node,citation,renderClinicalProfile,renderPearls,renderMemory} from './clinical-ui.mjs';
 const returnRound=findRound(new URLSearchParams(location.search).get('level') ?? '01');
-for (const id of ['playTab','playFooter']) document.getElementById(id).href=`./?level=${returnRound.number}`;
+for(const id of ['playTab','playFooter'])document.getElementById(id).href=`./?level=${returnRound.number}`;
 document.getElementById('editorialTab').href=`./review.html?level=${returnRound.number}`;
-const el=(tag,text,className)=>{const n=document.createElement(tag);if(text)n.textContent=text;if(className)n.className=className;return n;};
-const link=(title,url)=>{const a=el('a',title+' ↗');a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;};
+const cards=[],indexLinks=[];
+const panel=(label,open=false)=>{const d=node('details',null,'learning-panel');d.open=open;d.append(node('summary',label));return d;};
 for(const round of rounds){
-  const jump=el('a',`${round.number} · ${round.gene}`);jump.href=`#round-${round.number}`;document.getElementById('reviewIndex').append(jump);
-  const card=el('article',null,'review-round');card.id=`round-${round.number}`;
-  const head=el('header');head.append(el('span',`ROUND ${round.number} · ${round.topic.toUpperCase()}`,'eyebrow'),el('h2',round.gene),el('p',round.condition),el('span',round.reviewStatus,'review-badge'));card.append(head);
-  const body=el('div',null,'review-columns'), visual=el('div');
-  const img=el('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;visual.append(img,el('p',round.description,'small'));
-  const play=el('a','Open playable round →','primary');play.href=`./?level=${round.number}`;visual.append(play);
-  const content=el('div');content.append(el('h3','Relationship and mechanism'),el('p',round.summary));
-  const facts=el('dl',null,'gene-facts');for(const [title,text] of [['OMIM condition',round.omim],['Inheritance',round.inheritance],['Relevant variant classes',round.variant]]){const d=el('div');d.append(el('dt',title),el('dd',text));facts.append(d);}content.append(facts);
-  content.append(el('h3','Phenotype summaries'));for(const [title,desc] of round.phenotypes){const p=el('p');p.append(el('strong',title+'. '),document.createTextNode(desc));content.append(p);}content.append(el('p',round.nuance,'nuance'));
-  const clues=el('ol',null,'review-clues');for(const c of round.clues){const li=el('li');li.append(el('strong',`${c.at} pieces · ${c.label}: ${c.title}. `),document.createTextNode(c.body));clues.append(li);}content.append(el('h3','Progressive clues'),clues);
-  for(const q of Object.values(round.checkpoints)){const block=el('section',null,'review-question');block.append(el('h3',q.title),el('p',q.context),el('strong',q.question));const opts=el('ol');q.options.forEach((option,i)=>opts.append(el('li',option+(q.correct===i?' ✓ Correct answer':''))));block.append(opts,el('p',q.explanation),link('Supporting reference',q.source));content.append(block);}
-  const refs=el('nav',null,'review-sources');refs.setAttribute('aria-label',`${round.gene} sources`);for(const [title,url] of round.sources)refs.append(link(title,url));content.append(el('h3','Sources and community'),refs,link(...round.community),el('p',round.sourceNote,'source-note'),el('p',`Sources checked ${round.checked}.`,'source-note'));
-  body.append(visual,content);card.append(body);document.getElementById('reviewRounds').append(card);
+ const p=round.clinical;
+ const jump=node('a',`${round.number} · ${round.gene}`);jump.href=`#round-${round.number}`;document.getElementById('reviewIndex').append(jump);indexLinks.push(jump);
+ const card=node('article',null,'review-round');card.id=`round-${round.number}`;
+ const head=node('header');head.append(node('span',`ROUND ${round.number} · ${round.topic.toUpperCase()}`,'eyebrow'),node('h2',round.gene),node('p',round.condition),node('span',round.reviewStatus,'review-badge'));
+ const objective=node('div',null,'learning-objective');objective.append(node('strong','Learning objective'),node('p',p.objective));head.append(objective,node('p',p.overview,'clinical-overview'));card.append(head);
+ const body=node('div',null,'review-columns'),visual=node('div',null,'review-visual');
+ const img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';visual.append(img,node('p',round.description,'small'));
+ const play=node('a','Open playable round →','primary');play.href=`./?level=${round.number}`;visual.append(play);renderMemory(round,visual);
+ const facts=node('dl',null,'gene-facts');for(const [label,text] of [['Condition identifier',`OMIM ${round.omim}`],['Inheritance for this relationship',round.inheritance],['Relevant variant classes',round.variant]]){const d=node('div');d.append(node('dt',label),node('dd',text));facts.append(d);}visual.append(facts);
+ const content=node('div');
+ const pattern=node('section',null,'pattern-card');pattern.append(node('span','CLINICAL CONNECTION','eyebrow'),node('p',p.pattern),citation(p.patternSource,'Clinical reference'));content.append(pattern);
+ const phenotypes=panel('Clinical profile and HPO terms',true);renderClinicalProfile(round,phenotypes);content.append(phenotypes);
+ const interpretation=panel('Molecular interpretation and pitfalls');interpretation.append(node('p',round.summary));renderPearls(round,interpretation);content.append(interpretation);
+ const questions=panel('Reasoning questions and answer explanations');questions.append(node('p','Teaching scenarios are fictional and contain no patient-derived information. Every option has a rationale.','clinical-note'));
+ for(const [index,q] of Object.values(round.checkpoints).entries()){
+  const block=node('section',null,'review-question');block.append(node('span',`CHECKPOINT ${index+1} · ${index===0?'6':'8'} PIECES`,'question-tag'),node('h3',q.title),node('p',q.context),node('strong',q.question));
+  const options=node('ol');q.options.forEach((text,i)=>{const li=node('li');li.append(node('strong',`${text}${q.correct===i?' · Correct':''}`),node('span',q.rationales[i],'option-rationale'));options.append(li);});block.append(options,citation(q.source,'Supporting reference'));questions.append(block);
+ }content.append(questions);
+ const clues=panel('Progressive clues shown during play');const list=node('ol',null,'review-clues');for(const c of round.clues){const li=node('li');li.append(node('strong',`${c.at} pieces · ${c.label}: ${c.title}. `),document.createTextNode(c.body));if(c.sourceUrl)li.append(document.createTextNode(' '),citation(c.sourceUrl));list.append(li);}clues.append(list);content.append(clues);
+ const sources=panel('References and community resources');const refs=node('nav',null,'review-sources');refs.setAttribute('aria-label',`${round.gene} sources`);for(const [title,url] of round.sources)refs.append(citation(url,title));sources.append(refs,citation(round.community[1],round.community[0]),node('p',round.sourceNote,'source-note'),node('p',`Literature and HPO terminology checked ${round.checked}.`,'source-note'));content.append(sources);
+ const notes=panel('Personal editorial notes');notes.classList.add('review-editor-notes');const id=`notes-${round.number}`,key=`gregor-puzzles:review-notes:${round.id}`;
+ const label=node('label',`Review notes for ${round.gene}`);label.htmlFor=id;const textarea=node('textarea');textarea.id=id;textarea.rows=4;textarea.maxLength=12000;textarea.placeholder='Record a correction, missing reference, or teaching suggestion. Use no patient details.';
+ const status=node('p','Notes stay in this browser. They are not shared with the team and do not change scientific approval status.','clinical-note');status.setAttribute('role','status');
+ try{textarea.value=localStorage.getItem(key)??'';}catch{status.textContent='Local saving is unavailable. Copy your notes before leaving this page.';}
+ textarea.addEventListener('input',()=>{try{localStorage.setItem(key,textarea.value);status.textContent='Saved in this browser only. Scientific approval remains pending.';}catch{status.textContent='Could not save locally. Copy your notes before leaving this page.';}});
+ notes.append(label,textarea,status);content.append(notes);
+ body.append(visual,content);card.append(body);document.getElementById('reviewRounds').append(card);
+ cards.push({card,round,search:[round.gene,round.condition,round.topic,p.pattern,...p.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase()});
 }
+const search=document.getElementById('reviewSearch');search.addEventListener('input',()=>{
+ const query=search.value.trim().toLowerCase();let count=0;
+ cards.forEach((item,i)=>{const match=item.search.includes(query);item.card.hidden=!match;indexLinks[i].hidden=!match;if(match)count++;});
+ document.getElementById('reviewCount').textContent=`${count} of ${rounds.length} rounds shown`;
+ document.getElementById('reviewEmpty').hidden=count!==0;
+});
+document.getElementById('clearSearch').onclick=()=>{search.value='';search.dispatchEvent(new Event('input'));search.focus();};
+document.getElementById('expandProfiles').onclick=()=>{for(const {card}of cards)if(!card.hidden)card.querySelector('.learning-panel').open=true;};
+document.getElementById('collapseProfiles').onclick=()=>{for(const {card}of cards)if(!card.hidden)card.querySelectorAll('.learning-panel').forEach(d=>d.open=false);};
+window.addEventListener('beforeprint',()=>{document.querySelectorAll('.learning-panel:not(.review-editor-notes)').forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});});
+window.addEventListener('afterprint',()=>{document.querySelectorAll('[data-was-open]').forEach(d=>{d.open=d.dataset.wasOpen==='true';delete d.dataset.wasOpen;});});

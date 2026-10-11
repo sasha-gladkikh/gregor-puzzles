@@ -38,10 +38,23 @@ export function restoreSession(save, now = Date.now()) {
   state.startedAt = Number.isFinite(raw.startedAt) && raw.startedAt >= 0 ? raw.startedAt : null;
   state.finishedAt = Number.isFinite(raw.finishedAt) && raw.finishedAt >= (state.startedAt ?? 0) ? raw.finishedAt : null;
   if (!roundComplete(state)) state.finishedAt = null;
+  const upgraded = raw.learningVersion !== 2 && (state.answers.length > 0 || state.placed.length > 0);
+  if (raw.learningVersion !== 2) {
+    const wasFinished = roundComplete(state);
+    const previousElapsed = elapsedSeconds(state, now);
+    state.answers = [];
+    state.finishedAt = null;
+    // Resume a formerly completed timer from its saved finish, not from days ago.
+    if (wasFinished) {
+      state.seconds = previousElapsed;
+      if (state.startedAt !== null) state.startedAt = now - previousElapsed * 1000;
+    }
+  }
+  state.learningVersion = 2;
   const timed = save.timed === true;
   // Old saves contain elapsed seconds, but no running timestamp. Resume that time.
   if (timed && state.started && state.startedAt === null) state.startedAt = now - state.seconds * 1000;
   if (!timed) state.startedAt = null;
   if (roundComplete(state) && state.finishedAt === null) finishRound(state, now);
-  return {state, timed};
+  return {state, timed, upgraded};
 }

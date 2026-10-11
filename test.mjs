@@ -70,7 +70,7 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
   assert.deepEqual(r.clues.map(c=>c.at),[2,4,6,8,11,12]);
   assert.equal(r.clues[4].title,r.gene);assert.equal(r.clues[5].title,r.condition);
   assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
-  assert.equal(r.pieces.length,SIZE);assert.equal(r.phenotypes.length,3);
+  assert.equal(r.pieces.length,SIZE);assert.ok(r.clinical.features.length>=6&&r.clinical.features.length<=8);
   for(const q of Object.values(r.checkpoints)){assert.ok(q.correct>=0&&q.correct<q.options.length);assert.ok(q.explanation&&q.source.startsWith('https://'));}
   const svg=readFileSync(new URL(r.artwork,import.meta.url),'utf8');
   assert.match(svg,/viewBox="0 0 800 600"/);assert.ok(!svg.includes(r.gene));
@@ -111,4 +111,32 @@ test('collection completion requires all 20 answers and survives corrupt storage
  store.set(saveKey(rounds[4]),'{not json');assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,9);
  assert.equal(collectionProgress(()=>{throw Error('blocked');}).every(p=>p.pieces===0),true);
  const state=newState();place(state,0,0);assert.equal(collectionProgress(()=>{throw Error('blocked');},{id:rounds[0].id,state})[0].pieces,1);
+});
+
+import {hpoTerms} from './hpo-terms.mjs';
+test('clinical teaching has traceable terminology, claim sources, and distinct reasoning tasks',()=>{
+ const prompts=[];
+ for(const r of rounds){
+  assert.ok(r.clinical.objective&&r.clinical.memory&&r.clinical.recall.length===2);
+  assert.equal(r.clues.find(c=>c.at===6).body,r.clinical.pattern);
+  assert.ok(r.clinical.pearls.length>=2);
+  for(const f of r.clinical.features){if(f.hpo)assert.ok(hpoTerms[f.hpo],f.hpo);assert.ok(r.sources.some(([,url])=>url===f.source));}
+  for(const q of Object.values(r.checkpoints)){prompts.push(q.question);assert.equal(q.rationales.length,q.options.length);assert.ok(q.rationales.every(Boolean));assert.ok(r.sources.some(([,url])=>url===q.source));}
+  const earlyText=r.clues.filter(c=>c.at<11).map(c=>c.body+' '+c.title).join(' ');
+  assert.ok(!earlyText.toLowerCase().includes(r.gene.toLowerCase()),r.gene+' leaked before reveal');
+ }
+ assert.equal(new Set(prompts).size,20);
+});
+test('new clinical questions preserve legacy pieces but require fresh answers',()=>{
+ const old={...newState(),learningVersion:1,placed:[0,1,2,3,4,5],answers:['mechanism'],started:true};
+ const restored=restoreSession({state:old,timed:false},100000);
+ assert.deepEqual(restored.state.placed,old.placed);assert.deepEqual(restored.state.answers,[]);assert.equal(restored.upgraded,true);
+ assert.equal(pendingCheckpoint(restored.state),'mechanism');
+ const next=restoreSession({state:restored.state,timed:false},110000);assert.equal(next.upgraded,false);
+});
+test('upgrading a completed timed save excludes time since its old finish',()=>{
+ const state={...newState(),learningVersion:1,placed:Array.from({length:SIZE},(_,i)=>i),answers:['mechanism','inheritance'],started:true,startedAt:10000,finishedAt:30000,seconds:20};
+ const result=restoreSession({state,timed:true},1000000);
+ assert.equal(elapsedSeconds(result.state,1000000),20);assert.equal(elapsedSeconds(result.state,1005000),25);
+ assert.deepEqual(result.state.answers,[]);assert.equal(result.state.finishedAt,null);
 });

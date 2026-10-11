@@ -1,3 +1,4 @@
+import {clinicalProfiles} from './clinical.mjs';
 import {round as first, checkpoints as firstChecks, diagramDescription as firstDescription, pieceDescriptions as firstPieces} from './round.mjs';
 
 const med = path => `https://medlineplus.gov/genetics/${path}/`;
@@ -137,7 +138,7 @@ const entries=[
 ];
 
 const base={...first,omim:'255700',topic:'Membrane transport',inheritance:AR,variant:'Biallelic variants that reduce chloride-channel function.',summary:'Reduced chloride conductance can prolong muscle electrical activity and delay relaxation. This round focuses on the recessive gene–condition relationship.',description:firstDescription,pieces:firstPieces,checkpoints:firstChecks};
-export const rounds=[base,...entries.map((r,index)=>({...r,
+const introductoryRounds=[base,...entries.map((r,index)=>({...r,
  number:String(index+2).padStart(2,'0'),
  clues:[...r.clues.map(([label,title,body],i)=>({at:[2,4,6][i],label,title,body})),
   {at:8,label:'Inheritance',title:r.inheritance,body:r.inheritance===AR?'Disease-causing variants affect both gene copies.':'A disease-causing variant in one gene copy can be sufficient.'},
@@ -146,6 +147,32 @@ export const rounds=[base,...entries.map((r,index)=>({...r,
  checkpoints:{mechanism:r.mechanism,inheritance:inheritanceQuestion(r.inheritance,r.sources[0][1],index)}
 }))].map(r=>({...r,checked:'10 October 2026',artwork:`./artwork/${r.number}.svg`,reviewStatus:'Pending scientific review',
  sourceNote:'Original educational summary based on the linked references. OMIM links identify the condition; phenotype prose is paraphrased from the other cited sources. Illustrations are conceptual, not patient images or atomic structures.'}));
+
+export const rounds=introductoryRounds.map(r=>{
+ const clinical=clinicalProfiles[r.gene];
+ const sources=new Map(r.sources.map(([label,url])=>[url,label]));
+ const referenceNames={
+  'https://www.ncbi.nlm.nih.gov/books/NBK1124/':'GeneReviews · Noonan syndrome',
+  'https://www.nature.com/articles/s41591-024-03085-5':'Greene et al. · RNU4-2 phenotype and discovery (2024)',
+  'https://www.nature.com/articles/s41588-026-02554-6':'RNU4-2 · distinct recessive association (2026)',
+  'https://pubmed.ncbi.nlm.nih.gov/31468518/':'Jiang et al. · CACNA1A gain and loss of function (2019)',
+  'https://pmc.ncbi.nlm.nih.gov/articles/PMC4613477/':'Damaj et al. · CACNA1A neurodevelopmental spectrum (2015)',
+  'https://pmc.ncbi.nlm.nih.gov/articles/PMC9458680/':'Clinical and genetic characterization of CACNA1A-related disease (2022)',
+  'https://pubmed.ncbi.nlm.nih.gov/24534818/':'Prendiville et al. · cardiac genotype–phenotype associations (2014)',
+  'https://pmc.ncbi.nlm.nih.gov/articles/PMC4174543/':'Liu et al. · activated STING and SAVI (2014)',
+  'https://www.nejm.org/doi/10.1056/NEJMoa2207406':'Pellerin et al. · FGF14 repeat-expansion discovery',
+  'https://pmc.ncbi.nlm.nih.gov/articles/PMC10784672/':'Clinical and genetic keys to GAA-FGF14 ataxia'
+ };
+ const urls=[clinical.patternSource,...clinical.features.map(f=>f.source),...clinical.pearls.map(p=>p.source),...clinical.questions.map(q=>q.source)];
+ for(const url of urls) if(!sources.has(url)) sources.set(url,referenceNames[url]??(url.includes('ncbi.nlm.nih.gov/books')?'GeneReviews · clinical and molecular reference':url.includes('medlineplus')?'MedlinePlus Genetics · clinical reference':'Primary research · clinical and molecular evidence'));
+ return {...r,clinical,phenotypes:clinical.features.map(f=>[f.title,f.text]),
+  sources:[...sources].map(([url,label])=>[label,url]),
+  clues:r.clues.map(c=>c.at===6?{at:6,label:'Clinical pattern',title:'Connect the clinical findings',body:clinical.pattern,sourceUrl:clinical.patternSource}:c),
+  checkpoints:{mechanism:clinical.questions[0],inheritance:clinical.questions[1]}
+ };
+});
+// Keep the early clue anonymous; the gene name is revealed at piece 11.
+rounds.find(r=>r.gene==='STING1').clues[0].body='An intracellular signaling system operates on internal cell membranes.';
 
 export function findRound(value) {return rounds.find(r=>r.number===value||r.id===value)??rounds[0];}
 export const saveKey=round=>`gregor-puzzles:${round.id}`;

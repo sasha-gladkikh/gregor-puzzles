@@ -25,6 +25,18 @@ Open http://127.0.0.1:4173. No dependency installation is needed. The **Play puz
 - Piece silhouettes use dark non-scaling outlines, contrasting tray cards, subtle shadows, and letter labels. The phone layout uses three larger pieces per row, keeps page scrolling available, and brings the board into view after selection. Hints, reference images, reduced-motion support, descriptive piece labels, and full diagram descriptions are available. A storage warning appears if local saving is blocked.
 - Completion includes a next-round action, a biology summary, phenotype descriptions, inheritance, general variant classes, OMIM and supporting references, and a community resource.
 
+## Clinical education edition
+
+Every round has one learning objective, a clinical pattern unlocked at six pieces, 6–7 clinical findings or course modifiers, two gene-specific reasoning questions, explanations for all three options, two molecular interpretation notes, and a takeaway with an optional recall prompt. The 63 profile entries include modifiers and typical negative findings, not 63 independent symptoms. No diagnostic specificity, prevalence, or patient-level diagnosis is inferred from the teaching patterns.
+
+`clinical.mjs` holds the expanded educational content, `clinical-ui.mjs` renders shared clinical sections, and `hpo-terms.mjs` contains 50 terminology identifiers and official labels checked against the HPO ontology on 10 October 2026. HPO vocabulary mappings are not represented as official disease annotations; broader terms are identified. Numerical phenotype frequencies are omitted where a defensible cohort-specific estimate is not presented.
+
+The review page can be searched by gene, condition, clinical term, or HPO identifier. Clinical profiles open by default; molecular interpretation, answer rationales, references, and editorial notes are expandable. Notes are saved in this browser only and do not change the pending scientific review status. Printing expands educational sections and excludes personal notes. The linked PDF explains the original selection rationale; the web review contains the expanded clinical edition.
+
+Save migration preserves placed pieces and assistance counts while asking returning players to complete the updated questions. Completed timers resume from their former finish instead of including the intervening period. This changes educational content, not the save-key identity. Static builds add a shared content hash to local module and stylesheet URLs so cached pages do not mix releases.
+
+The content is designed to support explanation, application, and recall. Its effects on learning or retention have not been evaluated. Team review and a small learner pilot remain appropriate before conference use.
+
 ## The ten rounds
 
 The selection samples different biological processes from the supplied GFT pairs, retaining their relative order. It is an educational selection, not a clinical priority ranking; Matt's team can replace any selection during review.
@@ -44,7 +56,7 @@ FAM177A1 was discussed in earlier notes but was not among the supplied GFT pairs
 
 ## Scientific review and provenance
 
-**All ten rounds are pending scientific review.** Sources checked 10 October 2026. The review page makes the full content available for Matt's team to vet before conference use. Review gene–condition mapping, mechanism, illustration, phenotype wording, inheritance, variant descriptions, and question explanations. Language aims to respect varied experiences and identities. There is no patient image, diagnostic task, treatment advice, donation solicitation, or implication that solving a puzzle repairs a person.
+**All ten rounds are pending scientific review.** Sources checked 10 October 2026. The review page makes the full content available for Matt's team to vet before conference use. Review gene–condition mapping, mechanism, illustration, phenotype wording and HPO mappings, inheritance, variant descriptions, and all answer explanations. Language aims to respect varied experiences and identities. There is no patient image, diagnostic task, treatment advice, donation solicitation, or implication that solving a puzzle repairs a person.
 
 The input is the slim gene/condition selection supplied in the conversation. It contains pathogenic or likely pathogenic classifications but no site column, so site membership cannot be independently filtered from it. Only gene–condition relationships are included; no family identifiers, individual variants, patient phenotypes, row-level classifications, sequencing metadata, or workbook files are shipped. The variant descriptions are general published classes, not findings from individual families.
 
@@ -70,6 +82,6 @@ Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/d
 
 ## Validation and limitations
 
-18 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, round reset, and corrupt/blocked storage. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. The responsive layout was checked at 320 and 375 CSS pixels, including piece selection, placement, the library, and save restoration. A physical iPhone/Safari test is still recommended; browser viewport checks do not emulate the iOS engine. This is not a complete screen-reader or real-device accessibility audit.
+21 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, round reset, and corrupt/blocked storage. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. The responsive layout was checked at 320 and 375 CSS pixels, including piece selection, placement, the library, and save restoration. A physical iPhone/Safari test is still recommended; browser viewport checks do not emulate the iOS engine. This is not a complete screen-reader or real-device accessibility audit.
 
 This is a static game with no account system, analytics, data collection, external guess submission, or shared leaderboard. Answers are inspectable in client source. Timing is local, not tamper-resistant, and is not a clinical or educational score. Clearing browser data removes progress; progress does not sync between devices. Timed rounds continue while another round is open. Scientific review and final branding remain human review tasks, not completed approvals.
