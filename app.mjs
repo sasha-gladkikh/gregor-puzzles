@@ -1,9 +1,12 @@
 import {COLS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled} from './engine.mjs';
-import {round,checkpoints,pieceDescriptions,diagramDescription} from './round.mjs';
+import {rounds,findRound,saveKey} from './rounds.mjs';
+import {collectionProgress,roundLink} from './collection.mjs';
+const round=findRound(new URLSearchParams(location.search).get('level') ?? '01');
+const {checkpoints,pieces:pieceDescriptions,description:diagramDescription}=round;
 import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from './session.mjs';
 
 const $ = id => document.getElementById(id);
-const NS = 'http://www.w3.org/2000/svg', KEY = 'gregor-puzzles:' + round.id;
+const NS = 'http://www.w3.org/2000/svg', KEY = saveKey(round);
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
 let {state,timed} = restoreSession(stored);
@@ -12,7 +15,7 @@ let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
 let lastCount = -1, renderedCheck = null;
 const board = $('puzzle');
 const currentCheck = () => reviewId ?? pendingCheckpoint(state);
-const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed}));} catch {} };
+const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed}));$('saveNotice').hidden=true;} catch {$('saveNotice').hidden=false;} renderCollection(); };
 const announce = text => {$('status').textContent = text;};
 const focus = id => $(id).focus({preventScroll:false});
 function start(useRoute = 'image') { startRound(state,timed,useRoute); save(); updateMode(); }
@@ -20,7 +23,7 @@ function svgEl(tag,attrs={}) { const node=document.createElementNS(NS,tag); Obje
 function artworkPiece(id,prefix) {
   const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
   clip.append(svgEl('path',{d:pathFor(id)})); const defs=svgEl('defs'); defs.append(clip); g.append(defs);
-  g.append(svgEl('image',{href:'./artwork.svg',width:W,height:H,'clip-path':`url(#${prefix+id})`}));
+  g.append(svgEl('image',{href:round.artwork,width:W,height:H,'clip-path':`url(#${prefix+id})`}));
   g.append(svgEl('path',{d:pathFor(id),class:'piece-outline'})); return g;
 }
 function buildBoard() {
@@ -68,7 +71,7 @@ function afterProgress(before) {
   finishRound(state); render(); save();
   announce(progressMessage(before)+(currentCheck()?' Connect the clues in the learning question.':roundComplete(state)?' Round complete.':''));
   if(currentCheck()) focus('checkpointTitle');
-  else if(roundComplete(state)) focus('learnButton');
+  else if(roundComplete(state)) focus('nextRound');
   else $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
 }
 function attempt(slot) {
@@ -163,7 +166,7 @@ function render() {
   $('learningStatus').textContent=`${state.answers.length} of 2 learning questions completed.`;
   if(pictureDone){peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');}
   if(done){
-    $('completionText').textContent='You completed the picture and both learning questions. Review how the channel, inheritance, and muscle behavior connect.';
+    $('completionText').textContent='You completed the picture and both learning questions. Explore the gene–condition relationship below, or continue to another round.';
     const routeLabel=state.solvedByGuess?'Gene recognition':state.usedRoutes.includes('legacy')?'Restored progress':'Image puzzle';
     $('roundResults').replaceChildren();
     for(const [label,value] of [['Mode',timed?'Timed · '+formatTime(elapsedSeconds(state)):'Practice'],['Route',routeLabel],['Hints',String(state.hints)],['Image reveals',String(state.peeks)]]){
@@ -187,9 +190,12 @@ $('guessForm').onsubmit=e=>{
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
 $('checkpointContinue').onclick=()=>{
   reviewId=null;render();save();
-  if(currentCheck())focus('checkpointTitle');else if(roundComplete(state))focus('learnButton');else $('tray').querySelector('.piece:not(.placed)')?.focus();
+  if(currentCheck())focus('checkpointTitle');else if(roundComplete(state))focus('nextRound');else $('tray').querySelector('.piece:not(.placed)')?.focus();
 };
-$('helpButton').onclick=()=>$('helpDialog').showModal();$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('.dialog-close').onclick=()=>$('helpDialog').close();
+$('libraryButton').onclick=()=>{renderCollection();$('libraryDialog').showModal();};
+$('closeLibrary').onclick=()=>$('libraryDialog').close();
+$('collectionReview').onclick=()=>{renderCollection();$('libraryDialog').showModal();};
+$('helpButton').onclick=()=>$('helpDialog').showModal();$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
 $('restart').onclick=()=>$('restartDialog').showModal();$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
   state=newState();selected=null;hinted=null;peek=false;reviewId=null;renderedCheck=null;lastCount=-1;order=shuffled(order);
@@ -200,6 +206,16 @@ $('confirmRestart').onclick=()=>{
 };
 window.addEventListener('keydown',e=>{if(e.key==='Escape'){selected=null;hinted=null;updateSelection();}});
 $('learnButton').onclick=()=>{$('discoveryTitle').setAttribute('tabindex','-1');focus('discoveryTitle');};
+document.title=`Round ${round.number} · GREGoR Puzzles`;
+$('roundCrumb').textContent=`Round ${round.number}`;
+$('roundLabel').textContent=`ROUND ${round.number} / 10`;
+$('roundTitle').textContent=round.title;
+$('figureLabel').textContent=`FIG. ${round.number} / ${round.topic.toUpperCase()}`;
+$('reference').src=round.artwork; $('reference').alt=diagramDescription;
+$('biologySummary').textContent=round.summary;
+$('sourceNote').textContent=round.sourceNote;
+$('variantText').textContent=round.variant;
+$('inheritanceText').textContent=round.inheritance;
 $('discoveryTitle').textContent=round.gene;$('conditionName').textContent=round.condition;$('otherName').textContent=round.otherName;$('nuance').textContent=round.nuance;
 $('diagramDescription').textContent=diagramDescription;$('checkedDate').textContent='Sources checked '+round.checked+'.';
 $('guessFeedback').textContent='A correct answer completes the picture. Finish both questions to complete the round.';
@@ -209,3 +225,31 @@ $('community').textContent=round.community[0]+' ↗';$('community').href=round.c
 buildBoard();buildTray();render();save();
 if(roundComplete(state))announce('Round complete. Your diagram, learning answers, and results are saved.');
 else if(state.started)announce('Your progress is restored.'+(timed?' Elapsed time continues.':'')+(currentCheck()?' A learning question is ready.':''));
+
+function renderCollection() {
+  const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
+  const count=progress.filter(p=>p.done).length;
+  $('collectionCount').textContent=`${count} of ${rounds.length} complete`;
+  $('libraryProgress').textContent=`${count} of ${rounds.length} rounds complete. Progress is saved in this browser.`;
+  $('collectionFill').style.width=`${count/rounds.length*100}%`;
+  $('collectionFinished').hidden=count!==rounds.length;
+  const next=progress.find(p=>Number(p.round.number)>Number(round.number)&&!p.done)??progress.find(p=>!p.done&&p.round.id!==round.id);
+  $('nextRound').href=roundLink(next?.round??rounds[0]);
+  $('nextRound').textContent=next?`Continue to round ${next.round.number} →`:'Explore the collection →';
+  $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();$('libraryDialog').showModal();}:null;
+  const index=rounds.indexOf(round);
+  for(const [id,target] of [['previousRound',rounds[index-1]],['followingRound',rounds[index+1]]]){
+    const a=$(id);a.hidden=!target;if(target){a.href=roundLink(target);a.setAttribute('aria-label',`Go to round ${target.number}`);}
+  }
+  $('levelGrid').replaceChildren();
+  for(const item of progress){
+    const a=document.createElement('a');a.href=roundLink(item.round);a.className='level-card'+(item.done?' is-complete':'');
+    if(item.round.id===round.id)a.setAttribute('aria-current','page');
+    const num=document.createElement('span');num.className='level-number';num.textContent=item.round.number;
+    const title=document.createElement('h3');title.textContent=item.round.title;
+    const topic=document.createElement('p');topic.textContent=item.round.topic;
+    const status=document.createElement('span');status.className='level-status';status.textContent=item.done?`${item.round.gene} · Complete ✓`:item.started?`${item.pieces}/12 pieces · ${item.answers}/2 questions`:'Ready to explore';
+    const bar=document.createElement('span');bar.className='level-progress';const fill=document.createElement('span');fill.style.width=item.percent+'%';bar.append(fill);
+    a.append(num,title,topic,status,bar);$('levelGrid').append(a);
+  }
+}

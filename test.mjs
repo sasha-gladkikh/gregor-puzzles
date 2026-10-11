@@ -58,3 +58,57 @@ test('old format preferences cannot hide the image puzzle or discard progress',(
  assert.deepEqual(restored.state.placed,[0,4]);assert.deepEqual(restored.state.usedRoutes,['legacy']);
  assert.equal('route' in restored,false);
 });
+
+import {rounds,findRound,saveKey} from './rounds.mjs';
+import {collectionProgress,roundLink} from './collection.mjs';
+import {readFileSync} from 'node:fs';
+test('the collection contains ten distinct supplied gene-condition pairs',()=>{
+ const supplied=[['CLCN1','255700'],['GJB2','220290'],['SLC29A3','602782'],['SBDS','260400'],['RNU4-2','620851'],['CACNA1A','617106'],['PTPN11','163950'],['RNU4ATAC','616651'],['STING1','615934'],['FGF14','620174']];
+ assert.deepEqual(rounds.map(r=>[r.gene,r.omim]),supplied);
+ assert.equal(new Set(rounds.map(saveKey)).size,10);
+ for(const r of rounds){
+  assert.deepEqual(r.clues.map(c=>c.at),[2,4,6,8,11,12]);
+  assert.equal(r.clues[4].title,r.gene);assert.equal(r.clues[5].title,r.condition);
+  assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
+  assert.equal(r.pieces.length,SIZE);assert.equal(r.phenotypes.length,3);
+  for(const q of Object.values(r.checkpoints)){assert.ok(q.correct>=0&&q.correct<q.options.length);assert.ok(q.explanation&&q.source.startsWith('https://'));}
+  const svg=readFileSync(new URL(r.artwork,import.meta.url),'utf8');
+  assert.match(svg,/viewBox="0 0 800 600"/);assert.ok(!svg.includes(r.gene));
+ }
+});
+test('all ten image puzzles and recognition routes complete with both questions',()=>{
+ for(const r of rounds)for(const route of ['image','guess']){
+  const state=newState();startRound(state,true,route,10000);
+  if(route==='guess')guess(state,r.gene.toLowerCase(),r.gene);
+  for(let piece=0;piece<SIZE;piece++){
+   if(route==='image')place(state,piece,piece);
+   let id;while((id=pendingCheckpoint(state))){const q=r.checkpoints[id];assert.equal(answerCheckpoint(state,id,(q.correct+1)%q.options.length,q),false);assert.equal(answerCheckpoint(state,id,q.correct,q),true);}
+  }
+  assert.equal(roundComplete(state),true,r.gene);finishRound(state,25000);assert.equal(elapsedSeconds(state,50000),15);
+ }
+});
+test('round navigation uses stable anonymous numbers and safe fallback',()=>{
+ for(const r of rounds){assert.equal(findRound(r.number),r);assert.equal(findRound(r.id),r);assert.match(roundLink(r),/^\?level=\d{2}$/);}
+ for(const value of [null,undefined,'99','<script>',''])assert.equal(findRound(value),rounds[0]);
+ assert.equal(saveKey(rounds[0]),'gregor-puzzles:clcn1-recessive-v1');
+});
+test('progress stays isolated by round and a reset affects only that round',()=>{
+ const store=new Map(),read=k=>store.get(k);
+ for(const [i,r] of rounds.entries()){
+  const state=newState();startRound(state,false,'image');
+  for(let j=0;j<=i;j++)place(state,j,j);
+  store.set(saveKey(r),JSON.stringify({state,timed:false}));
+ }
+ assert.deepEqual(collectionProgress(read).map(p=>p.pieces),[1,2,3,4,5,6,7,8,9,10]);
+ store.set(saveKey(rounds[3]),JSON.stringify({state:newState(),timed:false}));
+ assert.deepEqual(collectionProgress(read).map(p=>p.pieces),[1,2,3,0,5,6,7,8,9,10]);
+});
+test('collection completion requires all 20 answers and survives corrupt storage',()=>{
+ const store=new Map();for(const r of rounds){const state=newState();guess(state,r.gene,r.gene);store.set(saveKey(r),JSON.stringify({state,timed:false}));}
+ assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,0);
+ for(const r of rounds){const value=JSON.parse(store.get(saveKey(r)));value.state.answers=['mechanism','inheritance'];store.set(saveKey(r),JSON.stringify(value));}
+ assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,10);
+ store.set(saveKey(rounds[4]),'{not json');assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,9);
+ assert.equal(collectionProgress(()=>{throw Error('blocked');}).every(p=>p.pieces===0),true);
+ const state=newState();place(state,0,0);assert.equal(collectionProgress(()=>{throw Error('blocked');},{id:rounds[0].id,state})[0].pieces,1);
+});

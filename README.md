@@ -1,42 +1,71 @@
-# GREGoR Puzzles
+# GREGoR Puzzles · GSS collection
 
-A modern academic genetics puzzle with a scientific schematic and progressively revealed clues. The first round explores **CLCN1 and recessive myotonia congenita (OMIM 255700)**, the first gene–condition pair in the supplied selection.
+Ten playable image-jigsaw rounds about rare disease gene–condition relationships. A professional GSS blue interface pairs original biological schematics with progressively revealed scientific clues. No patient records are included.
 
-## Play locally
+## Play or review
 
-Run `python3 -m http.server 4173` in this directory, then open http://localhost:4173. No dependency installation is needed. Serve over HTTP; JavaScript modules do not reliably run from a file URL.
+```sh
+npm test
+npm run build
+python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
+```
 
-- Assemble 12 interlocking pieces by dragging, or select a piece and select its board position.
-- Biology clues appear at 2, 4, 6, and 8 pieces. The gene appears at 11; the condition at 12.
-- A correct gene symbol completes the picture. Both learning questions are still required to finish the round. This route is recorded separately from assembly.
-- Play the image jigsaw with drag-and-drop or keyboard placement, reduced-motion support, and device-local progress.
-- Optional elapsed timer, image reference, hints, descriptive piece labels, and a full diagram description. Changing a selected piece clears the old hint.
-- Learning questions at six and eight pieces connect channel conductance to muscle behavior and inheritance to the condition. Incorrect answers receive explanations; correct answers unlock continued play. Condition/community links appear when the picture is complete.
+Open http://127.0.0.1:4173. No dependency installation is needed. `review.html` presents all content, illustrations, answer explanations, and references without requiring puzzle completion. Serve over HTTP; ES modules do not reliably run from a file URL. Any static host can serve `dist/`.
 
-`npm test` runs the state/geometry tests. `npm run build` creates a static `dist/` copy. Any static host can serve that directory. Runtime code is plain HTML, CSS, JavaScript, and original SVG; no application framework or backend is required. The interface uses system sans-serif fonts and makes no font-service requests.
+- Choose any of 10 rounds from the library. Each round has 12 interlocking image pieces and two learning questions.
+- Drag a piece, or select it and then its board position. Keyboard users can Tab and Enter; Escape clears a selection.
+- Clues unlock at 2, 4, 6, and 8 pieces. The gene unlocks at 11, the condition at 12. Unfinished rounds in the library do not show gene names.
+- A correct gene symbol completes the picture. Both questions still need to be completed, and this recognition route is recorded separately.
+- Practice is untimed. Optional timed mode includes time spent in other rounds, background tabs, reloads, and instructions. The clock stops once the picture and both questions are finished. Restart the current round to change modes.
+- Progress is stored separately for each round in this browser. Restart affects only the current round. Existing CLCN1 saves retain their original storage key.
+- Hints, reference images, reduced-motion support, descriptive piece labels, and full diagram descriptions are available. A storage warning appears if local saving is blocked.
+- Completion includes a next-round action, a biology summary, phenotype descriptions, inheritance, general variant classes, OMIM and supporting references, and a community resource.
 
-## Content and sources
+## The ten rounds
 
-The supplied workbook is a slim six-column gene/condition export, not the wider table described in the meeting. Its classifications are pathogenic or likely pathogenic; it does not have a site column, so Stanford membership could not be independently filtered. Known gene–disease association was verified using public references. No workbook is included here. No family identifiers, patient phenotypes, variants, row-level classifications, or sequencing metadata are stored or displayed.
+The selection samples different biological processes from the supplied GFT pairs, retaining their relative order. It is an educational selection, not a clinical priority ranking; Matt's team can replace any selection during review.
 
-- [OMIM, autosomal recessive myotonia congenita, 255700](https://omim.org/entry/255700): condition reference. The matching link is independently supplied by MedlinePlus. Direct automated retrieval of the OMIM entry was unavailable; the prototype does **not** claim its phenotype prose was extracted from OMIM.
-- [MedlinePlus Genetics, myotonia congenita](https://medlineplus.gov/genetics/condition/myotonia-congenita/): accessible source for the paraphrased channel, inheritance, and phenotype content.
-- [GeneReviews, Myotonia Congenita](https://www.ncbi.nlm.nih.gov/books/NBK1355/): further clinical reading.
-- [Wang et al., PLOS Biology (2019), Structure of the human ClC-1 chloride channel](https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000218): basis for the two-subunit illustration, with a separate chloride pathway in each subunit.
-- [Muscular Dystrophy Association](https://www.mda.org/disease/myotonia-congenita): relevant community resource, not a disease-specific foundation or a donation request.
+1. **CLCN1 / recessive myotonia congenita / OMIM 255700:** skeletal muscle chloride conductance.
+2. **GJB2 / recessive nonsyndromic hearing loss 1A / OMIM 220290:** gap-junction communication.
+3. **SLC29A3 / histiocytosis-lymphadenopathy plus syndrome / OMIM 602782:** intracellular nucleoside transport.
+4. **SBDS / Shwachman-Diamond syndrome 1 / OMIM 260400:** ribosome maturation.
+5. **RNU4-2 / ReNU syndrome / OMIM 620851:** a functional RNA in the major spliceosome.
+6. **CACNA1A / developmental and epileptic encephalopathy 42 / OMIM 617106:** calcium channels and synaptic release.
+7. **PTPN11 / Noonan syndrome 1 / OMIM 163950:** SHP2 and RAS/MAPK regulation.
+8. **RNU4ATAC / Roifman syndrome / OMIM 616651:** the minor spliceosome.
+9. **STING1 / STING-associated vasculopathy with onset in infancy / OMIM 615934:** excess interferon signaling.
+10. **FGF14 / spinocerebellar ataxia 27B / OMIM 620174:** an intronic GAA repeat expansion.
 
-Sources checked 7 October 2026. Content is an educational prototype pending scientific and community review before conference use. Symptoms differ among people. CLCN1 also has a dominant association: this round concerns the recessive condition only. The original illustration is conceptual and is not an atomic structure, experimentally determined topology, patient image, or model of a specific variant. No binding partners or unverified protein interactions are invented.
+FAM177A1 was discussed in earlier notes but was not among the supplied GFT pairs used for this collection. Repeat rows with different variant classifications are not separate levels.
 
-## Add the next round
+## Scientific review and provenance
 
-`round.mjs` contains the content; `engine.mjs` contains puzzle geometry and state; `app.mjs` renders and handles input; `session.mjs` manages restored progress, timing, and learning milestones. Curate one verified gene–condition pair at a time in original table order, deduplicating repeated pairs. Keep any extraction outside the repository and never commit the workbook. This release has **one playable round**. A round selector, additional content, and shared leaderboard are deliberately future features. Client-side answers are inspectable; this prototype is not a secure competition system. Timed mode measures wall-clock elapsed time from the first puzzle action until the picture and both questions are complete. It continues across reloads, background tabs, and dialogs. Mode selection locks after play begins; restart to change it. Results report hints, reference-image reveals, and gene recognition separately. Progress saved by an earlier format is retained and labeled as restored progress. Practice never starts the clock. Legacy saves resume from their stored elapsed time; time spent away before their first upgrade cannot be reconstructed. This device-local timer is not tamper-resistant and is not a clinical or educational score.
+**All ten rounds are pending scientific review.** Sources checked 10 October 2026. The review page makes the full content available for Matt's team to vet before conference use. Review gene–condition mapping, mechanism, illustration, phenotype wording, inheritance, variant descriptions, and question explanations. Language aims to respect varied experiences and identities. There is no patient image, diagnostic task, treatment advice, donation solicitation, or implication that solving a puzzle repairs a person.
 
-Progress is stored only in the browser's local storage. There is no analytics, account system, or external submission of guesses. Restart clears the saved round. Scientific references and community pages open only when selected. Branding is provisional and does not imply official Stanford endorsement.
+The input is the slim gene/condition selection supplied in the conversation. It contains pathogenic or likely pathogenic classifications but no site column, so site membership cannot be independently filtered from it. Only gene–condition relationships are included; no family identifiers, individual variants, patient phenotypes, row-level classifications, sequencing metadata, or workbook files are shipped. The variant descriptions are general published classes, not findings from individual families.
 
-## Visual design
+Every round links to the supplied matching OMIM condition identifier. Direct automated retrieval of OMIM text was unavailable. Phenotypes and biology are original paraphrases supported by MedlinePlus Genetics, GeneReviews, and primary research; they are **not represented as an extraction from OMIM**. References are stored with each round in `rounds.mjs` and shown in the game and review page. Community links were checked against the relevant organization's site. NORD is used where a specific foundation was not verified. Links do not solicit donations.
 
-Cardinal accents, white panels, neutral grays, system sans-serif typography, and a compact learning workspace take inspiration from [Stanford’s primary color palette](https://identity.stanford.edu/design-elements/color/primary-colors/). The interface retains its own GREGoR Puzzles wordmark and does not display the Stanford seal or university wordmark. The membrane drawing is an original schematic with flat scientific labels, not a protein structure model.
+Scientific distinctions preserved include dominant versus recessive associations of the same gene, functional RNAs rather than invented proteins for RNU4-2/RNU4ATAC, condition-specific CACNA1A mechanisms, and FGF14's noncoding repeat expansion. The conceptual diagrams are not atomic structures, measured traces, complete pathways, or diagnostic repeat thresholds. Knowledge gaps and variable phenotypes are stated in the content.
 
-## Verification after review fixes
+## Design and branding
 
-Thirteen automated tests cover shared piece geometry, invalid placements, final reveals, gene recognition, save validation, hint selection, elapsed-time restoration, legacy saves, learning gates, timer completion, restoration of older format preferences. Browser checks cover keyboard assembly, wrong and correct learning answers, completion restoration, hint clearing, and responsive layouts at 320 and 768 CSS pixels. Essential empty-slot outlines use #687888 against #edf0f4 (over 3:1 contrast); clue body text is 15px, and small-screen piece buttons are at least 48px high. This is not a full screen-reader or real-device accessibility audit.
+Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/default/files/2022-08/GSS_Logo_Primary.png): royal blue `#0043fd`, navy `#0c063f`, and cyan `#00a9f2`. [GREGoR Stanford Site](https://gregor.stanford.edu/) provides the institutional context. The temporary GSS text badge and GREGoR Puzzles wordmark await Jimmy's branding input. No Stanford seal or university wordmark is recreated. Typography uses system fonts; assets are local SVGs.
+
+## Project structure
+
+- `rounds.mjs`: ten-round catalog, sources, questions, and review status. `round.mjs` retains the original CLCN1 content for compatibility.
+- `engine.mjs`: curved jigsaw geometry and placement state.
+- `session.mjs`: learning gates, save restoration, and wall-clock timing.
+- `collection.mjs`: progress across independently saved rounds and anonymous numbered URLs.
+- `app.mjs`, `index.html`, `style.css`: game, library, and completion flow.
+- `artwork/01.svg` through `10.svg`: original conceptual illustrations.
+- `scripts/generate-artwork.py`: regenerates SVGs using Python's standard library; `artwork.svg` is the original source for the first illustration.
+- `review.html`, `review.mjs`, `review.css`: reviewer view with all answers.
+- `test.mjs`: geometry, learning, timing, migration, catalog, and collection regression tests.
+
+## Validation and limitations
+
+18 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, round reset, and corrupt/blocked storage. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. This is not a complete screen-reader or real-device accessibility audit.
+
+This is a static game with no account system, analytics, data collection, external guess submission, or shared leaderboard. Answers are inspectable in client source. Timing is local, not tamper-resistant, and is not a clinical or educational score. Clearing browser data removes progress; progress does not sync between devices. Timed rounds continue while another round is open. Scientific review and final branding remain human review tasks, not completed approvals.
