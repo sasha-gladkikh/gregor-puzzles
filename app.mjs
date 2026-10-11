@@ -6,6 +6,7 @@ const {checkpoints,pieces:pieceDescriptions,description:diagramDescription}=roun
 import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from './session.mjs';
 
 const $ = id => document.getElementById(id);
+const PIECE_PAD=44;
 const NS = 'http://www.w3.org/2000/svg', KEY = saveKey(round);
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
@@ -24,7 +25,7 @@ function artworkPiece(id,prefix) {
   const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
   clip.append(svgEl('path',{d:pathFor(id)})); const defs=svgEl('defs'); defs.append(clip); g.append(defs);
   g.append(svgEl('image',{href:round.artwork,width:W,height:H,'clip-path':`url(#${prefix+id})`}));
-  g.append(svgEl('path',{d:pathFor(id),class:'piece-outline'})); return g;
+  g.append(svgEl('path',{d:pathFor(id),class:'piece-outline','vector-effect':'non-scaling-stroke'})); return g;
 }
 function buildBoard() {
   board.replaceChildren();
@@ -43,8 +44,9 @@ function buildTray() {
     b.setAttribute('aria-label',`Piece ${String.fromCharCode(65+index)}: ${pieceDescriptions[id]}`);
     b.setAttribute('aria-pressed','false');
     const x=id%COLS*CW, y=Math.floor(id/COLS)*CH;
-    const svg=svgEl('svg',{viewBox:`${x-48} ${y-48} ${CW+96} ${CH+96}`,'aria-hidden':'true'});
+    const svg=svgEl('svg',{viewBox:`${x-PIECE_PAD} ${y-PIECE_PAD} ${CW+PIECE_PAD*2} ${CH+PIECE_PAD*2}`,'aria-hidden':'true'});
     svg.append(artworkPiece(id,'tray-')); b.append(svg);
+    const label=document.createElement('span');label.className='piece-label';label.textContent=String.fromCharCode(65+index);label.setAttribute('aria-hidden','true');b.append(label);
     b.addEventListener('click',()=>{if(b.dataset.suppress==='1'){delete b.dataset.suppress;return;}select(id);});
     b.addEventListener('pointerdown',e=>startDrag(e,id,b)); tray.append(b);
   });
@@ -54,6 +56,7 @@ function select(id) {
   if(currentCheck()){focus('checkpointTitle');return;}
   start(); ({selected,hinted}=choosePiece(selected,id)); updateSelection();
   announce(selected===null?'Selection cleared.':`Selected ${pieceDescriptions[id]}. Choose its place on the board.`);
+  if(selected!==null&&matchMedia('(max-width: 600px)').matches) $('board').scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }
 function updateSelection() {
   $('board').classList.toggle('started',state.placed.length>0||peek||selected!==null);
@@ -82,7 +85,7 @@ function attempt(slot) {
   selected=null; hinted=null; afterProgress(before);
 }
 function startDrag(e,id,b) {
-  if(e.button!==0||state.placed.includes(id)||currentCheck())return;
+  if(e.pointerType==='touch'||e.button!==0||state.placed.includes(id)||currentCheck())return;
   drag={id,b,x:e.clientX,y:e.clientY,moved:false,pointer:e.pointerId}; b.setPointerCapture(e.pointerId);
 }
 window.addEventListener('pointermove',e=>{
@@ -94,7 +97,7 @@ window.addEventListener('pointermove',e=>{
     d.ghost.querySelectorAll('[id]').forEach(el=>el.id='drag-'+el.id);
     d.ghost.querySelectorAll('[clip-path]').forEach(el=>el.setAttribute('clip-path',el.getAttribute('clip-path').replace('#','#drag-')));
     d.ghost.classList.add('drag-ghost'); const rect=board.getBoundingClientRect();
-    d.width=rect.width*(CW+96)/W; d.height=rect.height*(CH+96)/H;
+    d.width=rect.width*(CW+PIECE_PAD*2)/W; d.height=rect.height*(CH+PIECE_PAD*2)/H;
     Object.assign(d.ghost.style,{width:d.width+'px',height:d.height+'px'}); document.body.append(d.ghost); updateSelection();
   }
   d.ghost.style.left=e.clientX-d.width/2+'px'; d.ghost.style.top=e.clientY-d.height/2+'px';

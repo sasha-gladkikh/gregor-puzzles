@@ -2,6 +2,10 @@
 
 Ten playable image-jigsaw rounds about rare disease gene–condition relationships. A professional GSS blue interface pairs original biological schematics with progressively revealed scientific clues. No patient records are included.
 
+## Game guide and branding
+
+[Read the game explanation and selection rationale](docs/Game-design-and-selection.pdf) for all ten conditions, their educational purpose, and the review questions for Matt. [Compare three logo and name directions](branding/GSS-game-branding-concepts.png); editable SVG logos are in `branding/`. These concepts do not replace the current game branding.
+
 ## Play or review
 
 ```sh
@@ -13,12 +17,12 @@ python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 Open http://127.0.0.1:4173. No dependency installation is needed. `review.html` presents all content, illustrations, answer explanations, and references without requiring puzzle completion. Serve over HTTP; ES modules do not reliably run from a file URL. Any static host can serve `dist/`.
 
 - Choose any of 10 rounds from the library. Each round has 12 interlocking image pieces and two learning questions.
-- Drag a piece, or select it and then its board position. Keyboard users can Tab and Enter; Escape clears a selection.
+- On iPhone, tap a piece and then its board position. With a mouse, drag or click to place. Keyboard users can Tab and Enter; Escape clears a selection.
 - Clues unlock at 2, 4, 6, and 8 pieces. The gene unlocks at 11, the condition at 12. Unfinished rounds in the library do not show gene names.
 - A correct gene symbol completes the picture. Both questions still need to be completed, and this recognition route is recorded separately.
 - Practice is untimed. Optional timed mode includes time spent in other rounds, background tabs, reloads, and instructions. The clock stops once the picture and both questions are finished. Restart the current round to change modes.
 - Progress is stored separately for each round in this browser. Restart affects only the current round. Existing CLCN1 saves retain their original storage key.
-- Hints, reference images, reduced-motion support, descriptive piece labels, and full diagram descriptions are available. A storage warning appears if local saving is blocked.
+- Piece silhouettes use dark non-scaling outlines, contrasting tray cards, subtle shadows, and letter labels. The phone layout uses three larger pieces per row, keeps page scrolling available, and brings the board into view after selection. Hints, reference images, reduced-motion support, descriptive piece labels, and full diagram descriptions are available. A storage warning appears if local saving is blocked.
 - Completion includes a next-round action, a biology summary, phenotype descriptions, inheritance, general variant classes, OMIM and supporting references, and a community resource.
 
 ## The ten rounds
@@ -66,6 +70,6 @@ Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/d
 
 ## Validation and limitations
 
-18 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, round reset, and corrupt/blocked storage. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. This is not a complete screen-reader or real-device accessibility audit.
+18 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, round reset, and corrupt/blocked storage. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. The responsive layout was checked at 320 and 375 CSS pixels, including piece selection, placement, the library, and save restoration. A physical iPhone/Safari test is still recommended; browser viewport checks do not emulate the iOS engine. This is not a complete screen-reader or real-device accessibility audit.
 
 This is a static game with no account system, analytics, data collection, external guess submission, or shared leaderboard. Answers are inspectable in client source. Timing is local, not tamper-resistant, and is not a clinical or educational score. Clearing browser data removes progress; progress does not sync between devices. Timed rounds continue while another round is open. Scientific review and final branding remain human review tasks, not completed approvals.
