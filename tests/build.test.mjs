@@ -20,9 +20,7 @@ test('production build resolves every local file reference and excludes developm
     const head = html.split('</head>')[0];
     assert.match(head, /<meta name="robots" content="[^\"]*\bnoindex\b[^\"]*">/, page);
   }
-  const hosting = await readFile(join(root, 'netlify.toml'), 'utf8');
-  assert.match(hosting, /\[\[headers\]\]\s+for = "\/\*"\s+\[headers.values\]\s+X-Robots-Tag = "noindex, nofollow, noimageindex, nosnippet"/);
-  for (const name of ['src', 'tests', 'docs', '.git', '.github', 'README.md', 'artwork-study.html']) {
+  for (const name of ['src', 'game', 'tests', 'docs', '.git', '.github', 'README.md', 'artwork-study.html']) {
     assert.ok(!names.includes(name), name);
   }
   for (const name of names.filter(n => /\.(html|mjs|css)$/.test(n))) {

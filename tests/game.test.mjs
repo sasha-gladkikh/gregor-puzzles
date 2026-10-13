@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints} from '../src/engine.mjs';
-import {round} from '../src/round.mjs';
+import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints} from '../game/engine.mjs';
+import {round} from '../game/round.mjs';
 test('every internal boundary is shared and outside boundaries are flat',()=>{for(let i=0;i<SIZE;i++){const e=edges(i);if(i%4<3)assert.equal(e.right,edges(i+1).left);else assert.equal(e.right,0);if(i<8)assert.equal(e.bottom,edges(i+4).top);else assert.equal(e.bottom,0);if(i%4===0)assert.equal(e.left,0);if(i<4)assert.equal(e.top,0);assert.match(pathFor(i),/^M .* Z$/);assert.ok(!pathFor(i).includes('NaN'));}});
 test('shared tab curves coincide when traversed in reverse',()=>{
  const segments=(x,y,dx,dy,sign)=>{let start=[x,y];return edgePoints(x,y,dx,dy,sign).map(s=>{const out={...s,start};start=s.p.slice(-2);return out;}).filter(s=>s.op==='C');};
@@ -16,8 +16,8 @@ test('gene recognition is case-insensitive and tracked separately',()=>{const s=
 test('corrupt saved progress rejected',()=>{assert.ok(validSave(newState()));assert.ok(!validSave({...newState(),placed:[0,0]}));assert.ok(!validSave({...newState(),seconds:-1}));assert.ok(!validSave({...newState(),placed:[12]}));});
 test('shuffle retains every piece exactly once',()=>assert.deepEqual(shuffled(Array.from({length:SIZE},(_,i)=>i)).sort((a,b)=>a-b),Array.from({length:SIZE},(_,i)=>i)));
 
-import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from '../src/session.mjs';
-import {checkpoints} from '../src/round.mjs';
+import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from '../game/session.mjs';
+import {checkpoints} from '../game/round.mjs';
 test('a new selection always clears the old hint',()=>{
  assert.deepEqual(choosePiece(4,0),{selected:0,hinted:null});
  assert.deepEqual(choosePiece(4,4),{selected:null,hinted:null});
@@ -59,8 +59,8 @@ test('old format preferences cannot hide the image puzzle or discard progress',(
  assert.equal('route' in restored,false);
 });
 
-import {rounds,findRound,saveKey} from '../src/rounds.mjs';
-import {collectionProgress,roundLink} from '../src/collection.mjs';
+import {rounds,findRound,saveKey} from '../game/rounds.mjs';
+import {collectionProgress,roundLink} from '../game/collection.mjs';
 import {readFileSync} from 'node:fs';
 test('the collection contains ten distinct supplied gene-condition pairs',()=>{
  const supplied=[['CLCN1','255700'],['GJB2','220290'],['SLC29A3','602782'],['SBDS','260400'],['RNU4-2','620851'],['CACNA1A','617106'],['PTPN11','163950'],['RNU4ATAC','616651'],['STING1','615934'],['FGF14','620174']];
@@ -72,7 +72,7 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
   assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
   assert.equal(r.pieces.length,SIZE);assert.ok(r.clinical.features.length>=6&&r.clinical.features.length<=8);
   for(const q of Object.values(r.checkpoints)){assert.ok(q.correct>=0&&q.correct<q.options.length);assert.ok(q.explanation&&q.source.startsWith('https://'));}
-  const bytes=readFileSync(new URL(r.artwork,new URL('../src/',import.meta.url)));
+  const bytes=readFileSync(new URL(r.artwork,new URL('../game/',import.meta.url)));
   assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');
   assert.equal(r.illustration.landmarks.length,3);assert.ok(r.illustration.takeaway&&r.illustration.note);
   assert.ok(r.sources.some(([,url])=>url===r.illustration.source));
@@ -117,7 +117,7 @@ test('collection completion requires all 20 answers and survives corrupt storage
  const state=newState();place(state,0,0);assert.equal(collectionProgress(()=>{throw Error('blocked');},{id:rounds[0].id,state})[0].pieces,1);
 });
 
-import {hpoTerms} from '../src/hpo-terms.mjs';
+import {hpoTerms} from '../game/hpo-terms.mjs';
 test('clinical teaching has traceable terminology, claim sources, and distinct reasoning tasks',()=>{
  const prompts=[];
  for(const r of rounds){

@@ -15,21 +15,21 @@ Use `npm start -- --port=4174` if the default port is occupied. Stop with **Ctrl
 
 ## Structure
 
-- `src/`: game, scientific content, editorial review, and illustrations.
+- `game/`: game, scientific content, editorial review, and illustrations.
 - `scripts/`: build and local server.
 - `tests/`: game logic, build integrity, and server checks.
 - `docs/`: scientific rationale, review instructions, and development notes.
 - `.github/`: automated checks and feedback forms.
 
-The ten-round catalog is in `src/rounds.mjs`; clinical profiles and vocabulary are in `src/clinical.mjs` and `src/hpo-terms.mjs`. Illustration metadata is in `src/artwork-data.mjs`. The original CLCN1 module remains for save compatibility. Earlier design experiments remain in Git history.
+The ten-round catalog is in `game/rounds.mjs`; clinical profiles and vocabulary are in `game/clinical.mjs` and `game/hpo-terms.mjs`. Illustration metadata is in `game/artwork-data.mjs`. The original CLCN1 module remains for save compatibility. Earlier design experiments remain in Git history.
 
 ## Publishing
 
-The GitHub repository stays private. Only the generated `dist/` files are published to the game host. They contain no source workbook, family identifiers, individual variants, or development documents. Browser-delivered game code is necessarily accessible to players.
+The GitHub repository is public. GitHub Pages publishes only the generated `dist/` files. No source workbook, family identifiers, individual variants, or development documents are included in the game build.
 
-The game is an unlisted, link-accessible preview. All deployed resources return `X-Robots-Tag: noindex`; both HTML pages also include a robots meta tag. These instructions exclude the game from search engines that honor them, but do not authenticate visitors or prevent link forwarding. Do not block crawling in `robots.txt`, because crawlers must read the noindex directive. Netlify production access remains public to allow play without sign-in; the repository and deploy previews remain private.
+Both HTML pages include a `noindex` robots meta tag. This asks supporting search engines not to list the game; it does not restrict access or prevent link forwarding. The public GitHub repository can still be found in search. Do not block crawling in `robots.txt`, because crawlers must read the noindex directive.
 
-Netlify builds `main` automatically using `netlify.toml` and publishes only `dist/` to [gregor-puzzles.netlify.app](https://gregor-puzzles.netlify.app). Run tests before pushing. Use the existing Netlify project to preserve its URL and browser progress. Do not publish the repository root.
+The **Check and publish** workflow tests and builds every push to `main`, then deploys the game to [GitHub Pages](https://sasha-gladkikh.github.io/gregor-puzzles/). Pull requests run checks without deploying. The repository's Pages source must be **GitHub Actions**. No separate hosting account is needed.
 
 ## Validation and limits
 

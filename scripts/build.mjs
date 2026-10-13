@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
 
-const source = fileURLToPath(new URL('../src/', import.meta.url));
+const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
   'index.html', 'style.css', 'app.mjs', 'engine.mjs', 'session.mjs',

@@ -1,8 +1,8 @@
 # GREGoR Puzzles
 
-**[Play GREGoR Puzzles →](https://gregor-puzzles.netlify.app)**
+**[Play now →](https://sasha-gladkikh.github.io/gregor-puzzles/)**
 
-Unlisted preview. Share the link directly; no sign-in required.
+Opens in your browser. No installation or sign-in required.
 
 Ten image puzzles connecting rare disease genes, molecular mechanisms, and clinical phenotypes.
 
