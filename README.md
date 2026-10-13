@@ -2,6 +2,8 @@
 
 **[Play GREGoR Puzzles →](https://gregor-puzzles.netlify.app)**
 
+Unlisted preview. Share the link directly; no sign-in required.
+
 Ten image puzzles connecting rare disease genes, molecular mechanisms, and clinical phenotypes.
 
 Select a piece, then its position. Scientific clues appear as the image takes shape. Complete two reasoning questions to finish each round. Works with mouse, keyboard, or touch.

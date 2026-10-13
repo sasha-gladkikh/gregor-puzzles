@@ -4,3 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "24"
+
+# Unlisted, link-accessible game. These are indexing directives, not authentication.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noimageindex, nosnippet"

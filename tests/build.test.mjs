@@ -14,6 +14,14 @@ test('production build resolves every local file reference and excludes developm
   const names = await readdir(dist);
   assert.ok(names.includes('index.html'));
   assert.ok(names.includes('review.html'));
+  // Keep both entry points unlisted even if moved to a different static host.
+  for (const page of ['index.html', 'review.html']) {
+    const html = await readFile(join(dist, page), 'utf8');
+    const head = html.split('</head>')[0];
+    assert.match(head, /<meta name="robots" content="[^\"]*\bnoindex\b[^\"]*">/, page);
+  }
+  const hosting = await readFile(join(root, 'netlify.toml'), 'utf8');
+  assert.match(hosting, /\[\[headers\]\]\s+for = "\/\*"\s+\[headers.values\]\s+X-Robots-Tag = "noindex, nofollow, noimageindex, nosnippet"/);
   for (const name of ['src', 'tests', 'docs', '.git', '.github', 'README.md', 'artwork-study.html']) {
     assert.ok(!names.includes(name), name);
   }

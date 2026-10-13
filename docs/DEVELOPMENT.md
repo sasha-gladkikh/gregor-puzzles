@@ -25,7 +25,9 @@ The ten-round catalog is in `src/rounds.mjs`; clinical profiles and vocabulary a
 
 ## Publishing
 
-The GitHub repository stays private. Only the generated `dist/` files are published to the public game host. They contain no source workbook, family identifiers, individual variants, or development documents. Browser-delivered game code is necessarily accessible to players.
+The GitHub repository stays private. Only the generated `dist/` files are published to the game host. They contain no source workbook, family identifiers, individual variants, or development documents. Browser-delivered game code is necessarily accessible to players.
+
+The game is an unlisted, link-accessible preview. All deployed resources return `X-Robots-Tag: noindex`; both HTML pages also include a robots meta tag. These instructions exclude the game from search engines that honor them, but do not authenticate visitors or prevent link forwarding. Do not block crawling in `robots.txt`, because crawlers must read the noindex directive. Netlify production access remains public to allow play without sign-in; the repository and deploy previews remain private.
 
 Netlify builds `main` automatically using `netlify.toml` and publishes only `dist/` to [gregor-puzzles.netlify.app](https://gregor-puzzles.netlify.app). Run tests before pushing. Use the existing Netlify project to preserve its URL and browser progress. Do not publish the repository root.
 
