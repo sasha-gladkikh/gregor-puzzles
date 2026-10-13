@@ -22,7 +22,7 @@ export function pathFor(id){const r=Math.floor(id/COLS),c=id%COLS,x=c*CW,y=r*CH,
  }
  return s.join(' ')+' Z';
 }
-export function newState(){return {learningVersion:2,placed:[],hints:0,peeks:0,solvedByGuess:false,seconds:0,answers:[],started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
+export function newState(){return {sessionVersion:3,placed:[],hints:0,peeks:0,solvedByGuess:false,seconds:0,timingUnavailable:false,started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
 export function place(state,piece,slot){if(!Number.isInteger(piece)||piece<0||piece>=SIZE||piece!==slot||state.placed.includes(piece))return false;state.placed.push(piece);return true;}
 export const normalizeGene=value=>value.trim().toUpperCase().replace(/\s+/g,'');
 export function guess(state,value,gene){if(normalizeGene(value)!==normalizeGene(gene))return false;state.placed=Array.from({length:SIZE},(_,i)=>i);state.solvedByGuess=true;return true;}

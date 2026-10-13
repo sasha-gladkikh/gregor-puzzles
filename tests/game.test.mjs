@@ -16,8 +16,7 @@ test('gene recognition is case-insensitive and tracked separately',()=>{const s=
 test('corrupt saved progress rejected',()=>{assert.ok(validSave(newState()));assert.ok(!validSave({...newState(),placed:[0,0]}));assert.ok(!validSave({...newState(),seconds:-1}));assert.ok(!validSave({...newState(),placed:[12]}));});
 test('shuffle retains every piece exactly once',()=>assert.deepEqual(shuffled(Array.from({length:SIZE},(_,i)=>i)).sort((a,b)=>a-b),Array.from({length:SIZE},(_,i)=>i)));
 
-import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,pendingCheckpoint,answerCheckpoint,roundComplete} from '../game/session.mjs';
-import {checkpoints} from '../game/round.mjs';
+import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,roundComplete} from '../game/session.mjs';
 test('a new selection always clears the old hint',()=>{
  assert.deepEqual(choosePiece(4,0),{selected:0,hinted:null});
  assert.deepEqual(choosePiece(4,4),{selected:null,hinted:null});
@@ -32,22 +31,13 @@ test('practice does not create a clock and legacy saves migrate',()=>{
  const state=newState();startRound(state,false,'image',100000);assert.equal(elapsedSeconds(state,200000),0);
  const resumed=restoreSession({timed:true,state:{placed:[0],hints:1,peeks:0,seconds:20,solvedByGuess:false}},100000);
  assert.equal(resumed.state.startedAt,80000);assert.equal(elapsedSeconds(resumed.state,110000),30);
- assert.deepEqual(resumed.state.answers,[]);
+ assert.equal('answers' in resumed.state,false);
 });
-test('picture completion and gene recognition do not bypass learning checks',()=>{
- const s=newState();guess(s,round.gene,round.gene);assert.equal(roundComplete(s),false);
- assert.equal(pendingCheckpoint(s),'mechanism');
- assert.equal(answerCheckpoint(s,'inheritance',2,checkpoints.inheritance),false);
- assert.equal(answerCheckpoint(s,'mechanism',0,checkpoints.mechanism),false);
- assert.equal(answerCheckpoint(s,'mechanism',1,checkpoints.mechanism),true);
- assert.equal(pendingCheckpoint(s),'inheritance');
- assert.equal(answerCheckpoint(s,'inheritance',2,checkpoints.inheritance),true);
- assert.equal(roundComplete(s),true);
-});
-test('timer ends only when both picture and learning are complete',()=>{
- const s=newState();startRound(s,true,'image',100000);guess(s,round.gene,round.gene);
- finishRound(s,110000);assert.equal(s.finishedAt,null);
- answerCheckpoint(s,'mechanism',1,checkpoints.mechanism);answerCheckpoint(s,'inheritance',2,checkpoints.inheritance);
+test('the last piece completes the round and stops its timer',()=>{
+ const s=newState();startRound(s,true,'image',100000);
+ for(let i=0;i<SIZE-1;i++)place(s,i,i);
+ finishRound(s,110000);assert.equal(s.finishedAt,null);assert.equal(roundComplete(s),false);
+ place(s,SIZE-1,SIZE-1);assert.equal(roundComplete(s),true);
  finishRound(s,120000);assert.equal(elapsedSeconds(s,180000),20);
  finishRound(s,190000);assert.equal(s.finishedAt,120000);
  const resumed=restoreSession({state:s,timed:true},200000);assert.equal(elapsedSeconds(resumed.state,220000),20);
@@ -71,7 +61,6 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
   assert.equal(r.clues[4].title,r.gene);assert.equal(r.clues[5].title,r.condition);
   assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
   assert.equal(r.pieces.length,SIZE);assert.ok(r.clinical.features.length>=6&&r.clinical.features.length<=8);
-  for(const q of Object.values(r.checkpoints)){assert.ok(q.correct>=0&&q.correct<q.options.length);assert.ok(q.explanation&&q.source.startsWith('https://'));}
   const bytes=readFileSync(new URL(r.artwork,new URL('../game/',import.meta.url)));
   assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');
   assert.equal(r.illustration.landmarks.length,3);assert.ok(r.illustration.takeaway&&r.illustration.note);
@@ -80,13 +69,13 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
   assert.ok(!r.description.includes(r.gene));
  }
 });
-test('all ten image puzzles and recognition routes complete with both questions',()=>{
+test('all ten image puzzles and recognition routes finish without interruptions',()=>{
  for(const r of rounds)for(const route of ['image','guess']){
   const state=newState();startRound(state,true,route,10000);
   if(route==='guess')guess(state,r.gene.toLowerCase(),r.gene);
   for(let piece=0;piece<SIZE;piece++){
    if(route==='image')place(state,piece,piece);
-   let id;while((id=pendingCheckpoint(state))){const q=r.checkpoints[id];assert.equal(answerCheckpoint(state,id,(q.correct+1)%q.options.length,q),false);assert.equal(answerCheckpoint(state,id,q.correct,q),true);}
+   if(route==='image')assert.equal(roundComplete(state),piece===SIZE-1,r.gene);
   }
   assert.equal(roundComplete(state),true,r.gene);finishRound(state,25000);assert.equal(elapsedSeconds(state,50000),15);
  }
@@ -107,10 +96,8 @@ test('progress stays isolated by round and a reset affects only that round',()=>
  store.set(saveKey(rounds[3]),JSON.stringify({state:newState(),timed:false}));
  assert.deepEqual(collectionProgress(read).map(p=>p.pieces),[1,2,3,0,5,6,7,8,9,10]);
 });
-test('collection completion requires all 20 answers and survives corrupt storage',()=>{
+test('collection completion counts finished images and survives corrupt storage',()=>{
  const store=new Map();for(const r of rounds){const state=newState();guess(state,r.gene,r.gene);store.set(saveKey(r),JSON.stringify({state,timed:false}));}
- assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,0);
- for(const r of rounds){const value=JSON.parse(store.get(saveKey(r)));value.state.answers=['mechanism','inheritance'];store.set(saveKey(r),JSON.stringify(value));}
  assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,10);
  store.set(saveKey(rounds[4]),'{not json');assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,9);
  assert.equal(collectionProgress(()=>{throw Error('blocked');}).every(p=>p.pieces===0),true);
@@ -118,29 +105,37 @@ test('collection completion requires all 20 answers and survives corrupt storage
 });
 
 import {hpoTerms} from '../game/hpo-terms.mjs';
-test('clinical teaching has traceable terminology, claim sources, and distinct reasoning tasks',()=>{
- const prompts=[];
+test('clinical teaching retains traceable terminology and sources without revealing names early',()=>{
  for(const r of rounds){
-  assert.ok(r.clinical.objective&&r.clinical.memory&&r.clinical.recall.length===2);
+  assert.ok(r.clinical.objective&&r.clinical.memory);
   assert.equal(r.clues.find(c=>c.at===6).body,r.clinical.pattern);
   assert.ok(r.clinical.pearls.length>=2);
   for(const f of r.clinical.features){if(f.hpo)assert.ok(hpoTerms[f.hpo],f.hpo);assert.ok(r.sources.some(([,url])=>url===f.source));}
-  for(const q of Object.values(r.checkpoints)){prompts.push(q.question);assert.equal(q.rationales.length,q.options.length);assert.ok(q.rationales.every(Boolean));assert.ok(r.sources.some(([,url])=>url===q.source));}
   const earlyText=r.clues.filter(c=>c.at<11).map(c=>c.body+' '+c.title).join(' ');
   assert.ok(!earlyText.toLowerCase().includes(r.gene.toLowerCase()),r.gene+' leaked before reveal');
  }
- assert.equal(new Set(prompts).size,20);
 });
-test('new clinical questions preserve legacy pieces but require fresh answers',()=>{
- const old={...newState(),learningVersion:1,placed:[0,1,2,3,4,5],answers:['mechanism'],started:true};
- const restored=restoreSession({state:old,timed:false},100000);
- assert.deepEqual(restored.state.placed,old.placed);assert.deepEqual(restored.state.answers,[]);assert.equal(restored.upgraded,true);
- assert.equal(pendingCheckpoint(restored.state),'mechanism');
- const next=restoreSession({state:restored.state,timed:false},110000);assert.equal(next.upgraded,false);
+test('previous quiz checkpoints preserve pieces and allow immediate continuation',()=>{
+ for(const count of [6,8])for(const version of [1,2]){
+  const old={...newState(),sessionVersion:undefined,learningVersion:version,placed:Array.from({length:count},(_,i)=>i),answers:['mechanism'],started:true};
+  const {state}=restoreSession({state:old,timed:false},100000);
+  assert.deepEqual(state.placed,old.placed);assert.equal('answers' in state,false);assert.equal('learningVersion' in state,false);
+  assert.equal(roundComplete(state),false);assert.equal(place(state,count,count),true);
+  const progress=collectionProgress(()=>null,{id:rounds[0].id,state:old})[0];
+  assert.equal(progress.percent,Math.round(count/SIZE*100));
+ }
 });
-test('upgrading a completed timed save excludes time since its old finish',()=>{
- const state={...newState(),learningVersion:1,placed:Array.from({length:SIZE},(_,i)=>i),answers:['mechanism','inheritance'],started:true,startedAt:10000,finishedAt:30000,seconds:20};
+test('previously completed timed rounds retain their saved finish',()=>{
+ const state={...newState(),sessionVersion:undefined,learningVersion:1,placed:Array.from({length:SIZE},(_,i)=>i),answers:['mechanism','inheritance'],started:true,startedAt:10000,finishedAt:30000,seconds:20};
  const result=restoreSession({state,timed:true},1000000);
- assert.equal(elapsedSeconds(result.state,1000000),20);assert.equal(elapsedSeconds(result.state,1005000),25);
- assert.deepEqual(result.state.answers,[]);assert.equal(result.state.finishedAt,null);
+ assert.equal(roundComplete(result.state),true);assert.equal(elapsedSeconds(result.state,1005000),20);
+ assert.equal(result.state.finishedAt,30000);assert.equal(result.state.timingUnavailable,false);
+});
+test('old finished pictures awaiting quizzes count as complete without fabricating a time',()=>{
+ const old={...newState(),sessionVersion:undefined,learningVersion:2,placed:Array.from({length:SIZE},(_,i)=>i),answers:[],started:true,startedAt:10000};
+ const result=restoreSession({state:old,timed:true},1000000);
+ assert.equal(roundComplete(result.state),true);assert.equal(result.state.timingUnavailable,true);assert.equal(result.state.startedAt,null);
+ const reload=restoreSession(result,2000000);assert.equal(reload.state.timingUnavailable,true);assert.equal(reload.state.startedAt,null);
+ assert.equal(collectionProgress(()=>JSON.stringify({state:old,timed:true})).every(p=>p.done&&p.percent===100),true);
+ const practice=restoreSession({state:old,timed:false},1000000);assert.equal(roundComplete(practice.state),true);assert.equal(practice.state.timingUnavailable,false);
 });

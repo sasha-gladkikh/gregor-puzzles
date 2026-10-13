@@ -27,6 +27,5 @@ export function renderPearls(round,container){
 }
 export function renderMemory(round,container){
  const memory=node('div',null,'memory-card');memory.append(node('span','ONE CONNECTION TO REMEMBER','eyebrow'),node('p',round.clinical.memory));
- const recall=node('details',null,'recall-card');recall.append(node('summary','Try recalling it before you reveal the answer'),node('p',round.clinical.recall[0],'recall-prompt'));
- const reveal=node('details',null,'recall-answer');reveal.append(node('summary','Reveal explanation'),node('p',round.clinical.recall[1]));recall.append(reveal);container.append(memory,recall);
+ container.append(memory);
 }

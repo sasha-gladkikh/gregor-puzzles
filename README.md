@@ -6,7 +6,7 @@ Opens in your browser. No installation or sign-in required.
 
 Ten image puzzles connecting rare disease genes, molecular mechanisms, and clinical phenotypes.
 
-Select a piece, then its position. Scientific clues appear as the image takes shape. Complete two reasoning questions to finish each round. Works with mouse, keyboard, or touch.
+Select a piece, then its position. Scientific clues appear as the image takes shape. Complete the image to reveal the gene and condition. Works with mouse, keyboard, or touch.
 
 **Editorial review** provides the complete scientific content and references.
 

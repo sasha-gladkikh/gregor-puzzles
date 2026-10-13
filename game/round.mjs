@@ -32,23 +32,3 @@ export const pieceDescriptions = [
  'lower left: inside the muscle cell', 'lower middle left: base of the first subunit',
  'lower middle right: base of the second subunit', 'lower right: two-subunit channel caption'
 ];
-export const checkpoints = {
- mechanism: {
-  title: 'Connect function to muscle behavior',
-  context: 'Chloride conductance helps keep muscle-cell electrical activity stable.',
-  question: 'If this conductance is reduced, which outcome best fits the mechanism?',
-  options: ['Muscles consistently relax faster after a contraction.', 'Muscles can stay electrically active longer and relax more slowly.', 'The muscle cell can no longer respond to any electrical signal.'],
-  correct: 1,
-  explanation: 'Reduced chloride conductance can allow repetitive electrical activity, prolonging contraction. This helps explain delayed relaxation (myotonia). It does not mean that every electrical response disappears.',
-  source: 'https://medlineplus.gov/genetics/condition/myotonia-congenita/'
- },
- inheritance: {
-  title: 'Connect inheritance to the condition',
-  context: 'This round follows an autosomal recessive gene–condition relationship. A gene can be associated with more than one inheritance pattern.',
-  question: 'Which statement best describes the recessive relationship in this round?',
-  options: ['One disease-causing copy is sufficient for this recessive form.', 'Only an altered copy on the X chromosome can cause this form.', 'Disease-causing variants affect both copies of the gene.'],
-  correct: 2,
-  explanation: 'Autosomal recessive conditions involve disease-causing variants in both gene copies. A dominant association of the same gene is a different gene–condition relationship.',
-  source: 'https://medlineplus.gov/genetics/condition/myotonia-congenita/'
- }
-};

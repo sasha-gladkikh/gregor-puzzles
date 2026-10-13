@@ -1,3 +1,4 @@
+import {SIZE} from './engine.mjs';
 import {rounds,saveKey} from './rounds.mjs';
 import {restoreSession,roundComplete} from './session.mjs';
 
@@ -7,7 +8,7 @@ export function collectionProgress(read, current) {
     let saved;
     try {saved=JSON.parse(read(saveKey(round)));} catch {}
     const state=current?.id===round.id?current.state:restoreSession(saved).state;
-    const done=roundComplete(state),pieces=state.placed.length,answers=state.answers.length;
-    return {round,done,pieces,answers,started:state.started,percent:Math.round((pieces+answers)/14*100)};
+    const done=roundComplete(state),pieces=state.placed.length;
+    return {round,done,pieces,started:state.started,percent:Math.round(pieces/SIZE*100)};
   });
 }

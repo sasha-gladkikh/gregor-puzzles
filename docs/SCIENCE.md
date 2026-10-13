@@ -19,7 +19,7 @@ FAM177A1 was discussed during planning but was absent from the supplied pairs. T
 
 ## Educational content
 
-Each round includes a learning objective, a clinical pattern, selected findings, two reasoning questions with explanations for every option, molecular interpretation notes, and a recall prompt. Completing the image reveals three annotated biological landmarks.
+Each round includes a learning objective, a clinical pattern, selected findings, molecular interpretation notes, and one connection to remember. Completing all 12 pieces finishes the round; there are no quizzes. Completing the image reveals three annotated biological landmarks.
 
 The 63 clinical profile entries include course modifiers and typical negative findings; they are not 63 independent symptoms. The 50 HPO terms provide vocabulary mappings, not formal disease annotations. Teaching patterns do not establish diagnostic specificity or phenotype frequency.
 

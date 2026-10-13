@@ -7,7 +7,7 @@ For each round, assess:
 - **Association:** condition identifier, inheritance, and variant mechanism.
 - **Mechanism:** illustration, causal explanation, and stated exceptions.
 - **Phenotype:** clinical pattern, age and course, variability, and HPO mappings.
-- **Reasoning:** questions, correct answers, and explanations for every option.
+- **Teaching:** progressive clues, image annotations, and the connection between molecular biology and clinical findings.
 - **Evidence:** whether each source supports the associated claim.
 
 [Report a scientific correction](https://github.com/sasha-gladkikh/gregor-puzzles/issues/new?template=scientific-feedback.yml). Include the round, exact statement, proposed correction, and supporting source. Do not include patient information.

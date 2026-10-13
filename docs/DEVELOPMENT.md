@@ -33,7 +33,7 @@ The **Check and publish** workflow tests and builds every push to `main`, then d
 
 ## Validation and limits
 
-GitHub Actions runs tests and a build for pushes and pull requests. Checks cover placement, reveals, reasoning questions, timing, save migration, all ten rounds, published file references, and the local server.
+GitHub Actions runs tests and a build for pushes and pull requests. Checks cover placement, reveals, picture completion, timing, save migration, all ten rounds, published file references, and the local server.
 
 Browser checks cover completion, review navigation, reload restoration, and phone-width layouts. These do not replace physical iPhone/Safari or full accessibility testing. Scientific review remains pending.
 
