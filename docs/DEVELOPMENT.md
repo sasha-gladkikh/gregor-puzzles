@@ -1,45 +1,38 @@
 # Development
 
-Requires Node.js 22 or later; Node.js 24 LTS is recommended. No external runtime packages or install step are needed.
+Requires Node.js 22 or later. Node.js 24 LTS is recommended. No package installation is needed.
 
 ```sh
-npm start          # Build and serve the game at http://localhost:4173
-npm test           # Game logic and preview-server checks
-npm run build      # Generate static files in dist/
+git clone https://github.com/sasha-gladkikh/gregor-puzzles.git
+cd gregor-puzzles
+
+npm start          # Build and serve at http://localhost:4173
+npm test           # Game, build, and server checks
+npm run build      # Generate dist/ for hosting
 ```
 
-If port 4173 is occupied, run `npm start -- --port=4174`. Stop the server with **Ctrl+C**. Restart after source changes. The preview server listens on `127.0.0.1` and serves only `dist/`.
+Use `npm start -- --port=4174` if the default port is occupied. Stop with **Ctrl+C**; restart after edits. The local server serves only `dist/` and listens on `127.0.0.1`.
 
-## GitHub Codespaces
+## Structure
 
-[Create a codespace](https://codespaces.new/sasha-gladkikh/gregor-puzzles) with repository access. The container runs tests on creation and starts the game when it opens. In the **Ports** panel, open port **4173** in a browser if it does not open automatically.
+- `src/`: game, scientific content, editorial review, and illustrations.
+- `scripts/`: build and local server.
+- `tests/`: game logic, build integrity, and server checks.
+- `docs/`: scientific rationale, review instructions, and development notes.
+- `.github/`: automated checks and feedback forms.
 
-Keep the forwarded port **Private**, GitHub's default. Sign in with the same GitHub account to open that forwarded URL on a phone. A local `localhost` URL only works on the computer running the server. Codespaces availability, allowances, and charges depend on the account. This configuration does not publish a public website.
+The ten-round catalog is in `src/rounds.mjs`; clinical profiles and vocabulary are in `src/clinical.mjs` and `src/hpo-terms.mjs`. Illustration metadata is in `src/artwork-data.mjs`. The original CLCN1 module remains for save compatibility. Earlier design experiments remain in Git history.
 
-If the preview does not start, run `npm start` in the terminal. Startup output is in `/tmp/gregor-puzzles.log`. See [GitHub's port-forwarding documentation](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace).
+## Publishing
 
-## Source map
+The GitHub repository stays private. Only the generated `dist/` files are published to the public game host. They contain no source workbook, family identifiers, individual variants, or development documents. Browser-delivered game code is necessarily accessible to players.
 
-- `index.html`, `app.mjs`, `style.css`: game, library, and completion flow.
-- `engine.mjs`, `session.mjs`, `collection.mjs`: geometry, placement, learning gates, timing, and saved progress.
-- `rounds.mjs`, `clinical.mjs`, `hpo-terms.mjs`: catalog, scientific content, and terminology. `round.mjs` retains the original round for compatibility.
-- `artwork/01.webp`–`10.webp`: active illustrations. `artwork-data.mjs` supplies descriptions and landmarks; `artwork-ui.mjs` renders the guides.
-- `review.html`, `review.mjs`, `review.css`: complete scientific content and local editorial notes.
-- `build.mjs`: static build with content-based asset revisions.
-- `scripts/start.mjs`, `scripts/server.mjs`: local preview.
-- `test.mjs`, `tests/`: automated checks.
-- `docs/archive/`: earlier artwork, branding, and selection rationale.
+Netlify builds `main` automatically using `netlify.toml` and publishes only `dist/` to [gregor-puzzles.netlify.app](https://gregor-puzzles.netlify.app). Run tests before pushing. Use the existing Netlify project to preserve its URL and browser progress. Do not publish the repository root.
 
-`artwork-study.html` retains the earlier illustration comparison. Preview saves are separate from the main collection.
+## Validation and limits
 
-## Validation
+GitHub Actions runs tests and a build for pushes and pull requests. Checks cover placement, reveals, reasoning questions, timing, save migration, all ten rounds, published file references, and the local server.
 
-GitHub Actions runs tests and a production build for pushes and pull requests. Tests cover geometry, incorrect placement, reveals, recognition, learning gates, timing, save migration, all ten rounds, artwork metadata, and preview-server behavior.
+Browser checks cover completion, review navigation, reload restoration, and phone-width layouts. These do not replace physical iPhone/Safari or full accessibility testing. Scientific review remains pending.
 
-Previous browser checks covered full completion, review navigation, reload restoration, all ten images, and layouts at 320–390 CSS pixels. Viewport checks are not physical iPhone/Safari or complete accessibility tests. The Codespaces configuration requires a first cloud trial with an authorized account.
-
-## Runtime limits
-
-The game is static. It has no account system, analytics, or shared leaderboard. Progress and review notes remain in browser storage and do not sync between devices. Clearing browser data removes them. Answers are present in client source; timing is local and not tamper-resistant.
-
-Only files in `dist/` are needed for a static deployment. The repository must remain private unless its owner explicitly authorizes a different destination. Scientific review and final branding remain pending.
+Progress and editorial notes stay in browser storage and do not sync between devices. Moving from a local preview to the hosted URL starts separate progress. Clearing browser data removes it. Timing is local; there is no account system, analytics, or shared leaderboard.

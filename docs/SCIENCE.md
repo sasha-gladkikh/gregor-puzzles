@@ -15,7 +15,7 @@ Ten distinct gene–condition pairs were selected from the supplied GFT subset t
 9. **STING1** · [STING-associated vasculopathy with onset in infancy](https://omim.org/entry/615934). Excess interferon signaling.
 10. **FGF14** · [Spinocerebellar ataxia 27B](https://omim.org/entry/620174). An intronic GAA repeat expansion.
 
-FAM177A1 was discussed during planning but was absent from the supplied pairs. The [earlier selection rationale](archive/selection-rationale-2026-10-10.pdf) records the original design; the web review contains the expanded clinical edition.
+FAM177A1 was discussed during planning but was absent from the supplied pairs. The [earlier selection rationale](selection-rationale.pdf) records the original design; the web review contains the expanded clinical edition.
 
 ## Educational content
 
@@ -25,11 +25,11 @@ The 63 clinical profile entries include course modifiers and typical negative fi
 
 ## Sources and interpretation
 
-References accompany each round in **Editorial review** and in [rounds.mjs](../rounds.mjs). Scientific sources were checked on **10 October 2026**. Clinical summaries paraphrase GeneReviews, MedlinePlus Genetics, and primary research. OMIM links identify the corresponding condition; the prose is not an extraction of OMIM entries.
+References accompany each round in **Editorial review** and in [rounds.mjs](../src/rounds.mjs). Scientific sources were checked on **10 October 2026**. Clinical summaries paraphrase GeneReviews, MedlinePlus Genetics, and primary research. OMIM links identify the corresponding condition; the prose is not an extraction of OMIM entries.
 
 Inheritance and variant mechanisms refer to the selected gene–condition pair. They should not be generalized to every association of that gene. The content distinguishes functional RNAs from proteins, dominant from recessive associations, and repeat expansions from coding variants.
 
-Illustrations are AI-generated conceptual models, not atomic structures, measured traces, complete pathways, or diagnostic thresholds. [Illustration notes](../artwork-data.mjs) contain landmark explanations and supporting references; [generation prompts](../artwork/prompts.json) record provenance.
+Illustrations are AI-generated conceptual models, not atomic structures, measured traces, complete pathways, or diagnostic thresholds. [Illustration notes](../src/artwork-data.mjs) contain landmark explanations and supporting references; [generation prompts](../src/artwork/prompts.json) record provenance.
 
 ## Review and data scope
 

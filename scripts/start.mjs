@@ -10,7 +10,7 @@ if (!/^\d+$/.test(value) || port < 1 || port > 65535) {
 }
 
 process.chdir(fileURLToPath(new URL('../', import.meta.url)));
-await import('../build.mjs');
+await import('./build.mjs');
 const server = createPreviewServer('dist');
 server.on('error', error => {
   console.error(error.code === 'EADDRINUSE'
