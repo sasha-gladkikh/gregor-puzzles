@@ -146,7 +146,7 @@ const introductoryRounds=[base,...entries.map((r,index)=>({...r,
   {at:11,label:'The gene',title:r.gene,body:r.geneBody},{at:12,label:'The condition',title:r.condition,body:r.conditionBody}],
  sources:[[ `OMIM · condition #${r.omim}`,`https://omim.org/entry/${r.omim}`],...r.sources],
  checkpoints:{mechanism:r.mechanism,inheritance:inheritanceQuestion(r.inheritance,r.sources[0][1],index)}
-}))].map(r=>({...r,checked:'10 October 2026',artwork:`./artwork/${r.number}.svg`,reviewStatus:'Pending scientific review',
+}))].map(r=>({...r,checked:'10 October 2026',reviewStatus:'Pending scientific review',
  sourceNote:'Original educational summary based on the linked references. OMIM links identify the condition; phenotype prose is paraphrased from the other cited sources. Illustrations are conceptual, not patient images or atomic structures.'}));
 
 export const rounds=introductoryRounds.map(r=>{

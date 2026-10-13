@@ -2,8 +2,8 @@ from pathlib import Path
 from html import escape
 import math
 
-ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'artwork';OUT.mkdir(exist_ok=True)
+ROOT=Path(__file__).resolve().parent
+OUT=ROOT
 B='#0043fd';N='#0c063f';C='#00a9f2';T='#167f91';L='#c9d9e9';P='#e8efff';M='#51647b'
 def text(x,y,s,size=19,color=N,anchor='start',weight=500):
  return f'<text x="{x}" y="{y}" font-size="{size}" fill="{color}" text-anchor="{anchor}" font-weight="{weight}">{escape(s)}</text>'

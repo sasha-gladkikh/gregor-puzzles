@@ -1,0 +1,18 @@
+name: Gameplay issue
+description: Report a problem with playing or viewing the game.
+title: "[Game] "
+body:
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: "Example: iPhone, Safari"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Steps, observed behavior, and expected behavior
+      description: Include the round and steps to reproduce. Do not include patient information.
+    validations:
+      required: true

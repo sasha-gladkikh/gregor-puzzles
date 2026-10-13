@@ -1,1 +1,13 @@
-{"name":"gregor-puzzles","version":"0.2.0","private":true,"type":"module","scripts":{"test":"node --test test.mjs","build":"node build.mjs","start":"python3 -m http.server 4173"}}
+{
+  "name": "gregor-puzzles",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Ten image puzzles connecting rare disease genes, molecular mechanisms, and clinical phenotypes.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "test": "node --test test.mjs tests/server.test.mjs",
+    "build": "node build.mjs"
+  }
+}

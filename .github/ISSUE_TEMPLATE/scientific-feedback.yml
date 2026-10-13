@@ -1,0 +1,24 @@
+name: Scientific correction
+description: Correct an association, mechanism, phenotype, or reference.
+title: "[Science] "
+body:
+  - type: input
+    id: round
+    attributes:
+      label: Round or gene
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: Statement and proposed correction
+      description: Quote the statement and explain the correction. Do not include patient information.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Supporting source
+      description: Link to a publication or authoritative reference.
+    validations:
+      required: true

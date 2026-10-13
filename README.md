@@ -1,97 +1,33 @@
-# GREGoR Puzzles · GSS collection
+# GREGoR Puzzles
 
-Ten playable image-jigsaw rounds about rare disease gene–condition relationships. A professional GSS blue interface pairs original biological schematics with progressively revealed scientific clues. No patient records are included.
+Image puzzles for learning rare disease genetics. Ten rounds connect molecular mechanisms, clinical phenotypes, inheritance, and variant interpretation.
 
-## Game guide and branding
+## Try the game
 
-[Read the game explanation and selection rationale](docs/Game-design-and-selection.pdf) for all ten conditions, their educational purpose, and the review questions for Matt. The confirmed game name is **GREGoR Puzzles**. Earlier [logo and name explorations](branding/GSS-game-branding-concepts.png) are retained for reference; they are not the selected branding. Editable SVGs are in `branding/`.
+**[Open in GitHub Codespaces](https://codespaces.new/sasha-gladkikh/gregor-puzzles)** → Create codespace → open **GREGoR Puzzles** on port **4173**. The game starts automatically. Requires repository access and Codespaces availability.
 
-## Play or review
+**Run locally** with [Node.js 24 LTS](https://nodejs.org/en/download):
 
 ```sh
-npm test
-npm run build
-python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
+git clone https://github.com/sasha-gladkikh/gregor-puzzles.git
+cd gregor-puzzles
+npm start
 ```
 
-Open http://127.0.0.1:4173. No dependency installation is needed. The **Play puzzle** and **Editorial review** tabs connect the game and `review.html`. Review presents all content, illustrations, answer explanations, and references without requiring puzzle completion. Returning through the Play puzzle tab preserves the selected round and its saved progress. Serve over HTTP; ES modules do not reliably run from a file URL. Any static host can serve `dist/`.
+Open **[localhost:4173](http://localhost:4173)**. No package installation is required. The repository is private; sign in to GitHub or [download the source](https://github.com/sasha-gladkikh/gregor-puzzles/archive/refs/heads/main.zip) if cloning requires authentication.
 
-- Choose any of 10 rounds from the library. Each round has 12 interlocking image pieces and two learning questions.
-- On iPhone, tap a piece and then its board position. With a mouse, drag or click to place. Keyboard users can Tab and Enter; Escape clears a selection.
-- Clues unlock at 2, 4, 6, and 8 pieces. The gene unlocks at 11, the condition at 12. Unfinished rounds in the library do not show gene names.
-- A correct gene symbol completes the picture. Both questions still need to be completed, and this recognition route is recorded separately.
-- Practice is untimed. Optional timed mode includes time spent in other rounds, background tabs, reloads, and instructions. The clock stops once the picture and both questions are finished. Restart the current round to change modes.
-- Progress is stored separately for each round in this browser. Restart affects only the current round. Existing CLCN1 saves retain their original storage key.
-- Piece silhouettes use dark non-scaling outlines, contrasting tray cards, subtle shadows, and letter labels. The phone layout uses three larger pieces per row, keeps page scrolling available, and brings the board into view after selection. Hints, reference images, reduced-motion support, descriptive piece labels, and full diagram descriptions are available. A storage warning appears if local saving is blocked.
-- Completion includes a next-round action, a biology summary, phenotype descriptions, inheritance, general variant classes, OMIM and supporting references, and a community resource.
-- Each completed picture reveals three numbered landmarks and a short **From image to idea** guide. The same guide is visible in Editorial review. Images remain free of labels during assembly.
+![GREGoR Puzzles: image assembly and progressive scientific clues](docs/images/game-preview.jpg)
 
-## Illustration edition
+## Play
 
-All ten rounds now use the chosen clean scientific illustration style: broad silhouettes, restrained depth, blue/teal structures, and selective amber accents. The 1200 × 900 WebP images total about 934 KiB. Images depict concepts rather than measured molecular structures, complete pathways, or diagnostic thresholds. The STING scene distinguishes a signaling adaptor from an ion channel; splicing captions distinguish assembly from catalytic stages; repeat counts are explicitly symbolic.
+1. Select a piece, then its position. Mouse dragging also works.
+2. Answer two questions as scientific clues appear.
+3. Complete the image to reveal the gene, condition, and annotated mechanism.
 
-`artwork-data.mjs` records the scene description, twelve piece descriptions, three landmark coordinates and explanations, one visual takeaway, and sources for each image. `artwork-ui.mjs` shares the guide and numbered overlay between play and review. `artwork/prompts.json` records the final prompt set and built-in image-generation provenance. All illustrations still require scientific review. The earlier SVGs and generator are retained as design history and no longer supply the runtime puzzle images.
+Each round has 12 pieces. Practice is untimed; progress saves in your browser. Phone controls use tap-to-place. **Editorial review** provides the full clinical content, HPO terms, explanations, and references without completing a puzzle.
 
-`artwork-study.html` preserves the simplified/detailed synapse comparison. Its optional play previews have independent save keys and do not alter progress in the main collection. The simplified direction is selected for the main game.
+## Scientific status
 
-## Clinical education edition
+**Research education prototype. Scientific review pending.** Content draws on GeneReviews, MedlinePlus Genetics, and primary literature, with links to OMIM condition records. Illustrations are conceptual. No patient records are included. Learning outcomes have not been evaluated.
 
-Every round has one learning objective, a clinical pattern unlocked at six pieces, 6–7 clinical findings or course modifiers, two gene-specific reasoning questions, explanations for all three options, two molecular interpretation notes, and a takeaway with an optional recall prompt. The 63 profile entries include modifiers and typical negative findings, not 63 independent symptoms. No diagnostic specificity, prevalence, or patient-level diagnosis is inferred from the teaching patterns.
-
-`clinical.mjs` holds the expanded educational content, `clinical-ui.mjs` renders shared clinical sections, and `hpo-terms.mjs` contains 50 terminology identifiers and official labels checked against the HPO ontology on 10 October 2026. HPO vocabulary mappings are not represented as official disease annotations; broader terms are identified. Numerical phenotype frequencies are omitted where a defensible cohort-specific estimate is not presented.
-
-The review page can be searched by gene, condition, clinical term, or HPO identifier. Clinical profiles open by default; molecular interpretation, answer rationales, references, and editorial notes are expandable. Notes are saved in this browser only and do not change the pending scientific review status. Printing expands educational sections and excludes personal notes. The linked PDF explains the original selection rationale; the web review contains the expanded clinical edition.
-
-Save migration preserves placed pieces and assistance counts while asking returning players to complete the updated questions. Completed timers resume from their former finish instead of including the intervening period. This changes educational content, not the save-key identity. Static builds hash both runtime files and artwork, adding a shared revision to module, stylesheet, and runtime image URLs so cached pages do not mix releases.
-
-The content is designed to support explanation, application, and recall. Its effects on learning or retention have not been evaluated. Team review and a small learner pilot remain appropriate before conference use.
-
-## The ten rounds
-
-The selection samples different biological processes from the supplied GFT pairs, retaining their relative order. It is an educational selection, not a clinical priority ranking; Matt's team can replace any selection during review.
-
-1. **CLCN1 / recessive myotonia congenita / OMIM 255700:** skeletal muscle chloride conductance.
-2. **GJB2 / recessive nonsyndromic hearing loss 1A / OMIM 220290:** gap-junction communication.
-3. **SLC29A3 / histiocytosis-lymphadenopathy plus syndrome / OMIM 602782:** intracellular nucleoside transport.
-4. **SBDS / Shwachman-Diamond syndrome 1 / OMIM 260400:** ribosome maturation.
-5. **RNU4-2 / ReNU syndrome / OMIM 620851:** a functional RNA in the major spliceosome.
-6. **CACNA1A / developmental and epileptic encephalopathy 42 / OMIM 617106:** calcium channels and synaptic release.
-7. **PTPN11 / Noonan syndrome 1 / OMIM 163950:** SHP2 and RAS/MAPK regulation.
-8. **RNU4ATAC / Roifman syndrome / OMIM 616651:** the minor spliceosome.
-9. **STING1 / STING-associated vasculopathy with onset in infancy / OMIM 615934:** excess interferon signaling.
-10. **FGF14 / spinocerebellar ataxia 27B / OMIM 620174:** an intronic GAA repeat expansion.
-
-FAM177A1 was discussed in earlier notes but was not among the supplied GFT pairs used for this collection. Repeat rows with different variant classifications are not separate levels.
-
-## Scientific review and provenance
-
-**All ten rounds are pending scientific review.** Sources checked 10 October 2026. The review page makes the full content available for Matt's team to vet before conference use. Review gene–condition mapping, mechanism, illustration, phenotype wording and HPO mappings, inheritance, variant descriptions, and all answer explanations. Language aims to respect varied experiences and identities. There is no patient image, diagnostic task, treatment advice, donation solicitation, or implication that solving a puzzle repairs a person.
-
-The input is the slim gene/condition selection supplied in the conversation. It contains pathogenic or likely pathogenic classifications but no site column, so site membership cannot be independently filtered from it. Only gene–condition relationships are included; no family identifiers, individual variants, patient phenotypes, row-level classifications, sequencing metadata, or workbook files are shipped. The variant descriptions are general published classes, not findings from individual families.
-
-Every round links to the supplied matching OMIM condition identifier. Direct automated retrieval of OMIM text was unavailable. Phenotypes and biology are original paraphrases supported by MedlinePlus Genetics, GeneReviews, and primary research; they are **not represented as an extraction from OMIM**. References are stored with each round in `rounds.mjs` and shown in the game and review page. Community links were checked against the relevant organization's site. NORD is used where a specific foundation was not verified. Links do not solicit donations.
-
-Scientific distinctions preserved include dominant versus recessive associations of the same gene, functional RNAs rather than invented proteins for RNU4-2/RNU4ATAC, condition-specific CACNA1A mechanisms, and FGF14's noncoding repeat expansion. The conceptual diagrams are not atomic structures, measured traces, complete pathways, or diagnostic repeat thresholds. Knowledge gaps and variable phenotypes are stated in the content.
-
-## Design and branding
-
-Colors are drawn from the [public GSS logo](https://gregorconsortium.org/sites/default/files/2022-08/GSS_Logo_Primary.png): royal blue `#0043fd`, navy `#0c063f`, and cyan `#00a9f2`. [GREGoR Stanford Site](https://gregor.stanford.edu/) provides the institutional context. The confirmed game name is GREGoR Puzzles; the temporary GSS text badge and wordmark styling await Jimmy's visual branding input. No Stanford seal or university wordmark is recreated. Typography uses system fonts; illustrations are local WebP files and interface icons use SVG.
-
-## Project structure
-
-- `rounds.mjs`: ten-round catalog, sources, questions, and review status. `round.mjs` retains the original CLCN1 content for compatibility.
-- `engine.mjs`: curved jigsaw geometry and placement state.
-- `session.mjs`: learning gates, save restoration, and wall-clock timing.
-- `collection.mjs`: progress across independently saved rounds and anonymous numbered URLs.
-- `app.mjs`, `index.html`, `style.css`: game, library, and completion flow.
-- `artwork/01.webp` through `10.webp`: current conceptual illustrations; matching SVGs retain the earlier designs.
-- `artwork-data.mjs`, `artwork-ui.mjs`, `artwork.css`: image descriptions, sourced landmark guides, and rendering.
-- `scripts/generate-artwork.py`: regenerates the historical SVG designs only; `artwork.svg` is the original first-round source.
-- `review.html`, `review.mjs`, `review.css`: reviewer view with all answers.
-- `test.mjs`: geometry, learning, timing, migration, catalog, and collection regression tests.
-
-## Validation and limitations
-
-22 automated checks cover shared piece geometry, placement errors, final reveals, recognition, save validation, hint selection, timing, legacy saves, learning gates, every round through both completion routes, distinct GFT mappings, per-round save isolation, preview-save isolation, round reset, and corrupt/blocked storage. The catalog check also verifies WebP signatures, landmark coordinates, and illustration references. Browser testing covers real interactions, full collection completion, navigation, reload restoration, and responsive layout. Earlier checks covered 320 and 375 CSS pixels; the illustration edition also verifies full puzzle completion and the image guide at 390 pixels, all ten review images and overflow at 320 pixels, and hiding the guide again after restart. A physical iPhone/Safari test is still recommended; browser viewport checks do not emulate the iOS engine. This is not a complete screen-reader or real-device accessibility audit.
-
-This is a static game with no account system, analytics, data collection, external guess submission, or shared leaderboard. Answers are inspectable in client source. Timing is local, not tamper-resistant, and is not a clinical or educational score. Clearing browser data removes progress; progress does not sync between devices. Timed rounds continue while another round is open. Scientific review and final branding remain human review tasks, not completed approvals.
+[Conditions and evidence](docs/SCIENCE.md) · [Reviewer guide](docs/REVIEW.md) · [Development](docs/DEVELOPMENT.md) · [Report an issue](https://github.com/sasha-gladkikh/gregor-puzzles/issues/new/choose)
