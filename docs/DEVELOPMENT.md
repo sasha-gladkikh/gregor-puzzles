@@ -23,7 +23,7 @@ Use `npm start -- --port=4174` if the default port is occupied. Stop with **Ctrl
 
 The ten-round catalog is in `game/rounds.mjs`; clinical profiles, completion-card text, and vocabulary are in `game/clinical.mjs` and `game/hpo-terms.mjs`. Illustration metadata and image-note positions are in `game/artwork-data.mjs`; each note appears when the piece containing its point is placed. Mechanism figures and the spliceosome comparison are in `game/mechanism.mjs`. Scientific sign-off and the `requireApproval` switch are in `game/signoff.mjs`. Saved progress uses stable round IDs, so earlier saves still load. Earlier design experiments remain in Git history.
 
-`game/icons/` holds the home-screen icon and the QR code for the hosted address. The QR code was generated with macOS Core Image and verified by decoding; regenerate it if the address changes. See [BOOTH.md](BOOTH.md) for conference setup and device testing.
+`game/icons/` holds the selected puzzle-tile/DNA logo, its wordmark, the home-screen icon, and the QR code for the hosted address. `game/brand.css` applies the shared visual identity to the game and editorial page. The PNG wordmark preserves the selected typography; its display frame removes transparent vertical padding without stretching it. The QR code was generated with macOS Core Image and verified by decoding; regenerate it if the address changes. See [BOOTH.md](BOOTH.md) for conference setup and device testing.
 
 ## Publishing
 

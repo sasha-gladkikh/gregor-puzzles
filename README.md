@@ -1,4 +1,4 @@
-# GREGoR Puzzles
+# <img src="game/icons/brand-mark.png" width="36" height="36" alt=""> GREGoR Puzzles
 
 **[Play now →](https://sasha-gladkikh.github.io/gregor-puzzles/)**
 

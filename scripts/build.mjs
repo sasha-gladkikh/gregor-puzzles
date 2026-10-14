@@ -6,7 +6,7 @@ import {join} from 'node:path';
 const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
-  'index.html', 'style.css', 'app.mjs', 'engine.mjs', 'session.mjs',
+  'index.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs',
   'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',

@@ -1,0 +1,41 @@
+/* Shared GREGoR identity: the approved blue puzzle tile and white DNA helix. */
+:root{--surface:#f4f7ff;--line:#dce4f1;--brand-soft:#edf3ff;--brand-border:#cbdafa}
+.site-header .brand{display:block;flex:0 1 300px;width:300px;min-width:0;aspect-ratio:5;line-height:0;border-radius:8px;overflow:hidden}
+.brand-logo{display:block;width:100%;height:100%;object-fit:cover;object-position:center 50%}
+.site-header .header-right{flex-shrink:0}.site-header .edition{font-size:13px;color:#526080}
+.site-tabs{border-bottom-color:var(--brand-border)}.site-tab{border-radius:7px 7px 0 0}
+.site-tab[aria-current="page"]{background:#f7f9ff}.site-tab:hover{background:var(--brand-soft)}
+.puzzle-section,.discovery,.review-round{border-radius:14px;border-color:var(--line);box-shadow:0 3px 14px #0c063f04}
+.section-bar{background:#fbfcff}.section-bar h1{letter-spacing:-.45px}
+.collection-bar{border-radius:12px;background:#fff;border-color:var(--brand-border)}
+.library-button{border-radius:9px;background:var(--brand-soft);gap:7px}.menu-mark{display:block;flex-shrink:0;object-fit:contain}
+.nav-arrow{border-radius:8px}.collection-track,.progress-track{border-radius:999px}
+.board-frame{border-radius:11px;background:#fff;border-color:#b8c9e5}.board{border-radius:5px;background:#edf2fa}
+.board-watermark{border-radius:12px;background:#f9fbfff5;border-color:#b7caed;padding:10px 12px;color:var(--ink)}
+.board-brand-mark{display:block;object-fit:contain}.board-watermark p{margin:3px 0;font-weight:650}.board-watermark>span{color:#4d5e78}
+.piece{border-radius:11px;background:#e8effa;border-color:#a5b8d6;box-shadow:inset 0 1px 0 #fff,0 2px 0 #bfcee350}
+.piece:hover{background:#dce8fc;border-color:#6b8ac0}.piece[aria-pressed=true]{background:#dce8ff;border-radius:11px}
+.status-strip{border-radius:9px;border-color:var(--brand-border);border-left-color:var(--accent);background:#f3f7ff}
+.clue-number{border-radius:8px;background:#eef2f9}.clue.unlocked .clue-number{background:#e2ecff;color:#0035c9}
+.discovery-heading .eyebrow,.section-bar .eyebrow{color:#415c8d}
+.guess-input,.review-search input,.review-editor-notes textarea{border-radius:9px}.guess-input button{border-radius:0}
+.primary{border-radius:9px;box-shadow:0 2px 0 #0035c9}.primary:hover{background:#0035c9}
+.tool,.text-button{border-radius:9px}.mode-toggle{border-radius:10px}.mode-toggle button{border-radius:7px}
+.completion{border-radius:13px;background:#fbfcff;border-color:var(--brand-border);border-top-color:var(--accent)}
+.completion-badge{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:3px 12px 3px 5px;background:#eaf1ff}
+.completion-badge>img{object-fit:contain}.completion-badge .eyebrow{font-size:11px;letter-spacing:.8px}
+.collection-finished{border-radius:14px;background:#eaf1ff}.collection-finished h2{color:var(--ink)}
+dialog{border-radius:16px;border-top-width:4px}.dialog-close{border-radius:50%;width:40px}.dialog-close:hover{background:var(--brand-soft)}
+.dialog-brand{display:inline-flex;align-items:center;gap:8px}.dialog-brand img{object-fit:contain}.dialog-brand .eyebrow{color:#415c8d}
+.level-card{border-radius:12px;background:#fbfcff}.level-card:hover,.level-card[aria-current]{background:#f0f5ff}
+.level-number{width:38px;height:34px;border-radius:9px;background:#e6eeff;color:#0035c9}.is-complete .level-number{background:#e4f2f0;color:#005d55}
+.level-progress{height:5px}.library-reset{background:#f6f9ff;border-radius:10px;padding:16px}
+.review-callout,.learning-objective,.memory-card,.pattern-card,.review-empty{border-radius:10px}
+#reviewIndex a{border-radius:9px}#reviewIndex a:hover{background:var(--brand-soft)}
+.review-badge,.review-unpublished,.feature-key{border-radius:6px}.artwork-figure{border-radius:10px}
+.artwork-guide strong{color:var(--ink)}.help-qr{border-radius:10px;background:#f8faff}
+.footer-brand{display:inline-flex;align-items:center;gap:7px}.footer-brand>img{object-fit:contain;flex:none}
+@media(max-width:600px){.site-header .brand{flex-basis:260px;width:260px}.site-header .header-right{margin-left:auto}.puzzle-section,.discovery,.review-round{border-radius:12px}.board-watermark{top:28%;left:13%;right:13%;padding:7px 10px}.board-brand-mark{width:34px;height:34px}.board-watermark p{font-size:13px}.board-watermark>span{font-size:11px}.completion{border-radius:11px}.footer-brand{flex-wrap:wrap}}
+@media(max-width:360px){#helpButton{width:42px;min-width:42px;min-height:44px;justify-content:center;padding:8px;font-size:0;gap:0}#helpButton svg{display:block;width:20px;height:20px}.site-header .brand{flex-basis:230px}.board-watermark{top:25%;left:11%;right:11%}}
+@media(forced-colors:active){.site-tabs,.collection-bar,.puzzle-section,.discovery,.review-round,.completion,.level-card,.board-frame{border-color:CanvasText}.site-header .brand,.board-brand-mark,.footer-brand>img,.completion-badge>img,.menu-mark{forced-color-adjust:none;background:#fff}.primary{box-shadow:none}.clue-number,.level-number{border:1px solid CanvasText}}
+@media print{body{background:#fff}.puzzle-section,.discovery,.review-round{box-shadow:none}.site-tabs{display:none}}
