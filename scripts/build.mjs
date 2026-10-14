@@ -11,6 +11,7 @@ const files = [
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork.css',
+  'experience.mjs', 'experience.css',
 ];
 // With approval required, refuse to publish an empty collection.
 const {rounds} = await import(new URL('rounds.mjs', new URL('../game/', import.meta.url)));

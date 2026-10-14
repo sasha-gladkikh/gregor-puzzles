@@ -6,12 +6,13 @@ import {artworkMarkers,artworkGuide} from './artwork-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,roundComplete} from './session.mjs';
 import {isApproved} from './signoff.mjs';
+import {reduceMotion as reducedMotion,soundFeedback,illustrationWalkthrough,highlightStructure,assembleLogo} from './experience.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
 
 const $ = id => document.getElementById(id);
-const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sound=soundFeedback($('soundButton'));
 $('playTab').href = `./?level=${round.number}`;
 for (const id of ['editorialTab','editorialFooter']) $(id).href = `./review.html?level=${round.number}`;
 const PIECE_PAD=44;
@@ -20,7 +21,7 @@ const position = id => `row ${Math.floor(id/COLS)+1}, column ${id%COLS+1}`;
 // Each landmark belongs to the piece that contains it; placing that piece reveals the note.
 const landmarkPieces=round.illustration.landmarks.map(landmarkPiece);
 const imageMarkers=artworkMarkers(round,index=>showNote(index)),markers=[...imageMarkers.children];markers.forEach(m=>m.hidden=true);$('board').append(imageMarkers);
-const imageGuide=artworkGuide(round);imageGuide.id='artworkGuide';imageGuide.classList.add('side-guide');imageGuide.hidden=true;
+const imageGuide=node('details',null,'image-guide-details');imageGuide.id='artworkGuide';imageGuide.hidden=true;imageGuide.append(node('summary','Image guide and scientific notes'),artworkGuide(round));
 $('completion').after(imageGuide);
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
@@ -28,6 +29,15 @@ let {state,timed} = restoreSession(stored);
 let selected = null, hinted = null, peek = false, drag = null;
 let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
 let lastCount = -1, extrasShown = false;
+let walkthrough=null,completionTimer=null,lastCollectionCount=null;
+let cancelCollectionCelebration=()=>{};
+const walkthroughLayout=matchMedia('(min-width: 801px)');
+function positionWalkthrough(){
+  const panel=document.querySelector('.discovery');panel.classList.toggle('has-walkthrough',Boolean(walkthrough)&&walkthroughLayout.matches);
+  if(!walkthrough)return;
+  if(walkthroughLayout.matches)panel.prepend(walkthrough.element);else $('status').after(walkthrough.element);
+}
+walkthroughLayout.addEventListener('change',positionWalkthrough);
 const board = $('puzzle');
 const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed}));$('saveNotice').hidden=true;} catch {$('saveNotice').hidden=false;} renderCollection(); };
 // The strip under the board carries every message, new clue, and image note.
@@ -95,7 +105,7 @@ function updateSelection() {
     b.setAttribute('aria-pressed',String(Number(b.dataset.piece)===selected));
     b.classList.toggle('hinted',Number(b.dataset.piece)===hinted);
   });
-  document.querySelectorAll('.slot').forEach((slot,i)=>slot.classList.toggle('hinted',i===hinted));
+  document.querySelectorAll('.slot').forEach(slot=>slot.classList.toggle('hinted',Number(slot.parentElement.dataset.slot)===hinted));
 }
 // Notes stay anonymous until the round is complete, so they cannot reveal the gene or condition early.
 function noteFor(index) {
@@ -103,8 +113,10 @@ function noteFor(index) {
   return {kind:'landmark',index,piece:landmarkPieces[index],title:done?l.title:l.playTitle,text:done?l.text:l.playText};
 }
 function showNote(index) {
+  walkthrough?.select(index);
   strip(`Image note ${index+1}.`,[noteFor(index)]);
   markers.forEach((m,i)=>m.classList.toggle('is-active',i===index));
+  highlightStructure($('board'),round.illustration.landmarks[index]);
 }
 function discoveries(before,previous) {
   const clues=round.clues.filter(c=>c.at>before&&c.at<=state.placed.length&&c.at<SIZE).map(c=>({kind:'clue',...c}));
@@ -112,25 +124,38 @@ function discoveries(before,previous) {
   return [...clues,...notes];
 }
 function flyIn(id,from) {
-  if(!from||reducedMotion()||from.bottom<0||from.top>innerHeight)return;
+  if(reducedMotion())return;
   const g=board.querySelector(`[data-slot="${id}"] .piece-on-board`),b=board.getBoundingClientRect();
   if(!g?.animate||!b.width)return;
-  const unit=W/b.width,cx=(id%COLS+.5)*CW,cy=(Math.floor(id/COLS)+.5)*CH;
-  const fx=(from.left+from.width/2-b.left)*unit,fy=(from.top+from.height/2-b.top)*unit,scale=Math.min(from.width,from.height)*unit/(CW+PIECE_PAD*2);
+  const cx=(id%COLS+.5)*CW,cy=(Math.floor(id/COLS)+.5)*CH;
   g.style.transformOrigin=`${cx}px ${cy}px`;
-  g.animate([{transform:`translate(${fx-cx}px,${fy-cy}px) scale(${scale})`},{transform:'none'}],{duration:220,easing:'cubic-bezier(.2,.7,.2,1)'});
+  if(!from||from.bottom<0||from.top>innerHeight){g.animate([{transform:'scale(1.025)'},{transform:'none'}],{duration:180,easing:'ease-out'});return;}
+  const ghost=svgEl('svg',{viewBox:`${id%COLS*CW-PIECE_PAD} ${Math.floor(id/COLS)*CH-PIECE_PAD} ${CW+PIECE_PAD*2} ${CH+PIECE_PAD*2}`,'aria-hidden':'true'});
+  ghost.append(artworkPiece(id,`arrival-${id}-`));ghost.classList.add('drag-ghost');
+  Object.assign(ghost.style,{left:from.left+'px',top:from.top+'px',width:from.width+'px',height:from.height+'px',transformOrigin:'center'});document.body.append(ghost);g.style.opacity='0';
+  const dx=b.left+cx*b.width/W-from.left-from.width/2,dy=b.top+cy*b.height/H-from.top-from.height/2;
+  const scale=(CW+PIECE_PAD*2)*b.width/W/from.width;
+  ghost.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(${scale*1.015})`,offset:.86},{transform:`translate(${dx}px,${dy}px) scale(${scale})`}],{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'}).finished.catch(()=>{}).finally(()=>{ghost.remove();g.style.opacity='';});
 }
 function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   finishRound(state);
   const found=discoveries(before,previous);
+  const finishing=roundComplete(state)&&before<SIZE;
+  $('board').classList.toggle('finishing',finishing&&!reducedMotion());
+  $('completion').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   render(before); save();
   if(id!==null)flyIn(id,from);
+  void sound.play(finishing?'complete':'place');
   if(roundComplete(state)){
     strip(`Complete: ${round.gene} · ${round.condition}.${alias}`,found.filter(d=>d.kind==='landmark').map(d=>({...d,text:''})));
-    $('revealTitle').focus({preventScroll:true});
-    if(state.solvedByGuess&&before<SIZE)$('board').scrollIntoView({block:'start',behavior:reducedMotion()?'auto':'smooth'});
+    if(finishing){
+      clearTimeout(completionTimer);
+      const reveal=()=>{$('board').classList.remove('finishing');$('completion').classList.remove('reveal-pending');$('completion').classList.add('reveal-arriving');$('revealTitle').focus({preventScroll:true});highlightStructure($('board'),round.illustration.landmarks[0]);completionTimer=null;};
+      if(reducedMotion())reveal();else completionTimer=setTimeout(reveal,id===null?0:280);
+    }
   } else {
     strip(`${state.placed.length} of ${SIZE} placed.`,found);
+    for(const item of found.filter(d=>d.kind==='landmark'))highlightStructure($('board'),round.illustration.landmarks[item.index]);
     $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
   }
 }
@@ -225,6 +250,8 @@ function render(before=state.placed.length) {
     peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');renderResults();
     if(!extrasShown){
       extrasShown=true;
+      walkthrough=illustrationWalkthrough(round,{board:$('board'),onStep:i=>markers.forEach((m,j)=>m.classList.toggle('is-active',i===j)),onClose:()=>markers.forEach(m=>m.classList.remove('is-active'))});
+      positionWalkthrough();
       const finished=new Set(collectionProgress(key=>localStorage.getItem(key),{id:round.id,state}).filter(p=>p.done).map(p=>p.round.number));
       $('revealExtras').replaceChildren(...[mechanismFigure(round),spliceCompare(round,number=>finished.has(number),number=>rounds.some(r=>r.number===number))].filter(Boolean));
     }
@@ -248,12 +275,17 @@ $('guessForm').onsubmit=e=>{
   else {$('guessFeedback').textContent='That is not the gene for this round. Keep exploring the clues.';$('geneGuess').setAttribute('aria-invalid','true');}
 };
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
-$('libraryButton').onclick=()=>{renderCollection();$('libraryDialog').showModal();};
+function openDialog(id){walkthrough?.pause();$(id).showModal();}
+$('libraryButton').onclick=()=>{renderCollection();openDialog('libraryDialog');};
 $('closeLibrary').onclick=()=>$('libraryDialog').close();
-$('collectionReview').onclick=()=>{renderCollection();$('libraryDialog').showModal();};
-$('helpButton').onclick=()=>$('helpDialog').showModal();$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
-$('restart').onclick=()=>$('restartDialog').showModal();$('cancelRestart').onclick=()=>$('restartDialog').close();
+$('collectionReview').onclick=()=>{renderCollection();openDialog('libraryDialog');};
+$('helpButton').onclick=()=>openDialog('helpDialog');$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
+$('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
+  clearTimeout(completionTimer);completionTimer=null;walkthrough?.dispose();walkthrough=null;sound.stop();
+  positionWalkthrough();
+  $('board').classList.remove('finishing');$('completion').classList.remove('reveal-arriving','reveal-pending');imageGuide.open=false;
+  $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
   state=newState();selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;order=shuffled(order);
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
   $('guessFeedback').textContent='Enter the gene symbol to complete the image. We record how many pieces you needed.';
@@ -261,7 +293,7 @@ $('confirmRestart').onclick=()=>{
   board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();
   strip('New round. Choose Practice or Timed, then begin.');$('calm').focus();
 };
-document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();$('newPlayerDialog').showModal();});
+document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();openDialog('newPlayerDialog');});
 $('cancelNewPlayer').onclick=()=>$('newPlayerDialog').close();
 $('confirmNewPlayer').onclick=()=>{
   try{newPlayerKeys(Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))).forEach(key=>localStorage.removeItem(key));}catch{}
@@ -301,10 +333,13 @@ function renderCollection() {
   $('libraryProgress').textContent=`${count} of ${rounds.length} rounds complete. Progress is saved in this browser.`;
   $('collectionFill').style.width=`${count/rounds.length*100}%`;
   $('collectionFinished').hidden=count!==rounds.length;
+  if(count!==rounds.length)cancelCollectionCelebration();
+  if(count===rounds.length&&lastCollectionCount!==null&&lastCollectionCount<rounds.length){cancelCollectionCelebration();cancelCollectionCelebration=assembleLogo($('collectionLogo'));}
+  lastCollectionCount=count;
   const next=progress.find(p=>Number(p.round.number)>Number(round.number)&&!p.done)??progress.find(p=>!p.done&&p.round.id!==round.id);
   $('nextRound').href=roundLink(next?.round??rounds[0]);
   $('nextRound').textContent=next?`Continue to round ${next.round.number} →`:'Explore the collection →';
-  $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();$('libraryDialog').showModal();}:null;
+  $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();openDialog('libraryDialog');}:null;
   const index=rounds.indexOf(round);
   for(const [id,target] of [['previousRound',rounds[index-1]],['followingRound',rounds[index+1]]]){
     const a=$(id);a.hidden=!target;if(target){a.href=roundLink(target);a.setAttribute('aria-label',`Go to round ${target.number}`);}
@@ -313,11 +348,14 @@ function renderCollection() {
   for(const [i,item] of progress.entries()){
     const a=document.createElement('a');a.href=roundLink(item.round);a.className='level-card'+(item.done?' is-complete':'');
     if(item.round.id===round.id)a.setAttribute('aria-current','page');
+    const thumbnail=node('img',null,'level-thumbnail');thumbnail.src=item.round.artwork;thumbnail.alt='';thumbnail.width=800;thumbnail.height=600;thumbnail.loading='lazy';thumbnail.decoding='async';
     const num=document.createElement('span');num.className='level-number';num.textContent=item.round.number;
     const title=document.createElement('h3');title.textContent=item.round.title;
     const topic=document.createElement('p');topic.textContent=item.round.topic;
     const status=document.createElement('span');status.className='level-status';status.textContent=item.done?`${item.round.gene} · Complete ✓`:item.started?`${item.pieces}/12 pieces`:i===0&&!anyStarted?'Start here':'Ready to explore';
     const bar=document.createElement('span');bar.className='level-progress';const fill=document.createElement('span');fill.style.width=item.percent+'%';bar.append(fill);
-    a.append(num,title,topic,status,bar);$('levelGrid').append(a);
+    a.append(thumbnail,num,title,topic,status);
+    if(item.done)a.append(node('span',item.round.condition,'level-condition'));
+    a.append(bar);$('levelGrid').append(a);
   }
 }

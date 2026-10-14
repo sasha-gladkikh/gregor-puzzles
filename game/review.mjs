@@ -4,6 +4,7 @@ import {artworkMarkers,artworkGuide} from './artwork-ui.mjs';
 import {node,citation,renderClinicalProfile,renderPearls,renderMemory} from './clinical-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {checks} from './signoff.mjs';
+import {illustrationWalkthrough} from './experience.mjs';
 const returnRound=findRound(new URLSearchParams(location.search).get('level') ?? '01');
 for(const id of ['playTab','playFooter'])document.getElementById(id).href=`./?level=${returnRound.number}`;
 document.getElementById('editorialTab').href=`./review.html?level=${returnRound.number}`;
@@ -20,7 +21,9 @@ for(const round of rounds){
  head.append(signoffList);card.append(head);
  const body=node('div',null,'review-columns'),visual=node('div',null,'review-visual');
  const figure=node('div',null,'artwork-figure');
- const img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';figure.append(img,artworkMarkers(round));visual.append(figure,artworkGuide(round));
+ const img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';figure.append(img,artworkMarkers(round));
+ const walkthrough=illustrationWalkthrough(round,{board:figure,id:`review-walkthrough-${round.number}`,onStep:i=>{cards.forEach(c=>{if(c.card!==card)c.walkthrough.pause();});figure.querySelectorAll('.artwork-marker').forEach((m,j)=>m.classList.toggle('is-active',i===j));},onClose:()=>figure.querySelectorAll('.artwork-marker').forEach(m=>m.classList.remove('is-active'))});
+ visual.append(figure,walkthrough.element,artworkGuide(round));
  for(const extra of [mechanismFigure(round),spliceCompare(round,()=>true)])if(extra)visual.append(extra);
  if(playable.includes(round)){const play=node('a','Open playable round →','primary');play.href=`./?level=${round.number}`;visual.append(play);}
  else visual.append(node('p','Not playable until sign-off is complete.','review-unpublished'));
@@ -43,11 +46,11 @@ for(const round of rounds){
  textarea.addEventListener('input',()=>{try{localStorage.setItem(key,textarea.value);status.textContent='Saved in this browser only. Scientific approval remains pending.';}catch{status.textContent='Could not save locally. Copy your notes before leaving this page.';}});
  notes.append(label,textarea,status);content.append(notes);
  body.append(visual,content);card.append(body);document.getElementById('reviewRounds').append(card);
- cards.push({card,round,search:[round.gene,round.condition,round.topic,p.pattern,...p.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase()});
+ cards.push({card,round,walkthrough,search:[round.gene,round.condition,round.topic,p.pattern,...p.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase()});
 }
 const search=document.getElementById('reviewSearch');search.addEventListener('input',()=>{
  const query=search.value.trim().toLowerCase();let count=0;
- cards.forEach((item,i)=>{const match=item.search.includes(query);item.card.hidden=!match;indexLinks[i].hidden=!match;if(match)count++;});
+ cards.forEach((item,i)=>{const match=item.search.includes(query);item.card.hidden=!match;indexLinks[i].hidden=!match;if(match)count++;else item.walkthrough.pause();});
  document.getElementById('reviewCount').textContent=`${count} of ${rounds.length} rounds shown`;
  document.getElementById('reviewEmpty').hidden=count!==0;
 });
