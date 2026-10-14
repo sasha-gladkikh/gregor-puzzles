@@ -25,10 +25,18 @@ test('production build resolves every local file reference and excludes developm
   }
   for (const name of names.filter(n => /\.(html|mjs|css)$/.test(n))) {
     const content = await readFile(join(dist, name), 'utf8');
-    for (const match of content.matchAll(/['"]\.\/([^'"?]+\.(?:mjs|css|webp|html))(?:\?[^'"]*)?['"]/g)) {
+    for (const match of content.matchAll(/['"]\.\/([^'"?]+\.(?:mjs|css|webp|html|png|svg))(?:\?[^'"]*)?['"]/g)) {
       if (match[1].includes('${')) continue;
       assert.ok((await stat(join(dist, match[1]))).isFile(), `${name}: ${match[1]}`);
     }
   }
   assert.equal((await readdir(join(dist, 'artwork'))).filter(n => n.endsWith('.webp')).length, 10);
+  for (const icon of ['apple-touch-icon.png', 'play-qr.svg']) assert.ok((await stat(join(dist, 'icons', icon))).isFile(), icon);
+});
+
+test('every game module parses, including browser-only pages', async () => {
+  const root = fileURLToPath(new URL('../game/', import.meta.url));
+  for (const name of (await readdir(root)).filter(n => n.endsWith('.mjs'))) {
+    await promisify(execFile)(process.execPath, ['--check', join(root, name)]);
+  }
 });

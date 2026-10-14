@@ -22,7 +22,7 @@ export function renderClinicalProfile(round,container){
  container.append(node('p','HPO links describe standardized terminology. They are curated vocabulary mappings, not a claim that HPO formally annotates each feature to this disease. Broader mappings and course modifiers are identified in the notes.','clinical-note'));
 }
 export function renderPearls(round,container){
- for(const p of round.clinical.pearls){const section=node('section',null,'interpretation-pearl');section.append(node('h4',p.title),node('p',p.text),citation(p.source,'Supporting reference'));container.append(section);}
+ for(const p of round.clinical.pearls){const section=node('section',null,'interpretation-pearl');section.append(node('h4',p.title),node('p',p.text));p.sources.forEach((url,i)=>{if(i)section.append(document.createTextNode(' · '));section.append(citation(url,'Supporting reference',p.title));});container.append(section);}
  const scope=node('p',round.nuance,'nuance');container.append(scope);
 }
 export function renderMemory(round,container){

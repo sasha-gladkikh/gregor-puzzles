@@ -1,8 +1,10 @@
 import {node,citation} from './clinical-ui.mjs';
-export function artworkMarkers(round){
- const layer=node('div',null,'artwork-markers');layer.setAttribute('aria-hidden','true');
+// With onSelect, markers are buttons that reopen their note; otherwise they are decorative.
+export function artworkMarkers(round,onSelect){
+ const layer=node('div',null,'artwork-markers');if(!onSelect)layer.setAttribute('aria-hidden','true');
  round.illustration.landmarks.forEach((item,index)=>{
-  const marker=node('span',String(index+1),'artwork-marker');
+  const marker=node(onSelect?'button':'span',String(index+1),'artwork-marker');
+  if(onSelect){marker.type='button';marker.addEventListener('click',()=>onSelect(index));}
   marker.style.left=`${item.x}%`;marker.style.top=`${item.y}%`;layer.append(marker);
  });
  return layer;
