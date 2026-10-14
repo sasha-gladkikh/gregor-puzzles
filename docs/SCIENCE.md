@@ -19,7 +19,9 @@ FAM177A1 was discussed during planning but was absent from the supplied pairs. T
 
 ## Educational content
 
-Each round includes a learning objective, a clinical pattern, selected findings, molecular interpretation notes, and one connection to remember. Completing all 12 pieces finishes the round; there are no quizzes. Completing the image reveals three annotated biological landmarks.
+Each round includes a learning objective, a clinical pattern, selected findings, molecular interpretation notes, and one connection to remember. Completing all 12 pieces finishes the round; there are no quizzes. During play, clues unlock at 2, 4, 6, and 8 pieces (location, function, clinical pattern, inheritance), and each of three image notes appears when the piece containing it is placed. The completion card shows the gene, condition, a mechanism-to-phenotype connection, the clinical pattern, and one caveat; the full profile stays in Editorial review.
+
+Rounds 05 (U4 release at activation), 07 (SHP-2 autoinhibition), and 09 (STING activation without cGAMP) include a hand-drawn before/after mechanism figure. Rounds 05 and 08 compare the major and minor spliceosomes. These additions, the SAVI caveat on interferon-independent disease in mouse models, the Rafehi et al. co-discovery reference for FGF14, and the Hsu et al. reference for ENT3 require review like all other content.
 
 The 63 clinical profile entries include course modifiers and typical negative findings; they are not 63 independent symptoms. The 50 HPO terms provide vocabulary mappings, not formal disease annotations. Teaching patterns do not establish diagnostic specificity or phenotype frequency.
 

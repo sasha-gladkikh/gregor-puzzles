@@ -7,11 +7,14 @@ const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
   'index.html', 'style.css', 'app.mjs', 'engine.mjs', 'session.mjs',
-  'round.mjs', 'rounds.mjs', 'collection.mjs',
+  'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork.css',
 ];
+// With approval required, refuse to publish an empty collection.
+const {rounds} = await import(new URL('rounds.mjs', new URL('../game/', import.meta.url)));
+if (rounds.length === 0) throw new Error('No rounds are approved for publication. Update game/signoff.mjs or set requireApproval to false.');
 const contents = await Promise.all(files.map(file => readFile(join(source, file), 'utf8')));
 const hash = createHash('sha256').update(contents.join('\n'));
 async function hashArtwork(directory) {
@@ -22,6 +25,7 @@ async function hashArtwork(directory) {
   }
 }
 await hashArtwork('artwork');
+await hashArtwork('icons');
 const revision = hash.digest('hex').slice(0, 12);
 await rm(output, {recursive: true, force: true});
 await mkdir(output, {recursive: true});
@@ -31,5 +35,5 @@ for (const [i, file] of files.entries()) {
     (_, quote, path) => `${quote}${path}?v=${revision}${quote}`);
   await writeFile(join(output, file), text);
 }
-await cp(join(source, 'artwork'), join(output, 'artwork'), {recursive: true});
+for (const directory of ['artwork', 'icons']) await cp(join(source, directory), join(output, directory), {recursive: true});
 console.log(`Built GREGoR Puzzles in dist/ (${revision})`);

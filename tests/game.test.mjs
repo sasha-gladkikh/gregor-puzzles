@@ -1,6 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints} from '../game/engine.mjs';
-import {round} from '../game/round.mjs';
+import {allRounds as catalog} from '../game/rounds.mjs';
+const round=catalog[0];
 test('every internal boundary is shared and outside boundaries are flat',()=>{for(let i=0;i<SIZE;i++){const e=edges(i);if(i%4<3)assert.equal(e.right,edges(i+1).left);else assert.equal(e.right,0);if(i<8)assert.equal(e.bottom,edges(i+4).top);else assert.equal(e.bottom,0);if(i%4===0)assert.equal(e.left,0);if(i<4)assert.equal(e.top,0);assert.match(pathFor(i),/^M .* Z$/);assert.ok(!pathFor(i).includes('NaN'));}});
 test('shared tab curves coincide when traversed in reverse',()=>{
  const segments=(x,y,dx,dy,sign)=>{let start=[x,y];return edgePoints(x,y,dx,dy,sign).map(s=>{const out={...s,start};start=s.p.slice(-2);return out;}).filter(s=>s.op==='C');};
@@ -54,9 +55,9 @@ import {collectionProgress,roundLink} from '../game/collection.mjs';
 import {readFileSync} from 'node:fs';
 test('the collection contains ten distinct supplied gene-condition pairs',()=>{
  const supplied=[['CLCN1','255700'],['GJB2','220290'],['SLC29A3','602782'],['SBDS','260400'],['RNU4-2','620851'],['CACNA1A','617106'],['PTPN11','163950'],['RNU4ATAC','616651'],['STING1','615934'],['FGF14','620174']];
- assert.deepEqual(rounds.map(r=>[r.gene,r.omim]),supplied);
- assert.equal(new Set(rounds.map(saveKey)).size,10);
- for(const r of rounds){
+ assert.deepEqual(allRounds.map(r=>[r.gene,r.omim]),supplied);
+ assert.equal(new Set(allRounds.map(saveKey)).size,10);
+ for(const r of allRounds){
   assert.deepEqual(r.clues.map(c=>c.at),[2,4,6,8,11,12]);
   assert.equal(r.clues[4].title,r.gene);assert.equal(r.clues[5].title,r.condition);
   assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
@@ -70,7 +71,7 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
  }
 });
 test('all ten image puzzles and recognition routes finish without interruptions',()=>{
- for(const r of rounds)for(const route of ['image','guess']){
+ for(const r of allRounds)for(const route of ['image','guess']){
   const state=newState();startRound(state,true,route,10000);
   if(route==='guess')guess(state,r.gene.toLowerCase(),r.gene);
   for(let piece=0;piece<SIZE;piece++){
@@ -83,7 +84,7 @@ test('all ten image puzzles and recognition routes finish without interruptions'
 test('round navigation uses stable anonymous numbers and safe fallback',()=>{
  for(const r of rounds){assert.equal(findRound(r.number),r);assert.equal(findRound(r.id),r);assert.match(roundLink(r),/^\?level=\d{2}$/);}
  for(const value of [null,undefined,'99','<script>',''])assert.equal(findRound(value),rounds[0]);
- assert.equal(saveKey(rounds[0]),'gregor-puzzles:clcn1-recessive-v1');
+ assert.equal(saveKey(allRounds[0]),'gregor-puzzles:clcn1-recessive-v1');
 });
 test('progress stays isolated by round and a reset affects only that round',()=>{
  const store=new Map(),read=k=>store.get(k);
@@ -92,21 +93,22 @@ test('progress stays isolated by round and a reset affects only that round',()=>
   for(let j=0;j<=i;j++)place(state,j,j);
   store.set(saveKey(r),JSON.stringify({state,timed:false}));
  }
- assert.deepEqual(collectionProgress(read).map(p=>p.pieces),[1,2,3,4,5,6,7,8,9,10]);
- store.set(saveKey(rounds[3]),JSON.stringify({state:newState(),timed:false}));
- assert.deepEqual(collectionProgress(read).map(p=>p.pieces),[1,2,3,0,5,6,7,8,9,10]);
+ const counts=rounds.map((_,i)=>i+1),reset=Math.min(3,rounds.length-1);
+ assert.deepEqual(collectionProgress(read).map(p=>p.pieces),counts);
+ store.set(saveKey(rounds[reset]),JSON.stringify({state:newState(),timed:false}));
+ assert.deepEqual(collectionProgress(read).map(p=>p.pieces),counts.map((n,i)=>i===reset?0:n));
 });
 test('collection completion counts finished images and survives corrupt storage',()=>{
  const store=new Map();for(const r of rounds){const state=newState();guess(state,r.gene,r.gene);store.set(saveKey(r),JSON.stringify({state,timed:false}));}
- assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,10);
- store.set(saveKey(rounds[4]),'{not json');assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,9);
+ assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,rounds.length);
+ store.set(saveKey(rounds[Math.min(4,rounds.length-1)]),'{not json');assert.equal(collectionProgress(k=>store.get(k)).filter(p=>p.done).length,rounds.length-1);
  assert.equal(collectionProgress(()=>{throw Error('blocked');}).every(p=>p.pieces===0),true);
  const state=newState();place(state,0,0);assert.equal(collectionProgress(()=>{throw Error('blocked');},{id:rounds[0].id,state})[0].pieces,1);
 });
 
 import {hpoTerms} from '../game/hpo-terms.mjs';
 test('clinical teaching retains traceable terminology and sources without revealing names early',()=>{
- for(const r of rounds){
+ for(const r of allRounds){
   assert.ok(r.clinical.objective&&r.clinical.memory);
   assert.equal(r.clues.find(c=>c.at===6).body,r.clinical.pattern);
   assert.ok(r.clinical.pearls.length>=2);
@@ -138,4 +140,65 @@ test('old finished pictures awaiting quizzes count as complete without fabricati
  const reload=restoreSession(result,2000000);assert.equal(reload.state.timingUnavailable,true);assert.equal(reload.state.startedAt,null);
  assert.equal(collectionProgress(()=>JSON.stringify({state:old,timed:true})).every(p=>p.done&&p.percent===100),true);
  const practice=restoreSession({state:old,timed:false},1000000);assert.equal(roundComplete(practice.state),true);assert.equal(practice.state.timingUnavailable,false);
+});
+
+import {landmarkPiece,normalizeGene} from '../game/engine.mjs';
+import {newPlayerKeys} from '../game/collection.mjs';
+import {allRounds,publishedRounds} from '../game/rounds.mjs';
+import {signoff,isApproved,checks,requireApproval} from '../game/signoff.mjs';
+import {mechanisms,spliceComparison} from '../game/mechanism.mjs';
+test('clues follow location, function, clinical pattern, inheritance, gene, and condition',()=>{
+ for(const r of allRounds){
+  assert.deepEqual(r.clues.map(c=>c.label),['Location','Function','Clinical pattern','Inheritance','The gene','The condition']);
+  assert.equal(r.clues[2].title,r.clinical.patternTitle);
+ }
+ for(const r of allRounds)for(const field of ['phenotypes','subtitle'])assert.equal(field in r,false,`${r.gene}.${field}`);
+});
+test('each image note belongs to a different piece',()=>{
+ for(const r of allRounds){const pieces=r.illustration.landmarks.map(landmarkPiece);assert.equal(new Set(pieces).size,3,r.gene);for(const p of pieces)assert.ok(p>=0&&p<SIZE);}
+ assert.equal(landmarkPiece({x:43,y:42}),5);assert.equal(landmarkPiece({x:99,y:99}),11);assert.equal(landmarkPiece({x:1,y:1}),0);
+});
+test('gene entry ignores punctuation, accepts previous symbols, and records pieces used',()=>{
+ assert.equal(normalizeGene(' rnu4 2 '),'RNU42');
+ const s=newState();for(let i=0;i<4;i++)place(s,i,i);
+ assert.equal(guess(s,'RNU4.2','RNU4-2'),true);assert.equal(s.namedAt,4);
+ const sting=allRounds.find(r=>r.gene==='STING1'),t=newState();
+ assert.equal(guess(t,'tmem173',sting.gene,sting.aliases),true);assert.equal(t.namedAt,0);
+ assert.equal(guess(newState(),'STING',sting.gene,sting.aliases),false);assert.ok(sting.products.includes('STING'));
+ assert.equal(guess(newState(),'---','RNU4-2'),false);
+ assert.equal(restoreSession(JSON.parse(JSON.stringify({state:s,timed:false}))).state.namedAt,4);
+ assert.equal(restoreSession({state:{...newState(),namedAt:99,solvedByGuess:true},timed:false}).state.namedAt,null);
+});
+test('a new player clears every round but keeps editorial notes',()=>{
+ const keys=['gregor-puzzles:clcn1-recessive-v1','gregor-puzzles:fgf14-sca27b-v1','gregor-puzzles:review-notes:clcn1-recessive-v1','other-site:key'];
+ assert.deepEqual(newPlayerKeys(keys),keys.slice(0,2));
+});
+test('sign-off gates publication only when required and complete',()=>{
+ assert.deepEqual(rounds.map(r=>r.id),publishedRounds(allRounds,requireApproval).map(r=>r.id));assert.ok(rounds.length>0);
+ assert.equal(publishedRounds(allRounds,false).length,10);
+ assert.deepEqual(Object.keys(signoff).sort(),allRounds.map(r=>r.id).sort());
+ const full={status:'approved',reviewer:'Reviewer',date:'2026-10-20',checks:Object.fromEntries(checks.map(([k])=>[k,true]))};
+ assert.equal(isApproved(full),true);assert.equal(isApproved({...full,date:''}),false);assert.equal(isApproved({...full,checks:{...full.checks,clinical:false}}),false);
+ const list=allRounds.map((r,i)=>({...r,signoff:i===2?full:{...full,status:'pending'}}));assert.deepEqual(publishedRounds(list,true).map(r=>r.number),['03']);
+ for(const r of allRounds)if(!isApproved(r.signoff))assert.equal(r.reviewStatus,'Pending scientific review');
+});
+test('completion cards, mechanism figures, and comparisons cite listed sources',()=>{
+ for(const r of allRounds){
+  const c=r.clinical;assert.ok(c.connection&&c.patternTitle,r.gene);assert.ok(c.pearls[c.caveat],r.gene);
+  assert.ok(!c.patternTitle.toLowerCase().includes(r.gene.toLowerCase()));
+  const urls=[...(mechanisms[r.number]?.sources??[]),...(spliceComparison.rounds.includes(r.number)?[spliceComparison.source]:[]),...c.pearls.flatMap(p=>p.sources)];
+  for(const url of urls)assert.ok(r.sources.some(([,u])=>u===url),`${r.gene}: ${url}`);
+ }
+ assert.deepEqual(Object.keys(mechanisms).sort(),['05','07','09']);
+ for(const m of Object.values(mechanisms)){assert.equal(m.captions.length,2);assert.equal(m.toggle.length,2);assert.match(m.svg,/class="m-after"/);}
+});
+test('nothing shown during play names the gene, its product, or the condition',()=>{
+ const conditions=['SAVI','SCA27B','ReNU','Noonan','Roifman','Shwachman','myotonia','DFNB1','H syndrome'];
+ const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ for(const r of allRounds){
+  const terms=[r.gene,...r.aliases,...r.products,r.condition,...conditions].map(t=>new RegExp(`(^|[^A-Za-z0-9])${escape(t)}(?![A-Za-z0-9])`,'i'));
+  const shown=[...r.illustration.landmarks.flatMap(l=>[l.playTitle,l.playText]),r.description,...r.pieces,...r.clues.filter(c=>c.at<11).flatMap(c=>[c.title,c.body])];
+  for(const text of shown)for(const term of terms)assert.ok(!term.test(text),`${r.gene}: ${term} in “${text}”`);
+  for(const l of r.illustration.landmarks)assert.ok(l.title&&l.text&&l.playTitle&&l.playText);
+ }
 });

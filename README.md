@@ -19,4 +19,4 @@ Select a piece, then its position. Scientific clues appear as the image takes sh
 
 **Research education prototype. Scientific review pending.**
 
-[Conditions and evidence](docs/SCIENCE.md) · [Reviewer guide](docs/REVIEW.md) · [Development](docs/DEVELOPMENT.md) · [Feedback](https://github.com/sasha-gladkikh/gregor-puzzles/issues/new/choose)
+[Conditions and evidence](docs/SCIENCE.md) · [Reviewer guide](docs/REVIEW.md) · [Booth guide](docs/BOOTH.md) · [Development](docs/DEVELOPMENT.md) · [Feedback](https://github.com/sasha-gladkikh/gregor-puzzles/issues/new/choose)

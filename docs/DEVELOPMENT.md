@@ -21,7 +21,9 @@ Use `npm start -- --port=4174` if the default port is occupied. Stop with **Ctrl
 - `docs/`: scientific rationale, review instructions, and development notes.
 - `.github/`: automated checks and feedback forms.
 
-The ten-round catalog is in `game/rounds.mjs`; clinical profiles and vocabulary are in `game/clinical.mjs` and `game/hpo-terms.mjs`. Illustration metadata is in `game/artwork-data.mjs`. The original CLCN1 module remains for save compatibility. Earlier design experiments remain in Git history.
+The ten-round catalog is in `game/rounds.mjs`; clinical profiles, completion-card text, and vocabulary are in `game/clinical.mjs` and `game/hpo-terms.mjs`. Illustration metadata and image-note positions are in `game/artwork-data.mjs`; each note appears when the piece containing its point is placed. Mechanism figures and the spliceosome comparison are in `game/mechanism.mjs`. Scientific sign-off and the `requireApproval` switch are in `game/signoff.mjs`. Saved progress uses stable round IDs, so earlier saves still load. Earlier design experiments remain in Git history.
+
+`game/icons/` holds the home-screen icon and the QR code for the hosted address. The QR code was generated with macOS Core Image and verified by decoding; regenerate it if the address changes. See [BOOTH.md](BOOTH.md) for conference setup and device testing.
 
 ## Publishing
 
@@ -33,7 +35,7 @@ The **Check and publish** workflow tests and builds every push to `main`, then d
 
 ## Validation and limits
 
-GitHub Actions runs tests and a build for pushes and pull requests. Checks cover placement, reveals, picture completion, timing, save migration, all ten rounds, published file references, and the local server.
+GitHub Actions runs tests and a build for pushes and pull requests. Checks cover placement, reveals, image-note placement, gene entry and previous symbols, new-player reset, sign-off gating, source traceability for completion cards and figures, picture completion, timing, save migration, all ten rounds, published file references, and the local server.
 
 Browser checks cover completion, review navigation, reload restoration, and phone-width layouts. These do not replace physical iPhone/Safari or full accessibility testing. Scientific review remains pending.
 

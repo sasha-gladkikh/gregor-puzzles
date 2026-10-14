@@ -6,3 +6,6 @@
 @media(max-width:900px){.review-columns{grid-template-columns:1fr;gap:24px}.review-visual{max-width:none!important}.review-visual>img{max-width:620px}.review-round{padding:24px}.review-actions{gap:8px}.review-actions>span{flex-basis:100%}}
 @media(max-width:600px){.review-round{padding:22px 16px}.review-intro h1{font-size:29px}.review-callout{padding:18px}.review-search label{line-height:1.5}.review-round h2{font-size:29px}.review-round header>p{overflow-wrap:anywhere}.review-editor-notes textarea{font-size:16px}.review-actions .tool{min-height:44px}}
 @media print{.review-controls,.review-empty{display:none}.review-round[hidden]{display:none!important}.review-columns{display:block}.review-visual>img{max-width:420px}.review-main{padding:0}.review-columns .learning-panel{break-inside:auto}}
+.signoff-list{list-style:none;padding:0;margin:16px 0 0;display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--muted)}.signoff-list .is-done{color:#005d55;font-weight:600}
+.review-unpublished{font-size:14px;color:#5c501f;background:#f5efd8;border:1px solid #d7c793;border-radius:3px;padding:10px 12px}
+.review-visual>.mechanism,.review-visual>.splice-compare{margin:0 0 22px;padding-top:18px;border-top:1px solid var(--line)}

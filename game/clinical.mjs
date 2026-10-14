@@ -3,7 +3,9 @@
 const gr=id=>`https://www.ncbi.nlm.nih.gov/books/${id}/`;
 const med=path=>`https://medlineplus.gov/genetics/${path}/`;
 const feature=(system,title,hpo,text,context,source,key=false)=>({system,title,hpo,text,context,source,key});
-const pearl=(title,text,source)=>({title,text,source});
+const pearl=(title,text,...sources)=>({title,text,sources});
+// The completion card shows patternTitle with the clinical pattern, the connection sentence,
+// and pearls[caveat]. These additions are drafts pending scientific review like all content.
 const MC=gr('NBK1355'),GJ=gr('NBK1272'),SL=med('condition/histiocytosis-lymphadenopathy-plus-syndrome'),SD=gr('NBK1756'),RN=gr('NBK622730'),CA='https://pubmed.ncbi.nlm.nih.gov/31468518/',CAP='https://pmc.ncbi.nlm.nih.gov/articles/PMC4613477/',NO=gr('NBK1124'),RO=gr('NBK589232'),ROP='https://www.nature.com/articles/ncomms9718',ST=med('condition/sting-associated-vasculopathy-with-onset-in-infancy'),STP='https://pmc.ncbi.nlm.nih.gov/articles/PMC4174543/',FG=gr('NBK599589');
 export const clinicalProfiles={
  CLCN1:{
@@ -13,6 +15,8 @@ export const clinicalProfiles={
   pattern:'Stiffness after rest that eases with repeated movement, together with transient weakness and muscular hypertrophy.',
   patternSource:MC,
   memory:'Relaxation is delayed; repetition can help. The recessive form may also cause transient weakness.',
+  patternTitle:'Stiffness that eases with movement',caveat:0,
+  connection:'ClC-1 chloride conductance steadies the muscle membrane after each signal. With less of it, electrical activity can repeat after a contraction, so relaxation is delayed.',
   features:[
    feature('Muscle','Myotonia','HP:0002486','Delayed relaxation after contraction, sometimes evident after hand grip.','Core finding',MC,true),
    feature('Muscle','Warm-up phenomenon','HP:0003740','Repeated contractions can lessen stiffness.','Useful pattern; not unique to this condition',MC,true),
@@ -29,6 +33,8 @@ export const clinicalProfiles={
   onset:'Often congenital or prelingual. Mild hearing loss may be recognized later; some genotypes show progression.',
   pattern:'Bilateral sensorineural hearing loss, a variable audiologic course, and no expected syndromic skin findings in this recessive association.',patternSource:GJ,
   memory:'Nonsyndromic describes the associated findings, not a single severity or a guarantee of detection at birth.',
+  patternTitle:'Bilateral sensorineural hearing loss',caveat:1,
+  connection:'Connexin 26 gap junctions let neighboring inner-ear cells share ions and small molecules. Loss of function in both copies disrupts this communication and affects hearing, without the skin findings of some other GJB2 variants.',
   features:[
    feature('Hearing','Bilateral sensorineural hearing loss','HP:0008619','Hearing is affected through an inner-ear mechanism, typically in both ears.','Core finding',GJ,true),
    feature('Course','Variable severity',null,'The audiologic range extends from mild to profound.','Severity modifier, not an additional symptom',GJ,true),
@@ -45,6 +51,8 @@ export const clinicalProfiles={
   onset:'Presentation varies with the component features and can evolve over childhood and later life.',
   pattern:'Hyperpigmentation with hypertrichosis, histiocytosis or lymphadenopathy, and possible insulin-dependent diabetes or hearing loss.',patternSource:SL,
   memory:'Skin, histiocytes, and endocrine or hearing findings can belong to one variable spectrum.',
+  patternTitle:'Pigmented, hairy skin with histiocytosis',caveat:0,extraSources:['https://pubmed.ncbi.nlm.nih.gov/22174130/'],
+  connection:'ENT3 carries nucleosides out of lysosomes for reuse. When it fails, lysosomal and cellular homeostasis are disturbed; how that produces each clinical feature is still being worked out.',
   features:[
    feature('Skin','Hyperpigmented patches','HP:0000953','Areas of increased pigmentation may accompany tissue infiltration.','Particularly characteristic of H-syndrome presentations',SL,true),
    feature('Skin','Hypertrichosis','HP:0000998','Increased hair growth can overlie affected skin.','Interpret together with the pigmentation',SL,true),
@@ -62,6 +70,8 @@ export const clinicalProfiles={
   onset:'Often recognized in infancy or childhood. Pancreatic manifestations can improve with age while hematologic risks persist.',
   pattern:'Exocrine pancreatic insufficiency with neutropenia or other cytopenias, short stature, and skeletal abnormalities.',patternSource:SD,
   memory:'Pancreas plus marrow suggests a ribosome problem; the pseudogene complicates the molecular readout.',
+  patternTitle:'Pancreatic insufficiency with cytopenias',caveat:1,
+  connection:'SBDS and the GTPase EFL1 remove eIF6, a “do not join” tag on the large ribosomal subunit, so working ribosomes can form. Reduced SBDS function impairs this step; pancreatic and marrow findings are the central clinical connection.',
   features:[
    feature('Pancreas','Exocrine pancreatic insufficiency','HP:0001738','Reduced digestive enzyme production can cause malabsorption.','Core feature; may become less apparent with age',SD,true),
    feature('Blood','Neutropenia','HP:0001875','Neutrophil counts may be persistently or intermittently reduced.','Core hematologic clue',SD,true),
@@ -78,6 +88,8 @@ export const clinicalProfiles={
   onset:'Usually infancy or childhood. Severity and associated neurologic, growth, and feeding findings vary.',
   pattern:'Developmental delay with neonatal hypotonia, microcephaly, feeding difficulties, and sometimes epilepsy.',patternSource:RN,
   memory:'Noncoding does not mean nonfunctional: the RNA is part of the splicing machinery.',
+  patternTitle:'Developmental delay with early hypotonia',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/23074130/'],
+  connection:'RNU4-2 makes U4, an RNA that pairs with U6 to hold it inactive while the spliceosome assembles; U4 is released before splicing chemistry begins. ReNU variants change this RNA, not a protein, so coding-focused analysis can miss them.',
   features:[
    feature('Development','Global developmental delay','HP:0001263','Multiple developmental domains are affected; intellectual disability may be evident with age.','Core neurodevelopmental finding',RN,true),
    feature('Neurologic','Neonatal hypotonia','HP:0001319','Low muscle tone can be apparent early in life.','Frequently described',RN),
@@ -95,6 +107,8 @@ export const clinicalProfiles={
   onset:'Developmental and epileptic presentations often begin early. Seizure type, course, and cerebellar involvement vary.',
   pattern:'Developmental impairment with epilepsy, sometimes accompanied by hypotonia, ataxia, or abnormal eye movements.',patternSource:CAP,
   memory:'The gene identifies a channel; the specific variant determines how that channel is disturbed.',
+  patternTitle:'Developmental impairment with epilepsy',caveat:1,
+  connection:'CaV2.1 lets calcium into nerve terminals to trigger transmitter release. DEE42 variants can push channel activity up or down, so the gene alone does not reveal the direction of the change.',
   features:[
    feature('Neurologic','Seizures','HP:0001250','Seizure types and severity vary; some presentations include severe epilepsy.','Defining component of the selected association',CA,true),
    feature('Development','Global developmental delay','HP:0001263','Motor, language, and other developmental domains may be affected.','Core finding',CAP,true),
@@ -111,6 +125,8 @@ export const clinicalProfiles={
   onset:'Congenital findings may prompt recognition in infancy; growth, developmental, or bleeding features may become clearer later.',
   pattern:'Pulmonary valve stenosis with short stature, pectus changes, and a bleeding tendency.',patternSource:NO,
   memory:'A RASopathy is a pathway diagnosis; the gene and allele refine the phenotype and mechanism.',
+  patternTitle:'Pulmonary stenosis with short stature',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/9491886/','https://pubmed.ncbi.nlm.nih.gov/16358218/'],
+  connection:'SHP-2 is a phosphatase that helps turn RAS/MAPK signaling up. At rest, one of its own domains blocks the active site; many Noonan-associated variants weaken that block and increase activity.',
   features:[
    feature('Cardiac','Pulmonary valve stenosis','HP:0001642','Narrowing at the pulmonary valve is a particularly informative cardiac feature.','Enriched in PTPN11-related Noonan syndrome',NO,true),
    feature('Growth','Short stature','HP:0004322','Linear growth may be below the expected range.','Variable, not obligatory',NO,true),
@@ -128,6 +144,8 @@ export const clinicalProfiles={
   onset:'Growth and skeletal findings can be early; immune and retinal manifestations may become apparent at different ages.',
   pattern:'Spondyloepiphyseal dysplasia plus antibody deficiency and retinal dystrophy, with growth restriction.',patternSource:ROP,
   memory:'Skeleton, antibodies, retina: connect three systems to the minor spliceosome.',
+  patternTitle:'Skeleton, antibodies, and retina',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/23074130/'],
+  connection:'U4atac does the U4 job in the minor spliceosome, which removes the rare minor-class introns. Biallelic variants impair that processing across many transcripts at once, consistent with findings in several organ systems.',
   features:[
    feature('Skeleton','Spondyloepiphyseal dysplasia','HP:0002655','Vertebral and epiphyseal development is affected.','Characteristic pattern',ROP,true),
    feature('Immune','Deficient specific antibody response','HP:0005424','Antibody responses to tested antigens were absent in the original series, despite variable total immunoglobulin levels.','Original six-person series; assess the individual immune phenotype',ROP,true),
@@ -144,6 +162,8 @@ export const clinicalProfiles={
   onset:'Often begins in infancy. Skin and pulmonary findings can develop differently across individuals.',
   pattern:'Cold-sensitive acral skin lesions, recurrent fever, and interstitial lung involvement.',patternSource:ST,
   memory:'Skin plus lung inflammation can reflect a signal that stays active, not an immune response that is absent.',
+  patternTitle:'Acral skin lesions with lung disease',caveat:2,
+  connection:'In the cGAS–STING pathway shown, cGAS detects DNA in the cytosol and makes cGAMP, which activates STING. SAVI variants activate STING without that trigger, sustaining type I interferon signaling and inflammation.',
   features:[
    feature('Skin','Acral skin ulceration','HP:0200042','Inflammatory lesions can affect fingers, toes, ears, or nose and may ulcerate.','Useful distribution; may worsen with cold',ST,true),
    feature('Skin','Livedo reticularis','HP:0033505','A net-like violaceous discoloration can reflect small-vessel involvement.','Variable associated finding',ST),
@@ -152,7 +172,7 @@ export const clinicalProfiles={
    feature('Growth','Poor weight gain','HP:0001508','Chronic inflammatory disease can be associated with growth difficulties.','Variable; HPO label is “Failure to thrive”',STP),
    feature('Lymphatic','Lymphadenopathy','HP:0002716','Enlarged lymph nodes can accompany inflammation.','Variable associated finding',ST)
   ],
-  pearls:[pearl('Interferonopathy is a mechanistic category','Excessive signaling through STING can increase type I interferon activity. This explains why an immune gene may cause autoinflammation rather than a simple absence of immune responses.',STP),pearl('A molecular signature is supporting evidence','An interferon-stimulated gene signature supports pathway activation but is not uniquely diagnostic of this condition. The variant and clinical context still matter.',STP)]
+  pearls:[pearl('Interferonopathy is a mechanistic category','Excessive signaling through STING can increase type I interferon activity. This explains why an immune gene may cause autoinflammation rather than a simple absence of immune responses.',STP),pearl('A molecular signature is supporting evidence','An interferon-stimulated gene signature supports pathway activation but is not uniquely diagnostic of this condition. The variant and clinical context still matter.',STP),pearl('Interferon is not the whole story','SAVI is grouped with the type I interferonopathies, and patients show an interferon signature. In mouse models, however, vasculopathy developed without IRF3, and lung disease depended on T cells rather than type I interferon. Interferon is central but may not explain every feature.','https://pubmed.ncbi.nlm.nih.gov/28951494/','https://pubmed.ncbi.nlm.nih.gov/30772497/')]
  },
  FGF14:{
   objective:'Recognize a late-onset episodic-to-progressive ataxia pattern and explain why a repeat expansion can escape standard exome analysis.',
@@ -160,6 +180,8 @@ export const clinicalProfiles={
   onset:'Typically adult onset, often in later adulthood. Episodic symptoms may precede persistent gait ataxia.',
   pattern:'Adult-onset gait ataxia with episodic imbalance or diplopia and downbeat nystagmus.',patternSource:FG,
   memory:'Think beyond exons: an intronic repeat can underlie a late-onset ataxia pattern.',
+  patternTitle:'Late-onset ataxia with episodes',caveat:1,
+  connection:'An expanded GAA repeat deep in intron 1 of FGF14 underlies this late-onset ataxia. The protein-coding sequence is unchanged, and standard exome sequencing does not reliably detect the expansion.',
   features:[
    feature('Cerebellar','Gait ataxia','HP:0002066','Walking becomes unsteady because of impaired coordination.','Core presentation',FG,true),
    feature('Course','Episodic ataxia','HP:0002131','Intermittent episodes can precede or accompany persistent symptoms.','Useful course feature',FG,true),
