@@ -14,7 +14,7 @@ A checklist for running GREGoR Puzzles on a shared device at ASHG, and for testi
 - Start at round 01, the recommended first round. **Practice** is the default.
 - Between visitors, open **All rounds → New player → Start fresh**. This clears every round's pieces, hints, and times in that browser and keeps editorial notes.
 - On an iPad, use Guided Access (Settings → Accessibility) to keep the game in Safari.
-- Sound starts off. The header sound control enables quiet placement and completion cues; keep it off for the booth unless visitors prefer it. New player resets this preference. There is no shared ranking. Timed results include reading time, and entering the gene ends the puzzle early, so times are not comparable between visitors.
+- Quiet placement and completion sounds start on. Mute them with the header sound control if needed; the choice is saved across rounds and reloads. New player resets sound to on. There is no shared ranking. Timed results include reading time, and entering the gene ends the puzzle early, so times are not comparable between visitors.
 
 ## Testing with first-time players
 
@@ -40,7 +40,7 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Private Browsing (progress clears when the tab closes).
 - Reduce Motion on: pieces place without movement; walkthroughs use Previous/Next and do not auto-advance. Nothing essential is lost.
 - Complete a round, open **See it work**, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
-- Toggle sound on/off, reload, and start a new player. Verify no sound occurs on page load.
+- Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
 - Complete the collection and scroll to the completion banner: the logo assembles once, without moving the board.
 - VoiceOver: complete one round; pieces announce their position.
 - Airplane mode after loading: switch rounds and note what fails.

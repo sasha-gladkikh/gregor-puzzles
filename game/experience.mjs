@@ -15,9 +15,9 @@ export function createSequence(count,{onStep=()=>{},onState=()=>{},delay=()=>600
 // No audio files, analytics, autoplay, or third-party requests are used.
 export function soundFeedback(button){
   const key='gregor-puzzles:sound';
-  let enabled=false,context=null;
+  let enabled=true,context=null;
   const voices=new Set();
-  try{enabled=localStorage.getItem(key)==='on';}catch{}
+  try{enabled=localStorage.getItem(key)!=='off';}catch{}
   const paint=()=>{button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'Turn sound off':'Turn sound on');button.querySelector('span').textContent=enabled?'Sound on':'Sound off';};
   const stop=()=>{for(const voice of voices){try{voice.stop();}catch{}}voices.clear();};
   async function ready(){
