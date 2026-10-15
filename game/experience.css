@@ -109,13 +109,3 @@ body{background:#f6f8fc}
 @media(prefers-reduced-motion:reduce){.biology-spotlight,.piece,.board .piece-outline{transition:none!important}.completion.reveal-arriving{animation:none!important}}
 @media(forced-colors:active){.biology-spotlight,.discovery-ring{border-color:Highlight;box-shadow:none}.walkthrough{border-color:CanvasText}.level-card[aria-current]{border:2px solid Highlight}.logo-assembly{forced-color-adjust:none;background:#fff}}
 @media print{.site-header .site-tabs,.sound-button,.walkthrough-launch,.walkthrough-controls{display:none}.walkthrough-body[hidden]{display:block!important}.biology-spotlight{display:none}}
-/* Shared structure controls for the game and editorial illustration walkthroughs. */
-.structure-choices{display:flex;gap:8px;margin:0 0 16px}
-.structure-choice{width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink);font:600 15px var(--sans)}
-.structure-choice[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
-.figure-reference{font-size:14px;padding:10px 0}
-.figure-reference summary{font-size:14px;color:var(--accent);min-height:36px;cursor:pointer}
-.figure-reference p{font-size:14px;color:var(--muted);margin:8px 0}
-.figure-reference .inline-source{display:block;min-height:32px}
-@media(forced-colors:active){.structure-choice[aria-pressed=true]{border:2px solid Highlight}}
-@media print{.structure-choices{display:none!important}}

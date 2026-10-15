@@ -14,7 +14,7 @@ A checklist for running GREGoR Puzzles on a shared device at ASHG, and for testi
 - Start at round 01, the recommended first round. **Practice** is the default.
 - Between visitors, open **Browse rounds → New player → Start fresh**. This clears every round's pieces, hints, and times in that browser and keeps editorial notes.
 - **Collection** shows saved progress and a teaching map of the illustrated processes. Its field guide contains only completed rounds and can be printed or saved as a PDF through the browser's print dialog.
-- **Science & sources** opens full gene profiles without requiring puzzle completion. **Editorial review**, linked there and in the footer, is the separate review workspace.
+- **Science** opens full gene profiles without requiring puzzle completion. Its **Editorial review** link opens the reviewer workspace.
 - On an iPad, use Guided Access (Settings → Accessibility) to keep the game in Safari.
 - Quiet placement and completion sounds start on. Mute them with the header sound control if needed; the choice is saved across rounds and reloads. New player resets sound to on. There is no shared ranking. Timed results include reading time, and entering the gene ends the puzzle early, so times are not comparable between visitors.
 
@@ -43,8 +43,9 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Reduce Motion on: pieces place without movement; walkthroughs use Previous/Next and do not auto-advance. Nothing essential is lost.
 - Complete a round, open **Explore the illustration**, select numbered structures, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
 - Complete a round in **Focus view** and confirm completion restores the scientific column and accessible figure guide. Enlarge the finished figure, then close it and restart the round.
-- Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, Science & sources, and Editorial review navigation on a narrow screen.
-- Complete two rounds, open the field guide from Collection, and print to PDF. Only the completed rounds should appear, with readable figures, references, and review status.
+- Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, and Science on a narrow screen, then open Editorial review from Science.
+- Follow a reference number on a completion card and in Editorial review; the References panel should open at the cited item. Check that each external paper is listed once per round.
+- Complete two rounds, open the field guide from Collection, and print to PDF. Only the completed rounds should appear, with readable figures and references.
 - Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
 - Complete the collection and scroll to the completion banner: the logo assembles once, without moving the board.
 - VoiceOver: complete one round; pieces announce their position.

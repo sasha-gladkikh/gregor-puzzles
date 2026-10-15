@@ -13,9 +13,11 @@ function roundCard({round,done,pieces},first){
  const link=node('a',null,'collection-card-link');link.href=`./?level=${round.number}`;
  const figure=node('div',null,'collection-artwork'),img=node('img');img.src=round.artwork;img.alt='';img.width=800;img.height=600;img.loading='lazy';img.decoding='async';figure.append(img);
  const body=node('div',null,'collection-card-body');
- const meta=node('div',null,'collection-card-meta');meta.append(node('span',`Round ${round.number}`),node('span',done?'Complete':pieces?`${pieces} / 12 pieces`:first?'Start here':'12 pieces',done?'card-state complete':'card-state'));
+ const meta=node('div',null,'collection-card-meta');meta.append(node('span',`Round ${round.number}`));
  const title=node('h2',done?round.gene:round.title);body.append(meta,title,node('p',done?round.condition:round.topic,'collection-card-description'));
- const action=node('div',null,'collection-card-action');action.append(node('span',done?'Revisit the science':pieces?'Continue round':'Start round'),node('span','→'));
+ const action=node('div',null,`collection-card-action${done?' is-complete':''}`);
+ action.append(node('span',done?'Complete':pieces?`Continue · ${pieces} / 12`:first?'Start here':'Start round'));
+ const arrow=node('span','→');arrow.setAttribute('aria-hidden','true');action.append(arrow);
  body.append(action);link.append(figure,body);card.append(link);return card;
 }
 function render(){

@@ -1,4 +1,4 @@
-import {node,citation} from './clinical-ui.mjs';
+import {node,referenceMarks} from './clinical-ui.mjs';
 // With onSelect, markers are buttons that reopen their note; otherwise they are decorative.
 export function artworkMarkers(round,onSelect){
  const layer=node('div',null,'artwork-markers');if(!onSelect)layer.setAttribute('aria-hidden','true');
@@ -17,7 +17,6 @@ export function artworkGuide(round){
   const li=node('li'),badge=node('span',String(index+1),'artwork-key');badge.setAttribute('aria-hidden','true');
   const copy=node('div');copy.append(node('strong',item.title),node('p',item.text));li.append(badge,copy);list.append(li);
  });
- section.append(list,node('p',round.illustration.note,'artwork-note'),citation(round.illustration.source,'Diagram reference'));
- if(round.illustration.noteSource)section.append(document.createTextNode(' · '),citation(round.illustration.noteSource,'Assembly and activation'));
+ section.append(list,node('p',round.illustration.note,'artwork-note'),referenceMarks(round,[round.illustration.source,round.illustration.noteSource].filter(Boolean),'Illustration'));
  return section;
 }

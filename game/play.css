@@ -58,15 +58,7 @@ body{background:var(--surface)}
 #game .notes-found li,#game .notes-found p{font-size:15px}
 #game .figure-identity{padding:12px 0 0 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
 #game .figure-identity .eyebrow{font-size:12px;text-transform:none;letter-spacing:0}
-#game #identityGene{font-size:24px;line-height:1.2;font-weight:650;overflow-wrap:anywhere}
-#game #identityCondition{margin:0;font-size:16px;line-height:1.4}
-#game #identityInheritance{font-size:13px;color:var(--muted)}
-#game #identityOmim{font-size:13px;color:var(--accent);text-underline-offset:3px}
-#game .figure-identity .tool{white-space:normal;line-height:1.4;font-size:14px;justify-content:center;text-align:center;border-radius:5px;border-color:var(--line)}
-#game .figure-identity .primary{font-size:14px;padding:10px 8px;gap:4px;border-radius:5px;box-shadow:none}
 #game .completion{padding:22px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin:12px 0 0}
-#game .completion-badge{background:none;padding:0;border-radius:0}
-#game .completion-badge>img{display:none}
 #game #revealGene{font-size:28px;color:var(--ink);margin-bottom:5px}
 #game #revealCondition{font-size:20px;color:var(--ink);line-height:1.4}
 #game .completion h2{margin:8px 0 12px}
@@ -126,4 +118,16 @@ body{background:var(--surface)}
 @media(min-width:601px) and (max-width:800px){#game .assembly-area{grid-template-columns:minmax(0,1fr) 204px}#game .tray{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}}
 @media(max-width:600px){#game .collection-bar{margin-bottom:4px}#game .section-bar{padding-top:2px;padding-bottom:10px}#game .status-strip{width:100%}}
 @media(forced-colors:active){#game .figure-identity{border-color:CanvasText}#game .piece{border-color:CanvasText}}
-@media print{#game .puzzle-tools,#game .figure-identity,#game .piece-bank{display:none}}
+@media print{#game .puzzle-tools,#game .piece-bank{display:none}}
+
+/* One completed identity and one source list. */
+#game .figure-identity{gap:10px}
+#game .figure-identity h2{margin:0;line-height:1.4}
+#game .figure-identity #revealGene{display:block;font-size:24px;line-height:1.2;overflow-wrap:anywhere}
+#game .figure-identity #revealCondition{display:block;font-size:17px;font-weight:500;line-height:1.4}
+#game .figure-identity .reveal-alias{font-size:13px;margin:0}
+#game .figure-identity .reveal-metadata{flex-direction:column;align-items:flex-start;gap:7px;margin:0;font-size:13px}
+#game .round-reference-details{margin-top:18px;border-top:1px solid var(--line);padding-top:10px}
+#game .round-reference-details>summary{min-height:44px;font-size:16px;font-weight:600;padding:10px 0;cursor:pointer}
+#game .round-reference-details .reference-list{padding-left:22px}
+@media(max-width:600px){#game .figure-identity{display:block;width:100%;border:0;padding:18px 0 0;margin:0}#game .figure-identity h2{margin:6px 0 10px}#game .figure-identity #revealGene{font-size:27px}#game .figure-identity #revealCondition{font-size:20px}#game .figure-identity .reveal-alias{margin:0 0 10px}#game .figure-identity .reveal-metadata{flex-direction:row;align-items:center;gap:8px 18px;font-size:14px}}

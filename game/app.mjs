@@ -1,14 +1,12 @@
-import {node,citation} from './clinical-ui.mjs';
+import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
 import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled,normalizeGene,landmarkPiece} from './engine.mjs';
 import {rounds,allRounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink,newPlayerKeys} from './collection.mjs';
-import {artworkMarkers,artworkGuide} from './artwork-ui.mjs';
+import {artworkMarkers} from './artwork-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,roundComplete} from './session.mjs';
-import {isApproved} from './signoff.mjs';
 import {reduceMotion as reducedMotion,soundFeedback,illustrationWalkthrough,highlightStructure,assembleLogo} from './experience.mjs';
 import {renderSite} from './site.mjs';
-import {claimSource} from './science-ui.mjs';
 import {relatedRoundLinks} from './collection-data.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
@@ -23,8 +21,6 @@ const position = id => `row ${Math.floor(id/COLS)+1}, column ${id%COLS+1}`;
 // Each landmark belongs to the piece that contains it; placing that piece reveals the note.
 const landmarkPieces=round.illustration.landmarks.map(landmarkPiece);
 const imageMarkers=artworkMarkers(round,index=>showNote(index)),markers=[...imageMarkers.children];markers.forEach(m=>m.hidden=true);$('board').append(imageMarkers);
-const imageGuide=node('details',null,'image-guide-details');imageGuide.id='artworkGuide';imageGuide.hidden=true;imageGuide.append(node('summary','Image guide and scientific notes'),artworkGuide(round));
-$('completion').after(imageGuide);
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
 let {state,timed} = restoreSession(stored);
@@ -37,7 +33,7 @@ const walkthroughLayout=matchMedia('(min-width: 801px)');
 function positionWalkthrough(){
   const panel=document.querySelector('.discovery');panel.classList.toggle('has-walkthrough',Boolean(walkthrough)&&walkthroughLayout.matches);
   if(!walkthrough)return;
-  if(walkthroughLayout.matches)panel.prepend(walkthrough.element);else $('status').after(walkthrough.element);
+  if(walkthroughLayout.matches)panel.prepend(walkthrough.element);else $('identityCard').after(walkthrough.element);
 }
 walkthroughLayout.addEventListener('change',positionWalkthrough);
 const board = $('puzzle');
@@ -153,7 +149,7 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   if(id!==null)flyIn(id,from);
   void sound.play(finishing?'complete':'place');
   if(roundComplete(state)){
-    strip(`Complete: ${round.gene} · ${round.condition}.${alias}`,found.filter(d=>d.kind==='landmark').map(d=>({...d,text:''})));
+    strip(`Round complete. Your diagram is saved.${alias}`);
     if(finishing){
       clearTimeout(completionTimer);
       const reveal=()=>{$('board').classList.remove('finishing');$('completion').classList.remove('reveal-pending');$('completion').classList.add('reveal-arriving');$('revealTitle').focus({preventScroll:true});highlightStructure($('board'),round.illustration.landmarks[0]);completionTimer=null;};
@@ -238,8 +234,8 @@ function render(before=state.placed.length) {
   $('notesList').replaceChildren(...found.map(i=>{const note=noteFor(i),li=node('li');const badge=node('span',String(i+1),'strip-badge');badge.setAttribute('aria-hidden','true');li.append(badge,node('strong',note.title),' ',note.text);return li;}));
   if(done)board.setAttribute('aria-label','Completed diagram. '+diagramDescription);
   document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed;});
-  $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=done; imageGuide.hidden=!done;
-  $('identityCard').hidden=!done;
+  $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=done;
+  $('identityCard').hidden=!done;$('clueDetails').hidden=done;
   $('clueSummary').textContent=`${n} of ${SIZE} pieces`;
   $('progressText').textContent=`${n} of ${SIZE} pieces`; $('progressPercent').textContent=Math.round(n/SIZE*100)+'%';
   $('progressFill').style.width=n/SIZE*100+'%'; document.querySelector('.progress-track').setAttribute('aria-valuenow',n);
@@ -249,7 +245,6 @@ function render(before=state.placed.length) {
     round.clues.forEach((clue,i)=>{
       const open=n>=clue.at,li=document.createElement('li'); li.className=`clue ${open?'unlocked':'locked'} ${i>=4?'final':''} ${fresh&&open&&clue.at>before?'fresh':''}`;
       li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;
-      if(open&&clue.sourceUrl){const a=citation(clue.sourceUrl,'Clinical reference');a.classList.add('clinical-clue-source');li.querySelector('.clue-content').append(a);}
       $('clues').append(li);
     });lastCount=n;
   }
@@ -298,7 +293,6 @@ $('libraryButton').onclick=()=>{renderCollection();openDialog('libraryDialog');}
 $('closeLibrary').onclick=()=>$('libraryDialog').close();
 $('collectionReview').onclick=()=>{renderCollection();openDialog('libraryDialog');};
 $('helpButton').onclick=()=>openDialog('helpDialog');$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
-$('exploreFigure').onclick=()=>walkthrough?.open(0);
 $('focusButton').onclick=()=>{const on=!$('game').classList.contains('focus-view');$('game').classList.toggle('focus-view',on);$('focusButton').setAttribute('aria-pressed',String(on));$('focusButton').textContent=on?'Exit focus view':'Focus view';};
 $('enlargeButton').onclick=()=>{if(complete(state))openDialog('figureDialog');};
 $('closeFigure').onclick=()=>$('figureDialog').close();
@@ -306,7 +300,7 @@ $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=
 $('confirmRestart').onclick=()=>{
   clearTimeout(completionTimer);completionTimer=null;walkthrough?.dispose();walkthrough=null;sound.stop();
   positionWalkthrough();
-  $('board').classList.remove('finishing');$('completion').classList.remove('reveal-arriving','reveal-pending');imageGuide.open=false;
+  $('board').classList.remove('finishing');$('completion').classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
   state=newState();selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;order=shuffled(order);
   $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
@@ -338,23 +332,24 @@ $('figureLabel').textContent=`FIG. ${round.number} / ${round.topic.toUpperCase()
 $('reference').src=round.artwork; $('reference').alt=diagramDescription;
 $('diagramDescription').textContent=diagramDescription;
 $('revealGene').textContent=round.gene;$('revealCondition').textContent=round.condition;$('revealAlias').textContent=round.otherName;
-$('identityGene').textContent=round.gene;$('identityCondition').textContent=round.condition;$('identityInheritance').textContent=round.inheritance;
-$('identityOmim').href=`https://omim.org/entry/${round.omim}`;$('identityOmim').textContent=`OMIM ${round.omim} ↗`;
 $('revealMetadata').append(node('span',round.inheritance),citation(`https://omim.org/entry/${round.omim}`,`OMIM ${round.omim}`));
 $('revealConnection').textContent=round.clinical.connection;
 $('revealPatternTitle').textContent=`Clinical pattern · ${round.clinical.patternTitle}`;$('revealPattern').textContent=round.clinical.pattern;
 const caveat=round.clinical.pearls[round.clinical.caveat];$('revealCaveat').replaceChildren(node('strong',`${caveat.title}.`),' ',caveat.text);
-$('revealConnection').append(claimSource(round,'Mechanism and clinical connection',[round.illustration.source,round.clinical.patternSource,...(round.clinical.extraSources??[]),...(round.illustration.noteSource?[round.illustration.noteSource]:[])]));
-$('revealPattern').append(claimSource(round,'Clinical pattern',[round.clinical.patternSource]));
-$('revealCaveat').append(claimSource(round,'Interpretation note',caveat.sources));
+const completionSources=[
+ [round.illustration.source,round.clinical.patternSource,...(round.clinical.extraSources??[]),...(round.illustration.noteSource?[round.illustration.noteSource]:[])],
+ [round.clinical.patternSource],caveat.sources
+];
+const sourceKey=urls=>[...new Set(urls)].sort().join('|');
+if(completionSources.every(urls=>sourceKey(urls)===sourceKey(completionSources[0])))$('revealLines').after(referenceMarks(round,completionSources[0],'Mechanism, clinical pattern, and interpretation'));
+else ['revealConnection','revealPattern','revealCaveat'].forEach((id,index)=>$(id).append(referenceMarks(round,completionSources[index],['Mechanism','Clinical pattern','Interpretation'][index])));
+$('referencesBody').append(referenceList(round,{heading:''}));
 $('profileLink').href=`./science.html?level=${round.number}`;
 $('largeFigure').src=round.artwork;$('largeFigure').alt=diagramDescription;$('largeFigureCaption').textContent=round.illustration.note;
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
-$('sourceNote').textContent=`${round.reviewStatus}. Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
-const reviewed=allRounds.filter(r=>isApproved(r.signoff)).length;
-$('reviewSummary').textContent=reviewed?`${reviewed} of ${allRounds.length} rounds scientifically reviewed`:'Content pending scientific review';
+$('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
 buildBoard();buildTray();render();save();
-if(roundComplete(state))strip(`Complete: ${round.gene} · ${round.condition}. Your diagram and results are saved.`);
+if(roundComplete(state))strip('Round complete. Your diagram and results are saved.');
 else if(state.started)strip('Your progress is restored.'+(timed?' Elapsed time continues.':''));
 
 function renderCollection() {
@@ -371,7 +366,6 @@ function renderCollection() {
   $('nextRound').href=roundLink(next?.round??rounds[0]);
   $('nextRound').textContent=next?`Next round · ${next.round.number} →`:'Explore the collection →';
   $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();openDialog('libraryDialog');}:null;
-  $('quickNext').href=next?roundLink(next.round):'./collection.html';$('quickNext').textContent=next?`Next round · ${next.round.number} →`:'View collection →';
   const index=rounds.indexOf(round);
   for(const [id,target] of [['previousRound',rounds[index-1]],['followingRound',rounds[index+1]]]){
     const a=$(id);a.hidden=!target;if(target){a.href=roundLink(target);a.setAttribute('aria-label',`Go to round ${target.number}`);}

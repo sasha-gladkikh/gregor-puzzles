@@ -1,4 +1,4 @@
-import {node,citation} from './clinical-ui.mjs';
+import {node,referenceMarks} from './clinical-ui.mjs';
 
 export const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -54,7 +54,8 @@ export function soundFeedback(button){
 export function illustrationWalkthrough(round,{board,onStep=()=>{},onClose=()=>{},id=`walkthrough-${round.number}`}={}){
   const panel=node('section',null,'walkthrough');panel.id=id;panel.setAttribute('aria-label','Illustration walkthrough');
   const intro=node('div',null,'walkthrough-intro'),copy=node('div');
-  copy.append(node('span','FROM IMAGE TO IDEA','eyebrow'),node('h3',round.illustration.takeaway));
+  const takeaway=node('h3',round.illustration.takeaway);takeaway.append(referenceMarks(round,[round.illustration.source,round.illustration.noteSource].filter(Boolean),'Illustration'));
+  copy.append(node('span','FROM IMAGE TO IDEA','eyebrow'),takeaway);
   const launch=node('button','Explore the illustration','tool walkthrough-launch');launch.type='button';launch.setAttribute('aria-expanded','false');launch.setAttribute('aria-controls',`${id}-body`);
   intro.append(copy,launch);
   const body=node('div',null,'walkthrough-body');body.id=`${id}-body`;body.hidden=true;
@@ -64,12 +65,8 @@ export function illustrationWalkthrough(round,{board,onStep=()=>{},onClose=()=>{
   for(const b of [back,play,next])b.type='button';
   const counter=node('span',null,'walkthrough-count');
   controls.append(back,counter,next,play);
-  const choices=node('div',null,'structure-choices');choices.setAttribute('role','group');choices.setAttribute('aria-label','Select a structure');
-  const structureButtons=round.illustration.landmarks.map((l,i)=>{const b=node('button',String(i+1),'structure-choice');b.type='button';b.setAttribute('aria-label',`Structure ${i+1}: ${l.title}`);b.setAttribute('aria-pressed','false');b.onclick=()=>tour.step(i);choices.append(b);return b;});
-  const note=node('p','Highlights guide attention; they do not simulate molecular movement. Scientific review pending.','walkthrough-note');
-  const reference=node('details',null,'figure-reference');reference.append(node('summary','Figure sources'),node('p','References for the structures and processes described in this illustration.'),citation(round.illustration.source,'Diagram reference'));
-  body.append(choices,caption,controls,note,reference);
-  if(round.illustration.noteSource)reference.append(citation(round.illustration.noteSource,'Assembly and activation'));
+  const note=node('p','Highlights guide attention; they do not simulate molecular movement.','walkthrough-note');
+  body.append(caption,controls,note);
   panel.append(intro,body);
   const media=matchMedia('(prefers-reduced-motion: reduce)');
   const spotlight=node('div',null,'biology-spotlight');spotlight.setAttribute('aria-hidden','true');spotlight.hidden=true;board.append(spotlight);
@@ -78,7 +75,6 @@ export function illustrationWalkthrough(round,{board,onStep=()=>{},onClose=()=>{
     const point=round.illustration.landmarks[i];
     title.textContent=`${i+1}. ${point.title}`;text.textContent=point.text;
     spotlight.hidden=false;spotlight.style.left=`${point.x}%`;spotlight.style.top=`${point.y}%`;
-    structureButtons.forEach((b,j)=>b.setAttribute('aria-pressed',String(i===j)));
     onStep(i);
   }
   const tour=createSequence(3,{onStep:show,onState:paintControls,delay:i=>Math.max(5500,round.illustration.landmarks[i].text.split(/\s+/).length*250)});

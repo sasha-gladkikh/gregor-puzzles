@@ -1,4 +1,4 @@
-import {node,citation} from './clinical-ui.mjs';
+import {node,referenceMarks} from './clinical-ui.mjs';
 // Before/after mechanism figures for rounds where a change of state is the mechanism.
 // Hand-drawn schematics with labels; positions and sizes are not to scale. Pending scientific review.
 const ticks=(x0,x1,y0,y1)=>Array.from({length:Math.floor((x1-x0)/12)+1},(_,i)=>`<line class="m-pair" x1="${x0+i*12}" y1="${y0}" x2="${x0+i*12}" y2="${y1}"/>`).join('');
@@ -46,7 +46,7 @@ export function mechanismFigure(round){
  const caption=node('figcaption',m.captions[0]);caption.id=`${id}-caption`;caption.setAttribute('aria-live','polite');
  const button=node('button',m.toggle[0],'tool mechanism-toggle');button.type='button';button.setAttribute('aria-pressed','false');button.setAttribute('aria-controls',id);
  button.onclick=()=>{const on=!figure.classList.contains('is-changed');figure.classList.toggle('is-changed',on);button.setAttribute('aria-pressed',String(on));button.textContent=m.toggle[on?1:0];caption.textContent=m.captions[on?1:0];};
- const links=node('p',null,'mechanism-sources');m.sources.forEach((url,i)=>{if(i)links.append(document.createTextNode(' · '));links.append(citation(url,i?'Supporting reference':'Mechanism reference',m.label));});
+ const links=referenceMarks(round,m.sources,m.label);
  figure.append(caption,button,links);return figure;
 }
 export function spliceCompare(round,isDone,isPlayable=()=>true){
@@ -57,9 +57,9 @@ export function spliceCompare(round,isDone,isPlayable=()=>true){
  const thead=node('thead');thead.append(head);table.append(thead);const body=node('tbody');
  spliceComparison.rows.forEach(([label,...cells],row)=>{
   const tr=node('tr'),th=node('th',label);th.scope='row';tr.append(th);
-  cells.forEach((text,col)=>{const hidden=row>=2&&col!==index&&!isDone(other);const td=node('td',hidden?(isPlayable(other)?`Revealed in round ${other}`:'Pending scientific review'):text);if(col===index)td.className='is-current';if(hidden)td.classList.add('is-hidden');tr.append(td);});
+  cells.forEach((text,col)=>{const hidden=row>=2&&col!==index&&!isDone(other);const td=node('td',hidden?(isPlayable(other)?`Revealed in round ${other}`:'Not in this collection'):text);if(col===index)td.className='is-current';if(hidden)td.classList.add('is-hidden');tr.append(td);});
   body.append(tr);
  });
- table.append(body);section.append(table,citation(spliceComparison.source,'Intron share reference','minor spliceosome'));
+ table.append(body);section.append(table,referenceMarks(round,spliceComparison.source,'Spliceosome comparison'));
  return section;
 }

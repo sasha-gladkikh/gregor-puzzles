@@ -31,6 +31,7 @@ test('field-guide references cover the figure, clinical pattern, and selected ca
  for(const round of allRounds){
   const refs=guideReferences(round),urls=refs.map(ref=>ref.url);
   assert.equal(new Set(urls).size,urls.length);
+  assert.equal(urls.includes(`https://omim.org/entry/${round.omim}`),false,'OMIM is linked once in the guide header');
   for(const url of [round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...round.clinical.pearls[round.clinical.caveat].sources,...(round.clinical.extraSources??[])].filter(Boolean))assert.ok(urls.includes(url),`${round.gene}: ${url}`);
   assert.ok(refs.every(ref=>ref.label&&ref.url.startsWith('https://')));
  }

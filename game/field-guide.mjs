@@ -12,7 +12,7 @@ function entry(round,progress){
  const profile=round.clinical,caveat=profile.pearls[profile.caveat],article=node('article',null,'guide-entry');article.id=`round-${round.number}`;
  const header=node('header',null,'guide-entry-header'),identity=node('div',null,'guide-identity');identity.append(node('span','GREGoR Puzzles'),node('span',`Round ${round.number} · ${round.topic}`));
  const h=node('h2',round.gene);header.append(identity,h,node('p',round.condition,'guide-condition'));
- const meta=node('div',null,'guide-meta');meta.append(node('span',round.inheritance),external(`OMIM ${round.omim}`,`https://omim.org/entry/${round.omim}`),node('span',round.reviewStatus,'guide-review-status'));header.append(meta);article.append(header);
+ const meta=node('div',null,'guide-meta');meta.append(node('span',round.inheritance),external(`OMIM ${round.omim}`,`https://omim.org/entry/${round.omim}`));header.append(meta);article.append(header);
  const visual=node('figure',null,'guide-visual'),img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.decoding='async';
  visual.append(img,node('figcaption',`${round.illustration.takeaway} AI-generated conceptual illustration, not to scale.`));
  const text=node('div',null,'guide-text');
@@ -21,7 +21,13 @@ function entry(round,progress){
  const memory=node('p',null,'guide-memory');memory.append(node('strong','Remember this'),document.createTextNode(profile.memory));article.append(memory);
  const refs=node('section',null,'guide-references');refs.append(node('h3','Selected references'));const list=node('ol');for(const ref of guideReferences(round)){const li=node('li');li.append(external(ref.label,ref.url));list.append(li);}refs.append(list);article.append(refs);
  const related=relatedCompletedRounds(round.number,progress);
- if(related.length){const p=node('p',null,'guide-related');p.append(node('strong','Connect the rounds: '));related.forEach((item,index)=>{if(index)p.append(document.createTextNode(' · '));const a=node('a',`${item.gene} · ${item.relationship.toLowerCase()}`);a.href=`#round-${item.number}`;p.append(a);});if(['05','08'].includes(round.number)&&splicingPairComplete(progress)){p.append(document.createTextNode(' · '));const a=node('a','View the spliceosome comparison');a.href='./science.html?level=05#compare-splicing';p.append(a);}article.append(p);}
+ if(related.length){
+  const p=node('p',null,'guide-related');p.append(node('strong','Connect the rounds: '));
+  if(['05','08'].includes(round.number)&&splicingPairComplete(progress)){
+   const a=node('a','Compare RNU4-2 and RNU4ATAC');a.href='./science.html?level=05#compare-splicing';p.append(a);
+  }else related.forEach((item,index)=>{if(index)p.append(document.createTextNode(' · '));const a=node('a',`${item.gene} · ${item.relationship.toLowerCase()}`);a.href=`#round-${item.number}`;p.append(a);});
+  article.append(p);
+ }
  const footer=node('div',null,'guide-entry-footer');const science=node('a','Full profile and sources ↗');science.href=`./science.html?level=${round.number}`;footer.append(node('span','Public educational content · No patient data'),science);article.append(footer);return article;
 }
 function render(){

@@ -19,7 +19,9 @@ export const splicingPairComplete=progress=>['05','08'].every(number=>progress.s
 
 export function guideReferences(round){
  const caveat=round.clinical.pearls[round.clinical.caveat];
- const urls=[`https://omim.org/entry/${round.omim}`,round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...caveat.sources,...(round.clinical.extraSources??[])].filter(Boolean);
+ // The condition's OMIM link is already shown once in the guide header.
+ const omim=`https://omim.org/entry/${round.omim}`;
+ const urls=[round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...caveat.sources,...(round.clinical.extraSources??[])].filter(url=>url&&url!==omim);
  return [...new Set(urls)].map(url=>({url,label:round.sources.find(([,value])=>value===url)?.[0]??'Supporting reference'}));
 }
 
