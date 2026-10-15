@@ -1,6 +1,7 @@
-.field-guide{max-width:1140px;padding:42px 32px}
+.field-guide{max-width:var(--page-width);padding:34px var(--page-gutter)}
+#guideEntries{max-width:1076px}
 .guide-intro{display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
-.guide-intro h1{font-size:40px;letter-spacing:-1px;margin:8px 0 12px}
+.guide-intro h1{font-size:clamp(30px,3vw,40px);line-height:1.1;letter-spacing:-.7px;margin:0 0 12px}
 .guide-intro p:not(.page-kicker){font-size:17px;color:var(--muted);margin:0;max-width:650px}
 .guide-intro button{white-space:nowrap}
 .guide-browser-note{color:var(--muted);font-size:14px;margin:18px 0 30px}
@@ -42,10 +43,10 @@
 .guide-back{font-size:15px;color:var(--muted)}
 .guide-back a{display:inline-block;padding:10px 0;text-underline-offset:4px}
 @media(max-width:750px){
- .field-guide{padding:28px 20px}.guide-intro{display:block}.guide-intro h1{font-size:33px}.guide-intro button{margin-top:18px}.guide-entry{padding:24px}.guide-content,.guide-implications{grid-template-columns:1fr;gap:22px}.guide-visual{max-width:500px}.guide-references ol{columns:1}.guide-identity{flex-wrap:wrap}.guide-entry h2{font-size:32px}.guide-condition{font-size:19px}.guide-entry-footer{display:block}.guide-entry-footer a{display:block;margin-top:8px}
+ .field-guide{padding-top:26px;padding-bottom:28px}.guide-intro{display:block}.guide-intro h1{font-size:33px}.guide-intro button{margin-top:18px}.guide-entry{padding:24px}.guide-content,.guide-implications{grid-template-columns:1fr;gap:22px}.guide-visual{max-width:500px}.guide-references ol{columns:1}.guide-identity{flex-wrap:wrap}.guide-entry h2{font-size:32px}.guide-condition{font-size:19px}.guide-entry-footer{display:block}.guide-entry-footer a{display:block;margin-top:8px}
 }
 @media(max-width:400px){
- .field-guide{padding:24px 12px}.guide-entry{padding:20px 16px}.guide-intro h1{font-size:30px}.guide-memory{padding:12px 14px}
+ .field-guide{padding-top:26px;padding-bottom:24px}.guide-entry{padding:20px 16px}.guide-intro h1{font-size:30px}.guide-memory{padding:12px 14px}
 }
 @page{size:A4 portrait;margin:13mm}
 @media print{

@@ -30,7 +30,7 @@ function entry(round,progress){
   }else related.forEach((item,index)=>{if(index)p.append(document.createTextNode(' · '));const a=node('a',`${item.gene} · ${item.relationship.toLowerCase()}`);a.href=`#round-${item.number}`;p.append(a);});
   article.append(p);
  }
- const footer=node('div',null,'guide-entry-footer');const science=node('a','Full profile and sources ↗');science.href=`./science.html?level=${round.number}`;footer.append(node('span','Educational content · AI-generated artwork'),science);article.append(footer);return article;
+ const footer=node('div',null,'guide-entry-footer');const science=node('a','Science →');science.href=`./science.html?level=${round.number}`;footer.append(node('span','Educational content · AI-generated artwork'),science);article.append(footer);return article;
 }
 function render(){
  const progress=collectionProgress(key=>{try{return localStorage.getItem(key);}catch{return null;}}),completed=completedGuideRounds(progress);

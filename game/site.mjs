@@ -18,7 +18,7 @@ export function renderSite({active='play',roundNumber='01',playControls=false}={
         <a id="collectionTab" href="./collection.html${level}"${current('collection')}>Collection</a>
         <a id="scienceTab" href="./science.html${level}"${current('science')}>Science</a>
       </nav>
-      ${playControls?`<div class="site-controls"><button class="site-control sound-button" id="soundButton" type="button" aria-pressed="true" aria-label="Turn sound off">${speaker}<span>Sound on</span></button><button class="site-control" id="helpButton" type="button" aria-label="How to play">${question}<span>How to play</span></button></div>`:''}
+      <div class="site-controls${playControls?'':' is-empty'}"${playControls?'':' aria-hidden="true"'}>${playControls?`<button class="site-control sound-button" id="soundButton" type="button" aria-pressed="true" aria-label="Turn sound off">${speaker}<span>Sound on</span></button><button class="site-control" id="helpButton" type="button" aria-label="How to play">${question}<span>How to play</span></button>`:''}</div>
     </header>`;
   const footer=document.getElementById('siteFooter');
   if(footer)footer.innerHTML=`<footer class="site-footer">
