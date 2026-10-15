@@ -17,11 +17,24 @@ export const relatedCompletedRounds=(number,progress)=>relatedRoundLinks(number,
 export const completedGuideRounds=progress=>progress.filter(item=>item.done).map(item=>item.round);
 export const splicingPairComplete=progress=>['05','08'].every(number=>progress.some(item=>item.round.number===number&&item.done));
 
+// Keep the printable takeaways explicit: a selected technical pearl should not
+// displace a condition's course, clinical significance, or family implications.
+export function guideClinicalSections(round){
+ const profile=round.clinical;
+ return [
+  {label:'Mechanism',text:profile.connection},
+  {label:'Clinical pattern',text:profile.pattern},
+  {label:'Onset and course',text:profile.onset},
+  {label:'Clinical significance',text:profile.significance.text},
+  {label:'Family implications',text:profile.family.text}
+ ];
+}
+
 export function guideReferences(round){
- const caveat=round.clinical.pearls[round.clinical.caveat];
+ const profile=round.clinical;
  // The condition's OMIM link is already shown once in the guide header.
  const omim=`https://omim.org/entry/${round.omim}`;
- const urls=[round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...caveat.sources,...(round.clinical.extraSources??[])].filter(url=>url&&url!==omim);
+ const urls=[...profile.connectionSources,profile.patternSource,...profile.significance.sources,...profile.family.sources,round.illustration.source,round.illustration.noteSource].filter(url=>url&&url!==omim);
  return [...new Set(urls)].map(url=>({url,label:round.sources.find(([,value])=>value===url)?.[0]??'Supporting reference'}));
 }
 

@@ -1,6 +1,8 @@
 import {clinicalProfiles} from './clinical.mjs';
 import {illustrations} from './artwork-data.mjs';
 import {signoff,requireApproval,isApproved} from './signoff.mjs';
+import {hpoTerms} from './hpo-terms.mjs';
+import {interpretationSources} from './interpretation.mjs';
 
 // Public educational content only. No workbook rows, variants, or family data.
 const med = path => `https://medlineplus.gov/genetics/${path}/`;
@@ -58,7 +60,7 @@ const entries=[
   variant:'Heterozygous variants affecting channel function; effects are variant-dependent.',
   nuance:'CACNA1A has several distinct disease associations. Increased and decreased channel activity have both been reported in developmental epileptic encephalopathies.',
   summary:'CaV2.1 helps couple calcium entry to neurotransmitter release. Disturbed channel function can alter communication between neurons.',
-  sources:[['MedlinePlus · CACNA1A',med('gene/cacna1a')],['Jiang et al. · channel effects in DEE','https://doi.org/10.1111/epi.16316']],community:['CACNA1A Foundation','https://www.cacna1a.org/']},
+  sources:[['MedlinePlus · CACNA1A',med('gene/cacna1a')],['Jiang et al. · CACNA1A gain and loss of function (2019)','https://pubmed.ncbi.nlm.nih.gov/31468518/']],community:['CACNA1A Foundation','https://www.cacna1a.org/']},
  {gene:'PTPN11',omim:'163950',id:'ptpn11-noonan1-v1',title:'Keeping growth signals in balance',topic:'RAS / MAPK signaling',
   condition:'Noonan syndrome 1',otherName:'PTPN11-related Noonan syndrome',inheritance:AD,
   clues:[['Location','Intracellular signaling complexes','A regulatory protein participates in signals inside cells.'],['Function','Regulating RAS / MAPK','This pathway helps coordinate growth and development.']],
@@ -93,9 +95,17 @@ const entries=[
   sources:[['GeneReviews · GAA-FGF14-related ataxia','https://www.ncbi.nlm.nih.gov/books/NBK599589/'],['Pellerin et al. · NEJM 2023 repeat discovery','https://www.nejm.org/doi/10.1056/NEJMoa2207406'],['Rafehi et al. · AJHG 2023 repeat discovery','https://pubmed.ncbi.nlm.nih.gov/36493768/']],community:['SCA27b Ataxia Foundation','https://www.sca27b.org/']}
 ];
 
-// Gene products players may type instead of a symbol. They receive a nudge, not a completion.
+// Unambiguous product names are accepted and mapped back to the gene at completion.
 const products={CLCN1:['ClC-1'],GJB2:['Cx26','connexin 26'],SLC29A3:['ENT3'],'RNU4-2':['U4','U4 snRNA'],CACNA1A:['CaV2.1'],PTPN11:['SHP-2'],RNU4ATAC:['U4atac'],STING1:['STING'],FGF14:['FHF4']};
 const referenceNames={
+ 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7235630/':'ClinGen Hearing Loss Expert Panel · GJB2 penetrance (2019)',
+ 'https://pubmed.ncbi.nlm.nih.gov/24172204/':'Molho-Pessach et al. · H syndrome clinical series (2014)',
+ 'https://pmc.ncbi.nlm.nih.gov/articles/PMC2561939/':'Molho-Pessach et al. · SLC29A3 and H syndrome (2008)',
+ 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10697969/':'Ballios et al. · Roifman retinal phenotype and course (2023)',
+ 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6230649/':'Hallermayr et al. · Roifman syndrome phenotype (2018)',
+ 'https://pubmed.ncbi.nlm.nih.gov/33569478/':'Wang et al. · lung-predominant SAVI (2021)',
+ 'https://pubmed.ncbi.nlm.nih.gov/23258413/':'Sun et al. · cGAS, cGAMP, and STING (2013)',
+ 'https://medlineplus.gov/genetics/understanding/inheritance/riskassessment/':'MedlinePlus Genetics · inheritance and recurrence',
  'https://www.ncbi.nlm.nih.gov/books/NBK1124/':'GeneReviews · Noonan syndrome',
  'https://www.nature.com/articles/s41591-024-03085-5':'Greene et al. · RNU4-2 phenotype and discovery (2024)',
  'https://www.nature.com/articles/s41588-026-02554-6':'RNU4-2 · distinct recessive association (2026)',
@@ -117,12 +127,13 @@ const reviewLabel=entry=>isApproved(entry)?`Scientifically reviewed${entry.revie
 export const allRounds=entries.map((r,index)=>{
  const number=String(index+1).padStart(2,'0'),clinical=clinicalProfiles[r.gene],illustration=illustrations[number];
  const sources=new Map([[`https://omim.org/entry/${r.omim}`,`OMIM · condition #${r.omim}`],...r.sources.map(([label,url])=>[url,label])]);
- if(!sources.has(illustration.source))sources.set(illustration.source,'Illustration · mechanistic reference');
+ if(!sources.has(illustration.source))sources.set(illustration.source,referenceNames[illustration.source]??'Illustration · mechanistic reference');
  if(illustration.noteSource&&!sources.has(illustration.noteSource))sources.set(illustration.noteSource,'Spliceosome · assembly and activation');
- const urls=[clinical.patternSource,...clinical.features.map(f=>f.source),...clinical.pearls.flatMap(p=>p.sources),...(clinical.extraSources??[])];
+ const urls=[clinical.patternSource,...clinical.connectionSources,...[clinical.significance,clinical.family,clinical.interpretation].flatMap(claim=>claim.sources),...clinical.features.map(f=>f.source),...clinical.pearls.flatMap(p=>p.sources),...(clinical.extraSources??[])];
  for(const url of urls) if(!sources.has(url)) sources.set(url,referenceNames[url]??(url.includes('ncbi.nlm.nih.gov/books')?'GeneReviews · clinical and molecular reference':url.includes('medlineplus')?'MedlinePlus Genetics · clinical reference':'Primary research · clinical and molecular evidence'));
- return {...r,number,clinical,illustration,signoff:signoff[r.id],reviewStatus:reviewLabel(signoff[r.id]),checked:'10 October 2026',sourceNote,
-  aliases:r.aliases??[],products:products[r.gene]??[],
+ for(const [label,url] of interpretationSources)if(!sources.has(url))sources.set(url,label);
+ return {...r,number,clinical,illustration,signoff:signoff[r.id],reviewStatus:reviewLabel(signoff[r.id]),checked:'15 October 2026',sourceNote,
+  aliases:r.aliases??[],products:products[r.gene]??[],ambiguousProducts:r.gene==='RNU4-2'?['U4','U4 snRNA']:[],
   artwork:`./artwork/${number}.webp${new URL(import.meta.url).search}`,description:illustration.description,pieces:illustration.pieces,
   sources:[...sources].map(([url,label])=>[label,url]),
   clues:[...r.clues.map(([label,title,body],i)=>({at:[2,4][i],label,title,body})),
@@ -137,3 +148,9 @@ export function publishedRounds(list,required=requireApproval){return required?l
 export const rounds=publishedRounds(allRounds);
 export function findRound(value,list=rounds) {return list.find(r=>r.number===value||r.id===value)??list[0];}
 export const saveKey=round=>`gregor-puzzles:${round.id}`;
+
+// Search covers the terminology a learner may know before learning a symbol.
+export function searchText(round){
+ const c=round.clinical;
+ return [round.gene,...round.aliases,...round.products,round.condition,round.otherName,round.topic,round.inheritance,round.variant,c.pattern,c.overview,c.connection,c.onset,c.significance.text,c.family.text,c.interpretation.text,...c.pearls.flatMap(p=>[p.title,p.text]),...c.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase();
+}

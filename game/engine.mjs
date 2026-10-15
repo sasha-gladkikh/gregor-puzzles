@@ -22,10 +22,26 @@ export function pathFor(id){const r=Math.floor(id/COLS),c=id%COLS,x=c*CW,y=r*CH,
  }
  return s.join(' ')+' Z';
 }
-export function newState(){return {sessionVersion:3,placed:[],hints:0,peeks:0,solvedByGuess:false,namedAt:null,seconds:0,timingUnavailable:false,started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
+export function newState(){return {sessionVersion:3,placed:[],hints:0,geneHintSeen:false,peeks:0,solvedByGuess:false,namedAt:null,seconds:0,timingUnavailable:false,started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
 export function place(state,piece,slot){if(!Number.isInteger(piece)||piece<0||piece>=SIZE||piece!==slot||state.placed.includes(piece))return false;state.placed.push(piece);return true;}
 // Case, spaces, and punctuation are ignored: RNU4-2, rnu4 2, and RNU42 match.
 export const normalizeGene=value=>value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+// Recognition is optional. A product name counts only when it identifies this
+// gene unambiguously; a shared RNA such as U4 still needs a locus-specific name.
+export function recognizeGene(value,round){
+ const typed=normalizeGene(value);if(!typed)return null;
+ if(typed===normalizeGene(round.gene))return {kind:'symbol',name:round.gene};
+ const alias=round.aliases.find(name=>normalizeGene(name)===typed);
+ if(alias)return {kind:'alias',name:alias};
+ const product=round.products.find(name=>normalizeGene(name)===typed);
+ if(product)return {kind:round.ambiguousProducts?.includes(product)?'ambiguous':'product',name:product};
+ return null;
+}
+export function revealGeneHint(state,gene){
+ if(state.placed.length<8||state.placed.length>=11)return null;
+ if(!state.geneHintSeen){state.hints++;state.geneHintSeen=true;}
+ return `The symbol starts with ${gene.slice(0,3)} and has ${normalizeGene(gene).length} letters and digits. You can also complete the image to reveal it.`;
+}
 export function guess(state,value,gene,aliases=[]){
  const typed=normalizeGene(value);if(!typed||![gene,...aliases].some(symbol=>normalizeGene(symbol)===typed))return false;
  if(!complete(state))state.namedAt=state.placed.length;

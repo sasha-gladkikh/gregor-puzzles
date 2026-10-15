@@ -32,6 +32,8 @@ Record:
 
 Afterward, ask each person to explain the round's gene–mechanism–clinical connection in their own words. This is an observation for design, not evidence that the game improves learning.
 
+For trainees, also ask what the inheritance label does and does not tell a family, and why recognizing a gene does not establish a diagnosis. Revisit one connection after another round to look for retention; keep this facilitator exercise outside the game. Confirm that an unfamiliar symbol such as SLC29A3 does not prevent a satisfying image-puzzle completion.
+
 Simulate the booth once: three people in a row on one device, standing, in a noisy room, with a two-minute limit, using **New player** between them.
 
 ## iPhone and Safari checklist
@@ -45,6 +47,7 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Complete a round in **Focus view** and confirm completion restores the scientific column and accessible figure guide. Enlarge the finished figure, then close it and restart the round.
 - Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, and Science on a narrow screen, then open Editorial review from Science.
 - Follow a reference number on a completion card and in Editorial review; the References panel should open at the cited item. Check that each external paper is listed once per round.
+- Try ENT3 in round 03 and confirm it completes the image and teaches SLC29A3. Search Science for ENT3 and H syndrome. After eight pieces, open the symbol hint, enter an incorrect answer, then reopen the hint; it should remain available without being counted again.
 - Complete two rounds, open the field guide from Collection, and print to PDF. Only the completed rounds should appear, with readable figures and references.
 - Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
 - Complete the collection and scroll to the completion banner: the logo assembles once, without moving the board.

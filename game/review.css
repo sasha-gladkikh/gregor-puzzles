@@ -6,3 +6,4 @@
 
 .review-figure-note{font-size:12px!important;color:var(--muted);line-height:1.6!important;margin:14px 0 18px}.review-image-transcript{display:none}.review-content .reference-list{margin-top:0}.review-content h4 .reference-marks{margin-top:-3px}.review-content .learning-panel>.reference-marks{margin-left:0}
 @media print{.review-image-transcript{display:block}.review-image-transcript h4{font-size:14px;margin:14px 0 5px}.review-image-transcript p{font-size:12px;line-height:1.5}.review-visual .walkthrough{display:none}}
+.review-content .science-detail-panel{margin-top:16px;padding-bottom:0}.review-content .science-detail-panel .science-pearl h4{margin-top:0}.review-content .science-detail-panel .science-pearl p{font-size:14px}.review-content .science-detail-panel .science-pearl+.science-pearl{margin-top:20px}

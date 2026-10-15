@@ -1,8 +1,7 @@
-import {allRounds,rounds as playable,findRound} from './rounds.mjs';
+import {allRounds,rounds as playable,findRound,searchText} from './rounds.mjs';
 import {node,citation,referenceMarks} from './clinical-ui.mjs';
-import {hpoTerms} from './hpo-terms.mjs';
 import {renderSite} from './site.mjs';
-import {scientificFigure,clinicalDetails,scientificInterpretation,scientificReferences,scientificMechanisms} from './science-ui.mjs';
+import {scientificFigure,clinicalDetails,scientificFamily,scientificInterpretation,scientificReferences,scientificMechanisms} from './science-ui.mjs';
 
 const params=new URLSearchParams(location.search);
 let current=findRound(params.get('level')??'01',allRounds);
@@ -10,7 +9,7 @@ const mount=document.getElementById('scienceArticle'),index=document.getElementB
 const entries=allRounds.map(round=>{
  const link=node('a',null,'science-round-link');link.href=`./science.html?level=${round.number}`;link.append(node('span',round.number),node('strong',round.gene));
  link.addEventListener('click',event=>{if(event.button||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();history.pushState({},'',link.href);showRound(round);mount.querySelector('h2').focus({preventScroll:true});});index.append(link);
- return {round,link,search:[round.gene,round.condition,round.topic,round.clinical.pattern,...round.clinical.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase()};
+ return {round,link,search:searchText(round)};
 });
 function showRound(round){
  current=round;renderSite({active:'science',roundNumber:round.number,playControls:false});
@@ -24,12 +23,12 @@ function showRound(round){
  const actions=node('div',null,'science-actions');
  if(playable.includes(round)){const play=node('a','Play this round','primary');play.href=`./?level=${round.number}`;actions.append(play);}
  const review=node('a','Review this content','tool');review.href=`./review.html?level=${round.number}#round-${round.number}`;actions.append(review);head.append(actions);
- const sections=node('nav',null,'science-section-nav');sections.setAttribute('aria-label',`${round.gene} profile sections`);for(const [label,hash]of [['Mechanism','mechanism'],['Clinical pattern','clinical-pattern'],['Interpretation','interpretation'],['References','references']]){const a=node('a',label);a.href=`#${hash}`;sections.append(a);}head.append(sections);
+ const sections=node('nav',null,'science-section-nav');sections.setAttribute('aria-label',`${round.gene} profile sections`);for(const [label,hash]of [['Mechanism','mechanism'],['Clinical features','clinical-pattern'],['Family implications','family'],['Interpretation','interpretation'],['References','references']]){const a=node('a',label);a.href=`#${hash}`;sections.append(a);}head.append(sections);
  const layout=node('div',null,'science-article-grid'),visual=node('div',null,'science-visual-column'),content=node('div',null,'science-reading');
  visual.append(scientificFigure(round),scientificMechanisms(round));
- const mechanism=node('section',null,'science-section science-mechanism');mechanism.id='mechanism';const mechanismHeading=node('h3','Mechanism');mechanismHeading.append(referenceMarks(round,[round.illustration.source,round.clinical.patternSource,...(round.clinical.extraSources??[]),...(round.illustration.noteSource?[round.illustration.noteSource]:[])],'Mechanism and clinical connection'));mechanism.append(mechanismHeading,node('p',round.clinical.connection,'science-lead'));
+ const mechanism=node('section',null,'science-section science-mechanism');mechanism.id='mechanism';const mechanismHeading=node('h3','Mechanism');mechanismHeading.append(referenceMarks(round,round.clinical.connectionSources,'Mechanism and clinical connection'));mechanism.append(mechanismHeading,node('p',round.clinical.connection,'science-lead'));
  const memory=node('aside',null,'science-memory');memory.append(node('span','One connection to remember','science-kicker'),node('p',round.clinical.memory));mechanism.append(memory);
- content.append(mechanism,clinicalDetails(round),scientificInterpretation(round),scientificReferences(round));
+ content.append(mechanism,clinicalDetails(round),scientificFamily(round),scientificInterpretation(round),scientificReferences(round));
  layout.append(visual,content);article.append(head,layout);mount.replaceChildren(article);
  document.title=`${round.gene} · Science · GREGoR Puzzles`;
  document.querySelector('.science-review-link').href=`./review.html?level=${round.number}#round-${round.number}`;
@@ -49,4 +48,6 @@ function filter(){
 search.addEventListener('input',filter);
 document.getElementById('clearScienceSearch').addEventListener('click',()=>{search.value='';filter();search.focus();});
 window.addEventListener('popstate',()=>{search.value='';showRound(findRound(new URLSearchParams(location.search).get('level'),allRounds));filter();});
+window.addEventListener('beforeprint',()=>{mount.querySelectorAll('details').forEach(details=>{details.dataset.wasOpen=String(details.open);details.open=true;});});
+window.addEventListener('afterprint',()=>{mount.querySelectorAll('[data-was-open]').forEach(details=>{details.open=details.dataset.wasOpen==='true';delete details.dataset.wasOpen;});});
 showRound(current);

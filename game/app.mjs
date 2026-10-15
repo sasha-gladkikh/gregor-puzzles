@@ -1,5 +1,5 @@
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
-import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled,normalizeGene,landmarkPiece} from './engine.mjs';
+import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled,normalizeGene,recognizeGene,revealGeneHint,landmarkPiece} from './engine.mjs';
 import {rounds,allRounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink,newPlayerKeys} from './collection.mjs';
 import {artworkMarkers} from './artwork-ui.mjs';
@@ -211,7 +211,7 @@ function updateMode() {
 function renderResults() {
   const plural=(n,word)=>`${n} ${word}${n===1?'':'s'}`;
   const mode=timed?(state.timingUnavailable?'Timed · time unavailable':`Timed · ${formatTime(elapsedSeconds(state))}`):'Practice';
-  const route=state.solvedByGuess?(state.namedAt!==null?`Named the gene at ${state.namedAt} of ${SIZE} pieces`:'Gene recognition'):state.usedRoutes.includes('legacy')?'Restored progress':'Image puzzle';
+  const route=state.solvedByGuess?(state.namedAt!==null?`Identified this round at ${state.namedAt} of ${SIZE} pieces`:'Gene recognition'):state.usedRoutes.includes('legacy')?'Restored progress':'Image puzzle';
   $('roundResults').textContent=[mode,route,plural(state.hints,'hint'),plural(state.peeks,'reference view')].join(' · ');
 }
 function render(before=state.placed.length) {
@@ -249,6 +249,7 @@ function render(before=state.placed.length) {
     });lastCount=n;
   }
   $('completion').hidden=!done; $('completionActions').hidden=!done; $('guessForm').hidden=done;
+  $('geneHint').hidden=n<8||n>=11;
   $('hint').disabled=done; $('peek').disabled=done;
   $('hint').hidden=done;$('peek').hidden=done;$('focusButton').hidden=done;$('enlargeButton').hidden=!done;
   document.querySelector('.mode-toggle').hidden=done;
@@ -279,13 +280,18 @@ $('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('refere
 $('hint').onclick=()=>{start('image');hinted=selected??order.find(id=>!state.placed.includes(id));selected=hinted;state.hints++;updateSelection();strip(`Hint: the highlighted piece belongs in ${position(hinted)}.`);save();};
 $('guessForm').onsubmit=e=>{
   e.preventDefault();const value=$('geneGuess').value;
-  if(!normalizeGene(value)){$('guessFeedback').textContent='Enter a gene symbol first.';return;}
+  if(!normalizeGene(value)){$('guessFeedback').textContent='Enter a gene symbol or product name, or keep building the image.';return;}
   start('guess');const before=state.placed.length,previous=[...state.placed];
-  if(guess(state,value,round.gene,round.aliases)){
-    const alias=normalizeGene(value)===normalizeGene(round.gene)?'':` ${value.trim().toUpperCase()} is the previous symbol for ${round.gene}.`;
+  const answer=recognizeGene(value,round);
+  if(answer&&answer.kind!=='ambiguous'&&guess(state,round.gene,round.gene)){
+    const alias=answer.kind==='product'?` ${answer.name} is encoded by ${round.gene}.`:answer.kind==='alias'?` ${answer.name} is a previous symbol for ${round.gene}.`:'';
     selected=null;hinted=null;afterProgress(before,previous,{alias});
-  } else if(round.products.some(p=>normalizeGene(p)===normalizeGene(value))){$('guessFeedback').textContent='That names the gene product. Enter its gene symbol to complete the image.';}
-  else {$('guessFeedback').textContent='That is not the gene for this round. Keep exploring the clues.';$('geneGuess').setAttribute('aria-invalid','true');}
+  } else if(answer?.kind==='ambiguous'){$('guessFeedback').textContent='That identifies the RNA family. More than one gene encodes it; use the specific gene symbol or finish the image.';}
+  else {$('guessFeedback').textContent='No match for this round. Keep building to discover the gene.';$('geneGuess').setAttribute('aria-invalid','true');}
+};
+$('geneHint').onclick=()=>{
+ const hint=revealGeneHint(state,round.gene);if(!hint)return;
+ $('guessFeedback').textContent=hint;save();
 };
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
 function openDialog(id){walkthrough?.pause();$(id).showModal();}
@@ -306,7 +312,7 @@ $('confirmRestart').onclick=()=>{
   $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
   $('clueDetails').open=true;$('revealExtras').open=false;
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
-  $('guessFeedback').textContent='A correct gene symbol completes the image.';
+  $('guessFeedback').textContent='Optional. A gene symbol or unambiguous product name completes the image.';$('geneHint').disabled=false;
   markers.forEach(m=>{m.hidden=true;m.classList.remove('is-new');});
   board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();
   strip('New round. Choose Practice or Timed, then begin.');$('calm').focus();
@@ -333,16 +339,24 @@ $('reference').src=round.artwork; $('reference').alt=diagramDescription;
 $('diagramDescription').textContent=diagramDescription;
 $('revealGene').textContent=round.gene;$('revealCondition').textContent=round.condition;$('revealAlias').textContent=round.otherName;
 $('revealMetadata').append(node('span',round.inheritance),citation(`https://omim.org/entry/${round.omim}`,`OMIM ${round.omim}`));
-$('revealConnection').textContent=round.clinical.connection;
-$('revealPatternTitle').textContent=`Clinical pattern · ${round.clinical.patternTitle}`;$('revealPattern').textContent=round.clinical.pattern;
-const caveat=round.clinical.pearls[round.clinical.caveat];$('revealCaveat').replaceChildren(node('strong',`${caveat.title}.`),' ',caveat.text);
-const completionSources=[
- [round.illustration.source,round.clinical.patternSource,...(round.clinical.extraSources??[]),...(round.illustration.noteSource?[round.illustration.noteSource]:[])],
- [round.clinical.patternSource],caveat.sources
+const p=round.clinical;
+const completionSections=[
+ ['Mechanism',p.connection,p.connectionSources],
+ ['Clinical pattern',p.pattern,[p.patternSource]],
+ ['Onset and course',p.onset,[p.patternSource]],
+ ['Clinical significance',p.significance.text,p.significance.sources],
+ ['Family implications',p.family.text,p.family.sources]
 ];
+// Adjacent statements with the same sources share one citation marker group.
 const sourceKey=urls=>[...new Set(urls)].sort().join('|');
-if(completionSources.every(urls=>sourceKey(urls)===sourceKey(completionSources[0])))$('revealLines').after(referenceMarks(round,completionSources[0],'Mechanism, clinical pattern, and interpretation'));
-else ['revealConnection','revealPattern','revealCaveat'].forEach((id,index)=>$(id).append(referenceMarks(round,completionSources[index],['Mechanism','Clinical pattern','Interpretation'][index])));
+$('revealLines').replaceChildren(...completionSections.map(([label,text,sources],index)=>{
+ const row=node('div'),title=node('dt',label),body=node('dd',text);
+  if(!completionSections[index+1]||sourceKey(sources)!==sourceKey(completionSections[index+1][2])){
+   let start=index;while(start>0&&sourceKey(completionSections[start-1][2])===sourceKey(sources))start--;
+   body.append(referenceMarks(round,sources,completionSections.slice(start,index+1).map(([title])=>title).join(', ')));
+  }
+ row.append(title,body);return row;
+}));
 $('referencesBody').append(referenceList(round,{heading:''}));
 $('profileLink').href=`./science.html?level=${round.number}`;
 $('largeFigure').src=round.artwork;$('largeFigure').alt=diagramDescription;$('largeFigureCaption').textContent=round.illustration.note;

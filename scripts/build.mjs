@@ -9,7 +9,7 @@ const files = [
   'index.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs',
   'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
   'review.html', 'review.mjs', 'review.css',
-  'clinical.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
+  'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork.css',
   'experience.mjs', 'experience.css',
   'site.mjs', 'site.css', 'about.html', 'about.mjs', 'play.css',

@@ -2,6 +2,7 @@ import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
 import {hpoTerms} from './hpo-terms.mjs';
 import {artworkMarkers} from './artwork-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
+import {interpretationPrinciples} from './interpretation.mjs';
 
 export function scientificFigure(round){
  const section=node('section',null,'science-visual');
@@ -35,35 +36,72 @@ export function scientificFigure(round){
 
 export function clinicalDetails(round){
  const section=node('section',null,'science-section clinical-details');section.id='clinical-pattern';
- const p=round.clinical,heading=node('h3','Clinical pattern');heading.append(referenceMarks(round,p.patternSource,'Clinical pattern and onset'));
- section.append(heading,node('p',p.pattern,'science-lead'));
+ const p=round.clinical,heading=node('h3','Clinical features');heading.append(referenceMarks(round,p.patternSource,'Clinical overview and onset'));
+ section.append(heading,node('p',p.overview,'science-lead'));
  const onset=node('p',null,'science-onset');onset.append(node('strong','Onset and course. '),document.createTextNode(p.onset));section.append(onset);
- section.append(node('p','Selected findings, not a diagnostic checklist. Features and support needs vary. A missing finding does not by itself exclude the condition.','science-context'));
- const groups=new Map();for(const feature of p.features){if(!groups.has(feature.system))groups.set(feature.system,[]);groups.get(feature.system).push(feature);}
+ const significance=node('aside',null,'science-significance'),significanceHeading=node('h4','Clinical significance');significanceHeading.append(referenceMarks(round,p.significance.sources,'Clinical significance'));significance.append(significanceHeading,node('p',p.significance.text));section.append(significance);
+ section.append(node('p','Selected clinical findings and modifiers. Frequency, severity, and support needs vary; formal diagnostic criteria are condition-specific.','science-context'));
  const features=node('div',null,'science-features');
- for(const [system,items] of groups){
-  const group=node('section',null,'science-feature-system'),heading=node('h4',system),sources=new Set(items.map(f=>f.source));
-  if(sources.size===1)heading.append(referenceMarks(round,[...sources],`${system} findings`));
-  group.append(heading);const list=node('ul',null,'science-feature-list');
-  for(const feature of items){
-   const item=node('li',null,'science-feature'),description=node('p'),title=node('strong',`${feature.title}.`);
-   if(sources.size>1)title.append(referenceMarks(round,feature.source,feature.title));
-   description.append(title,document.createTextNode(` ${feature.text}`));
-   const context=node('p',feature.context,'science-context');
-   if(feature.hpo){context.append(document.createTextNode(' · '),citation(`https://hpo.jax.org/browse/term/${feature.hpo}`,feature.hpo,hpoTerms[feature.hpo]));}
-   item.append(description,context);list.append(item);
-  }group.append(list);features.append(group);
+ for(const {id,label,description,items} of groupedClinicalFeatures(p.features)){
+  const group=node('section',null,'science-feature-group');group.dataset.group=id;
+  group.append(node('h4',label),node('p',description,'science-context'));
+  // Group claims with a shared source instead of repeating a source control per finding.
+  const systems=new Map();for(const feature of items){if(!systems.has(feature.system))systems.set(feature.system,[]);systems.get(feature.system).push(feature);}
+  for(const [system,findings] of systems){
+   const subsection=node('section',null,'science-feature-system'),heading=node('h5',system),sources=new Set(findings.map(f=>f.source));
+   if(sources.size===1)heading.append(referenceMarks(round,[...sources],`${system} findings`));
+   subsection.append(heading);const list=node('ul',null,'science-feature-list');
+   for(const feature of findings){
+    const item=node('li',null,'science-feature'),description=node('p'),title=node('strong',`${feature.title}.`);
+    if(sources.size>1)title.append(referenceMarks(round,feature.source,feature.title));
+    description.append(title,document.createTextNode(` ${feature.text}`));
+    const context=node('p',feature.context,'science-context');item.append(description,context);
+    if(feature.hpo){
+     const term=node('p',null,'science-hpo');term.append(node('span','HPO: '),citation(`https://hpo.jax.org/browse/term/${feature.hpo}`,`${hpoTerms[feature.hpo]} · ${feature.hpo}`));
+     if(feature.hpoQualifier)term.append(node('span',feature.hpoQualifier,'science-hpo-qualifier'));
+     item.append(term);
+    }
+    list.append(item);
+   }subsection.append(list);group.append(subsection);
+  }features.append(group);
  }
- section.append(features,node('p','HPO links define standardized terms. They are vocabulary mappings, not a claim of formal disease annotation; broader mappings and course modifiers are identified above.','science-context'));
+ section.append(features,node('p','HPO links define standardized terms. They are vocabulary mappings, not a claim of formal disease annotation. Clinical qualifiers explain when a term is broader than the finding described.','science-context'));
  return section;
+}
+
+export function groupedClinicalFeatures(features){
+ const groups=[
+  {id:'characteristic',label:'Characteristic pattern',description:'Findings emphasized for recognition. Interpret the combination and variant context; this is not a diagnostic checklist.'},
+  {id:'variable',label:'Additional and variable findings',description:'Associated findings that broaden the phenotype; this grouping does not imply rarity.'},
+  {id:'course',label:'Course and clinical context',description:'Timing, triggers, and other modifiers help interpret the presentation.'}
+ ];
+ return groups.map(group=>({...group,items:features.filter(feature=>{
+  const id=feature.group??(feature.system==='Course'?'course':feature.key?'characteristic':'variable');return id===group.id;
+ })})).filter(group=>group.items.length);
+}
+
+export function scientificFamily(round){
+ const section=node('section',null,'science-section');section.id='family';
+ const heading=node('h3','Family implications');heading.append(referenceMarks(round,round.clinical.family.sources,'Family implications'));
+ section.append(heading,node('p',round.clinical.family.text));return section;
 }
 
 export function scientificInterpretation(round){
  const section=node('section',null,'science-section');section.id='interpretation';section.append(node('h3','Interpretation'));
+ const overview=node('p',round.clinical.interpretation.text);overview.append(referenceMarks(round,round.clinical.interpretation.sources,'Variant interpretation'));section.append(overview);
+ const details=node('details',null,'science-detail-panel');details.append(node('summary','Mechanism and testing details'));
  for(const pearl of round.clinical.pearls){
-  const part=node('section',null,'science-pearl'),heading=node('h4',pearl.title);heading.append(referenceMarks(round,pearl.sources,pearl.title));part.append(heading,node('p',pearl.text));section.append(part);
+  const part=node('section',null,'science-pearl'),heading=node('h4',pearl.title);heading.append(referenceMarks(round,pearl.sources,pearl.title));part.append(heading,node('p',pearl.text));details.append(part);
  }
- section.append(node('p',round.nuance,'science-context'));return section;
+ details.append(node('p',round.nuance,'science-context'));section.append(details,scientificPrinciples(round));return section;
+}
+
+export function scientificPrinciples(round){
+ const details=node('details',null,'science-detail-panel');
+ details.append(node('summary','How genetic evidence becomes a diagnosis'));
+ const sources=[...new Set(interpretationPrinciples.flatMap(principle=>principle.sources))];
+ for(const principle of interpretationPrinciples){const item=node('section',null,'science-pearl');item.append(node('h4',principle.title),node('p',principle.text));details.append(item);}
+ details.append(referenceMarks(round,sources,'Principles of variant interpretation'));return details;
 }
 
 export function scientificReferences(round){

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints} from '../game/engine.mjs';
+import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints,recognizeGene,revealGeneHint} from '../game/engine.mjs';
 import {allRounds as catalog} from '../game/rounds.mjs';
 const round=catalog[0];
 test('every internal boundary is shared and outside boundaries are flat',()=>{for(let i=0;i<SIZE;i++){const e=edges(i);if(i%4<3)assert.equal(e.right,edges(i+1).left);else assert.equal(e.right,0);if(i<8)assert.equal(e.bottom,edges(i+4).top);else assert.equal(e.bottom,0);if(i%4===0)assert.equal(e.left,0);if(i<4)assert.equal(e.top,0);assert.match(pathFor(i),/^M .* Z$/);assert.ok(!pathFor(i).includes('NaN'));}});
@@ -61,7 +61,7 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
   assert.deepEqual(r.clues.map(c=>c.at),[2,4,6,8,11,12]);
   assert.equal(r.clues[4].title,r.gene);assert.equal(r.clues[5].title,r.condition);
   assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
-  assert.equal(r.pieces.length,SIZE);assert.ok(r.clinical.features.length>=6&&r.clinical.features.length<=8);
+  assert.equal(r.pieces.length,SIZE);assert.ok(r.clinical.features.length>=6);
   const bytes=readFileSync(new URL(r.artwork,new URL('../game/',import.meta.url)));
   assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.equal(bytes.toString('ascii',8,12),'WEBP');
   assert.equal(r.illustration.landmarks.length,3);assert.ok(r.illustration.takeaway&&r.illustration.note);
@@ -144,7 +144,7 @@ test('old finished pictures awaiting quizzes count as complete without fabricati
 
 import {landmarkPiece,normalizeGene} from '../game/engine.mjs';
 import {newPlayerKeys} from '../game/collection.mjs';
-import {allRounds,publishedRounds} from '../game/rounds.mjs';
+import {allRounds,publishedRounds,searchText} from '../game/rounds.mjs';
 import {signoff,isApproved,checks,requireApproval} from '../game/signoff.mjs';
 import {mechanisms,spliceComparison} from '../game/mechanism.mjs';
 test('clues follow location, function, clinical pattern, inheritance, gene, and condition',()=>{
@@ -172,6 +172,38 @@ test('gene entry ignores punctuation, accepts previous symbols, and records piec
 test('a new player clears every round but keeps editorial notes',()=>{
  const keys=['gregor-puzzles:clcn1-recessive-v1','gregor-puzzles:fgf14-sca27b-v1','gregor-puzzles:review-notes:clcn1-recessive-v1','other-site:key'];
  assert.deepEqual(newPlayerKeys(keys),keys.slice(0,2));
+});
+test('optional recognition accepts precise products and aliases without conflating shared RNAs or diagnoses',()=>{
+ const slc=allRounds.find(r=>r.gene==='SLC29A3'),sting=allRounds.find(r=>r.gene==='STING1'),rna=allRounds.find(r=>r.gene==='RNU4-2');
+ assert.deepEqual(recognizeGene(' ent-3 ',slc),{kind:'product',name:'ENT3'});
+ assert.equal(recognizeGene('STING',sting).kind,'product');
+ assert.equal(recognizeGene('TMEM173',sting).kind,'alias');
+ assert.equal(recognizeGene('RNU42',rna).kind,'symbol');
+ assert.equal(recognizeGene('U4',rna).kind,'ambiguous');
+ assert.equal(recognizeGene('U4 snRNA',rna).kind,'ambiguous');
+ assert.equal(recognizeGene('STING',slc),null);
+ assert.equal(recognizeGene('Noonan syndrome',allRounds.find(r=>r.gene==='PTPN11')),null);
+ for(const r of allRounds)for(const product of r.products.filter(name=>!r.ambiguousProducts.includes(name))){
+  const state=newState();place(state,0,0);const answer=recognizeGene(product,r);
+  assert.equal(answer.kind,'product',`${r.gene}: ${product}`);
+  assert.equal(guess(state,r.gene,r.gene),true);assert.equal(state.namedAt,1);assert.equal(complete(state),true);
+ }
+});
+test('Science searches recognize protein names, former symbols, alternative conditions and HPO vocabulary',()=>{
+ const matches=query=>allRounds.filter(r=>searchText(r).includes(query.toLowerCase())).map(r=>r.gene);
+ assert.deepEqual(matches('ENT3'),['SLC29A3']);assert.deepEqual(matches('H syndrome'),['SLC29A3']);
+ assert.ok(matches('TMEM173').includes('STING1'));assert.ok(matches('SHP-2').includes('PTPN11'));
+ assert.ok(matches('Muscle weakness').includes('CLCN1'));
+});
+test('late symbol hint can be reopened and restored without extra hint counts or an early answer',()=>{
+ const state=newState();assert.equal(revealGeneHint(state,'SLC29A3'),null);
+ for(let i=0;i<8;i++)place(state,i,i);
+ const hint=revealGeneHint(state,'SLC29A3');assert.match(hint,/starts with SLC/);assert.ok(!hint.includes('SLC29A3'));
+ assert.equal(state.hints,1);assert.equal(revealGeneHint(state,'SLC29A3'),hint);assert.equal(state.hints,1);
+ const resumed=restoreSession({state:JSON.parse(JSON.stringify(state)),timed:false}).state;
+ assert.equal(revealGeneHint(resumed,'SLC29A3'),hint);assert.equal(resumed.hints,1);
+ for(let i=8;i<11;i++)place(resumed,i,i);assert.equal(revealGeneHint(resumed,'SLC29A3'),null);
+ assert.equal(newState().geneHintSeen,false);
 });
 test('sign-off gates publication only when required and complete',()=>{
  assert.deepEqual(rounds.map(r=>r.id),publishedRounds(allRounds,requireApproval).map(r=>r.id));assert.ok(rounds.length>0);

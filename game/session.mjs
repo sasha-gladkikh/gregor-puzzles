@@ -26,6 +26,7 @@ export function restoreSession(save, now = Date.now()) {
   delete state.learningVersion;
   state.sessionVersion = 3;
   state.timingUnavailable = raw.timingUnavailable === true;
+  state.geneHintSeen = raw.geneHintSeen === true;
   state.namedAt = raw.solvedByGuess && Number.isInteger(raw.namedAt) && raw.namedAt >= 0 && raw.namedAt < SIZE ? raw.namedAt : null;
   state.usedRoutes = Array.isArray(raw.usedRoutes) ? [...new Set(raw.usedRoutes.map(id => id === 'text' ? 'legacy' : id).filter(id => ['image', 'legacy', 'guess'].includes(id)))] : [];
   state.started = raw.started === true || raw.placed.length > 0 || raw.seconds > 0 || raw.hints > 0 || raw.peeks > 0;

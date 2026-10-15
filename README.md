@@ -9,7 +9,7 @@ Ten image puzzles connecting rare disease genes, molecular mechanisms, and clini
 Select a piece, then its position. Scientific clues appear as the image takes shape. Complete the image to reveal the gene and condition. Works with mouse, keyboard, or touch.
 
 - **Collection:** browse rounds, explore the process map, and print a field guide of completed rounds.
-- **Science:** read the mechanism, clinical pattern, interpretation, and references for each gene.
+- **Science:** read clinical features, family implications, variant interpretation, and references.
 - **Editorial review:** inspect player-facing content. Open it from Science.
 
 Progress stays in this browser. Previous saved rounds remain compatible.

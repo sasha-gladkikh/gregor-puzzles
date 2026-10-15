@@ -2,11 +2,13 @@
 // HPO links standardize terminology; they do not assert an official disease annotation.
 const gr=id=>`https://www.ncbi.nlm.nih.gov/books/${id}/`;
 const med=path=>`https://medlineplus.gov/genetics/${path}/`;
-const feature=(system,title,hpo,text,context,source,key=false)=>({system,title,hpo,text,context,source,key});
+const feature=(system,title,hpo,text,context,source,key=false,details={})=>({system,title,hpo,text,context,source,key,group:system==='Course'?'course':key?'characteristic':'variable',...details});
 const pearl=(title,text,...sources)=>({title,text,sources});
-// The completion card shows patternTitle with the clinical pattern, the connection sentence,
-// and pearls[caveat]. These additions are drafts pending scientific review like all content.
+const evidence=(text,...sources)=>({text,sources});
+// Explicit sources follow each teaching claim into Science, completion, and the field guide.
+// Feature groups describe educational emphasis, not diagnostic criteria or prevalence.
 const MC=gr('NBK1355'),GJ=gr('NBK1272'),SL=med('condition/histiocytosis-lymphadenopathy-plus-syndrome'),SD=gr('NBK1756'),RN=gr('NBK622730'),CA='https://pubmed.ncbi.nlm.nih.gov/31468518/',CAP='https://pmc.ncbi.nlm.nih.gov/articles/PMC4613477/',NO=gr('NBK1124'),RO=gr('NBK589232'),ROP='https://www.nature.com/articles/ncomms9718',ST=med('condition/sting-associated-vasculopathy-with-onset-in-infancy'),STP='https://pmc.ncbi.nlm.nih.gov/articles/PMC4174543/',FG=gr('NBK599589');
+const GJEXP='https://pmc.ncbi.nlm.nih.gov/articles/PMC7235630/',SLP='https://pubmed.ncbi.nlm.nih.gov/24172204/',SLH='https://pmc.ncbi.nlm.nih.gov/articles/PMC2561939/',CACOHORT='https://pmc.ncbi.nlm.nih.gov/articles/PMC9458680/',ROEYE='https://pmc.ncbi.nlm.nih.gov/articles/PMC10697969/',ROIMMUNE='https://pmc.ncbi.nlm.nih.gov/articles/PMC6230649/',STLUNG='https://pubmed.ncbi.nlm.nih.gov/33569478/';
 export const clinicalProfiles={
  CLCN1:{
   objective:'Distinguish delayed muscle relaxation from weakness, and interpret inheritance at the variant–condition level.',
@@ -17,11 +19,15 @@ export const clinicalProfiles={
   memory:'Relaxation is delayed; repetition can help. The recessive form may also cause transient weakness.',
   patternTitle:'Stiffness that eases with movement',caveat:0,
   connection:'ClC-1 chloride conductance steadies the muscle membrane after each signal. With less of it, electrical activity can repeat after a contraction, so relaxation is delayed.',
+  connectionSources:[MC],
+  significance:evidence('Stiffness and brief weakness can affect everyday movement. The warm-up effect is informative but not specific; myotonic dystrophy has a different molecular basis and additional systemic implications.',MC),
+  family:evidence('When both parents carry a pathogenic variant for the recessive association, each pregnancy has a 25% chance of inheriting both variants. Some CLCN1 alleles instead have dominant effects, so the allele matters.',MC),
+  interpretation:evidence('Distinguish recessive from dominant CLCN1 disease using the specific variants, zygosity, segregation, and phenotype. For two different recessive variants, establish whether they affect opposite gene copies (in trans).',MC),
   features:[
    feature('Muscle','Myotonia','HP:0002486','Delayed relaxation after contraction, sometimes evident after hand grip.','Core finding',MC,true),
    feature('Muscle','Warm-up phenomenon','HP:0003740','Repeated contractions can lessen stiffness.','Useful pattern; not unique to this condition',MC,true),
    feature('Muscle','Muscle hypertrophy','HP:0003712','Muscles may be enlarged despite impaired relaxation.','Variable expression',MC),
-   feature('Muscle','Transient weakness','HP:0001324','Brief loss of force may occur when movement starts after rest.','Especially informative for the recessive form',MC,true),
+   feature('Muscle','Transient weakness','HP:0001324','Brief loss of force may occur when movement starts after rest.','Especially informative for the recessive form',MC,true,{hpoQualifier:'The linked term is muscle weakness; “transient after rest” is the clinical qualifier.'}),
    feature('Muscle','Myalgia','HP:0003326','Muscle pain can accompany stiffness.','Reported; severity differs',MC),
    feature('Muscle','Distal weakness','HP:0002460','Persistent weakness of distal muscles can occur.','Less typical than stiffness; not required',MC)
   ],
@@ -29,16 +35,20 @@ export const clinicalProfiles={
  },
  GJB2:{
   objective:'Recognize the recessive nonsyndromic hearing profile and distinguish an informative negative finding from an exclusion rule.',
-  overview:'The selected association primarily affects hearing. Severity, age at recognition, and progression vary; a passed newborn screen does not exclude a mild presentation.',
+  overview:'This selected recessive association primarily affects hearing. It should be kept distinct from dominant or syndromic GJB2 conditions.',
   onset:'Often congenital or prelingual. Mild hearing loss may be recognized later; some genotypes show progression.',
   pattern:'Bilateral sensorineural hearing loss, a variable audiologic course, and no expected syndromic skin findings in this recessive association.',patternSource:GJ,
   memory:'Nonsyndromic describes the associated findings, not a single severity or a guarantee of detection at birth.',
   patternTitle:'Bilateral sensorineural hearing loss',caveat:1,
-  connection:'Connexin 26 gap junctions let neighboring inner-ear cells share ions and small molecules. Loss of function in both copies disrupts this communication and affects hearing, without the skin findings of some other GJB2 variants.',
+  connection:'Connexin 26 gap junctions let neighboring inner-ear cells share ions and small molecules. Reduced function from variants in both copies can affect hearing, without the skin findings of some other GJB2 associations.',
+  connectionSources:[med('gene/gjb2'),GJEXP],
+  significance:evidence('A passed newborn hearing screen does not exclude mild or later-recognized hearing loss. Severity and progression vary, including among people with the same genotype.',GJ),
+  family:evidence('When both parents are carriers, each pregnancy has a 25% chance of inheriting both variants. That genotype does not predict one hearing outcome: penetrance and severity can depend on the particular alleles.',GJ,GJEXP),
+  interpretation:evidence('The p.Met34Thr and p.Val37Ile variants are pathogenic in the recessive context with incomplete penetrance and variable expression. Incomplete penetrance means some people with the genotype do not show hearing loss; variable expression means the hearing phenotype differs among those who do.',GJEXP),
   features:[
    feature('Hearing','Bilateral sensorineural hearing loss','HP:0008619','Hearing is affected through an inner-ear mechanism, typically in both ears.','Core finding',GJ,true),
    feature('Course','Variable severity',null,'The audiologic range extends from mild to profound.','Severity modifier, not an additional symptom',GJ,true),
-   feature('Course','Congenital or early onset',null,'Early presentation is typical, but recognition may be delayed.','Age modifier; screening is not perfectly sensitive',GJ),
+   feature('Course','Congenital or early onset',null,'Early presentation is typical, but mild hearing loss can be missed by newborn screening or recognized later.','A passed screen is not an exclusion rule',GJ),
    feature('Course','Often stable, sometimes progressive',null,'Progression is possible and depends partly on genotype.','Do not assume stability for every individual',GJ),
    feature('Vestibular','Usually preserved vestibular function',null,'Vestibular dysfunction is not an expected defining feature.','Typical negative finding; not a stand-alone exclusion test',GJ),
    feature('Other systems','Nonsyndromic presentation',null,'Skin disease is not expected from this selected recessive association.','Other GJB2 associations can include skin involvement',med('gene/gjb2'),true)
@@ -53,14 +63,20 @@ export const clinicalProfiles={
   memory:'Skin, histiocytes, and endocrine or hearing findings can belong to one variable spectrum.',
   patternTitle:'Pigmented, hairy skin with histiocytosis',caveat:0,extraSources:['https://pubmed.ncbi.nlm.nih.gov/22174130/'],
   connection:'ENT3 carries nucleosides out of lysosomes for reuse. When it fails, lysosomal and cellular homeostasis are disturbed; how that produces each clinical feature is still being worked out.',
+  connectionSources:[med('gene/slc29a3'),'https://pubmed.ncbi.nlm.nih.gov/22174130/'],
+  significance:evidence('Skin findings may point to a broader endocrine, hearing, growth, and histiocytic condition. The combination can evolve and differs even within families; no single historical syndrome label captures every presentation.',SL,SLP),
+  family:evidence('When both parents carry a pathogenic SLC29A3 variant, each pregnancy has a 25% chance of inheriting both variants. Relatives with the same genotype can have different combinations of findings.',SL,SLP),
+  interpretation:evidence('H syndrome and related historical diagnoses overlap within the same recessive spectrum. A relevant phenotype and biallelic pathogenic or likely pathogenic variants support the association; a familiar syndrome label alone does not establish it.',SL,SLP),
   features:[
-   feature('Skin','Hyperpigmented patches','HP:0000953','Areas of increased pigmentation may accompany tissue infiltration.','Particularly characteristic of H-syndrome presentations',SL,true),
+   feature('Skin','Hyperpigmented patches','HP:0000953','Pigmented, often thickened patches commonly involve the lower body and thighs.','Particularly characteristic of H-syndrome presentations; distribution varies',SLH,true),
    feature('Skin','Hypertrichosis','HP:0000998','Increased hair growth can overlie affected skin.','Interpret together with the pigmentation',SL,true),
    feature('Immune','Histiocytosis','HP:0100727','Histiocytes accumulate in tissues.','Shared feature across the spectrum',SL,true),
    feature('Lymphatic','Lymphadenopathy','HP:0002716','Nodes may enlarge because of histiocytic accumulation.','Distribution and extent vary',SL),
-   feature('Endocrine','Insulin-dependent diabetes','HP:0000819','Diabetes is an important component of some presentations.','Not required in every phenotype',SL),
+   feature('Endocrine','Insulin-dependent diabetes','HP:0000819','Diabetes requiring insulin occurs in some presentations.','Not required in every phenotype',SL,false,{hpoQualifier:'The linked term is diabetes mellitus. Insulin dependence does not establish autoimmune type 1 diabetes.'}),
    feature('Hearing','Hearing loss','HP:0000407','Sensorineural hearing impairment has been described.','Variable associated finding',SL),
-   feature('Musculoskeletal','Finger or toe contractures','HP:0034392','Restricted joint movement may accompany systemic findings.','Reported in the spectrum',SL)
+   feature('Musculoskeletal','Finger or toe contractures','HP:0034392','Restricted joint movement may accompany systemic findings.','Reported in the spectrum',SL,false,{hpoQualifier:'The linked term is joint contracture; fingers and toes specify the affected sites.'}),
+   feature('Growth','Short stature','HP:0004322','Reduced height is a recurring part of the multisystem pattern.','Variable; not required for recognition',SLP),
+   feature('Endocrine','Hypogonadism or delayed puberty',null,'Reduced gonadal function can delay pubertal development.','Reported endocrine finding; not universal',SLH)
   ],
   pearls:[pearl('Unifying historical diagnoses','H syndrome, PHID, Faisalabad histiocytosis, and familial Rosai-Dorfman disease overlap within the SLC29A3 spectrum.',SL),pearl('Mechanism has an evidence boundary','ENT3 supports intracellular nucleoside handling. How altered transport produces every clinical feature is not fully resolved; the diagram is not a proven linear pathway to all symptoms.',med('gene/slc29a3'))]
  },
@@ -69,16 +85,23 @@ export const clinicalProfiles={
   overview:'Exocrine pancreatic dysfunction plus cytopenias is the central clinical connection. Growth and skeletal findings broaden the pattern; myeloid malignancy predisposition is an important part of the natural history.',
   onset:'Often recognized in infancy or childhood. Pancreatic manifestations can improve with age while hematologic risks persist.',
   pattern:'Exocrine pancreatic insufficiency with neutropenia or other cytopenias, short stature, and skeletal abnormalities.',patternSource:SD,
-  memory:'Pancreas plus marrow suggests a ribosome problem; the pseudogene complicates the molecular readout.',
+  memory:'Pancreas plus marrow connects to ribosome maturation. Blood-related risks can persist even when digestive symptoms improve.',
   patternTitle:'Pancreatic insufficiency with cytopenias',caveat:1,
   connection:'SBDS and the GTPase EFL1 remove eIF6, a “do not join” tag on the large ribosomal subunit, so working ribosomes can form. Reduced SBDS function impairs this step; pancreatic and marrow findings are the central clinical connection.',
+  connectionSources:['https://pubmed.ncbi.nlm.nih.gov/26479198/',SD],
+  significance:evidence('Marrow failure, myelodysplastic syndrome, and acute myeloid leukemia are important possible complications. These risks are not inevitable outcomes.',SD),
+  family:evidence('When both parents are carriers, each pregnancy has a 25% chance of inheriting both pathogenic variants. Parental testing clarifies recurrence because a variant can occasionally arise de novo.',SD),
+  interpretation:evidence('The homologous pseudogene complicates mapping and allele assignment. Confirm pathogenic or likely pathogenic variants on both SBDS copies and establish phase when needed; two sequence findings alone are insufficient.',SD),
   features:[
    feature('Pancreas','Exocrine pancreatic insufficiency','HP:0001738','Reduced digestive enzyme production can cause malabsorption.','Core feature; may become less apparent with age',SD,true),
    feature('Blood','Neutropenia','HP:0001875','Neutrophil counts may be persistently or intermittently reduced.','Core hematologic clue',SD,true),
    feature('Blood','Anemia','HP:0001903','Red-cell production may be affected along with other marrow lineages.','Variable cytopenia',med('condition/shwachman-diamond-syndrome')),
    feature('Blood','Thrombocytopenia','HP:0001873','Low platelets may accompany marrow dysfunction.','Variable cytopenia',med('condition/shwachman-diamond-syndrome')),
    feature('Growth','Short stature','HP:0004322','Growth can be affected by nutritional and intrinsic factors.','Commonly described, variable severity',SD),
-   feature('Skeleton','Metaphyseal dysplasia','HP:0100255','Abnormal development of the ends of long bones can be part of the skeletal phenotype.','Useful associated finding',SD,true)
+   feature('Skeleton','Metaphyseal dysplasia','HP:0100255','Abnormal development of the ends of long bones can be part of the skeletal phenotype.','Useful associated finding',SD,true),
+   feature('Immune','Recurrent infections',null,'Neutropenia and altered neutrophil function can increase susceptibility to infections.','May be an early manifestation',SD),
+   feature('Pancreas','Steatorrhea and poor weight gain',null,'Fatty stools and poor growth can reflect pancreatic malabsorption.','Variable; absence of steatorrhea does not exclude the condition',SD),
+   feature('Course','Marrow failure and myeloid malignancy risk',null,'Myelodysplastic syndrome and acute myeloid leukemia are important possible complications.','Predisposition is not an inevitable outcome',SD)
   ],
   pearls:[pearl('Natural history matters','Marrow failure and predisposition to myelodysplastic syndrome or acute myeloid leukemia are clinically important. They are risks, not inevitable outcomes.',med('condition/shwachman-diamond-syndrome')),pearl('Pseudogene-aware analysis','Gene conversion from the homologous pseudogene can introduce pathogenic sequence into SBDS. Mapping, allele assignment, and phase require attention during analysis.',SD)]
  },
@@ -90,6 +113,10 @@ export const clinicalProfiles={
   memory:'Noncoding does not mean nonfunctional: the RNA is part of the splicing machinery.',
   patternTitle:'Developmental delay with early hypotonia',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/23074130/'],
   connection:'RNU4-2 makes U4, an RNA that pairs with U6 to hold it inactive while the spliceosome assembles; U4 is released before splicing chemistry begins. ReNU variants change this RNA, not a protein, so coding-focused analysis can miss them.',
+  connectionSources:['https://www.nature.com/articles/s41586-024-07773-7','https://www.nature.com/articles/s41467-024-50785-0',RN],
+  significance:evidence('Communication, feeding, mobility, epilepsy, and sleep needs vary. MRI findings can add support, but neither a normal scan nor the absence of seizures excludes this dominant neurodevelopmental association.',RN),
+  family:evidence('Most dominant ReNU variants arise de novo. Parental testing helps clarify recurrence, but a negative blood result cannot exclude germline mosaicism; de novo does not mean zero recurrence risk.',RN),
+  interpretation:evidence('Assessment must include the noncoding RNU4-2 locus and the relevant variant mechanism. The separately described biallelic association should not be assigned to a dominant ReNU result.',RN,'https://www.nature.com/articles/s41588-026-02554-6'),
   features:[
    feature('Development','Global developmental delay','HP:0001263','Multiple developmental domains are affected; intellectual disability may be evident with age.','Core neurodevelopmental finding',RN,true),
    feature('Neurologic','Neonatal hypotonia','HP:0001319','Low muscle tone can be apparent early in life.','Frequently described',RN),
@@ -97,7 +124,10 @@ export const clinicalProfiles={
    feature('Feeding','Infant feeding difficulties','HP:0008872','Feeding and weight gain may require support.','Variable early manifestation',RN,true),
    feature('Neurologic','Seizures','HP:0001250','Epilepsy occurs in a subset, with differing seizure types.','Not required for the diagnosis','https://www.nature.com/articles/s41591-024-03085-5'),
    feature('Communication','Speech and language delay','HP:0000750','Expressive communication may be substantially affected.','Support needs vary',RN),
-   feature('Growth','Short stature','HP:0004322','Linear growth may be reduced.','Variable associated finding','https://www.nature.com/articles/s41591-024-03085-5')
+   feature('Growth','Short stature','HP:0004322','Linear growth may be reduced.','Variable associated finding','https://www.nature.com/articles/s41591-024-03085-5'),
+   feature('Imaging','Brain MRI findings',null,'A thin or developmentally atypical corpus callosum and enlarged ventricles are reported.','Supportive findings; neither universal nor specific',RN),
+   feature('Neurobehavior','Autism and stereotyped movements',null,'Some individuals have autism or repetitive movements; communication and behavioral support needs differ.','Variable associated findings',RN),
+   feature('Sleep','Sleep difficulties',null,'Sleep disturbance can accompany the developmental presentation.','Variable; relevant to everyday functioning',RN)
   ],
   pearls:[pearl('Mechanism beyond the coding genome','Dominant ReNU variants affect a constrained region of U4 RNA involved in major-spliceosome function. A normal protein consequence annotation does not imply a benign RNA effect.','https://www.nature.com/articles/s41586-024-07773-7'),pearl('Do not merge the recessive association','Biallelic RNU4-2 variants have a separately described recessive neurodevelopmental association. Its findings and mechanism should not be pooled indiscriminately with dominant ReNU.','https://www.nature.com/articles/s41588-026-02554-6')]
  },
@@ -109,13 +139,19 @@ export const clinicalProfiles={
   memory:'The gene identifies a channel; the specific variant determines how that channel is disturbed.',
   patternTitle:'Developmental impairment with epilepsy',caveat:1,
   connection:'CaV2.1 lets calcium into nerve terminals to trigger transmitter release. DEE42 variants can push channel activity up or down, so the gene alone does not reveal the direction of the change.',
+  connectionSources:[med('gene/cacna1a'),CA],
+  significance:evidence('Prolonged seizures and loss of previously acquired skills can occur. Developmental course and cerebellar involvement vary; these complications should not be assumed for every CACNA1A presentation.',CACOHORT,CA),
+  family:evidence('Severe presentations often involve a de novo variant, but inherited and parental mosaic variants occur. A nonmosaic parent heterozygous for the causal variant has a 50% transmission chance per pregnancy; that does not predict the child’s severity.',CACOHORT,med('understanding/inheritance/riskassessment')),
+  interpretation:evidence('The specific variant determines whether gain or loss of channel function is plausible. Functional direction, repeat expansions, and findings from other CACNA1A associations cannot be assigned from the gene symbol alone.',CA,med('gene/cacna1a')),
   features:[
    feature('Neurologic','Seizures','HP:0001250','Seizure types and severity vary; some presentations include severe epilepsy.','Defining component of the selected association',CA,true),
    feature('Development','Global developmental delay','HP:0001263','Motor, language, and other developmental domains may be affected.','Core finding',CAP,true),
    feature('Cognition','Intellectual disability','HP:0001249','Cognitive impairment may be evident as development progresses.','Overlaps the developmental domain; not an independent diagnostic count',CAP),
    feature('Neuromuscular','Hypotonia','HP:0001252','Reduced muscle tone may accompany the neurodevelopmental presentation.','Variable','https://pmc.ncbi.nlm.nih.gov/articles/PMC9458680/'),
    feature('Cerebellar','Ataxia','HP:0001251','Coordination difficulties can occur, including episodic features.','May be subtle or absent',CAP,true),
-   feature('Eye movements','Nystagmus','HP:0000639','Involuntary eye movements can provide a cerebellar clue.','Not obligatory in DEE; reported in the broader overlapping spectrum',CAP)
+   feature('Eye movements','Nystagmus','HP:0000639','Involuntary eye movements can provide a cerebellar clue.','Not obligatory in DEE; reported in the broader overlapping spectrum',CAP),
+   feature('Neurologic','Prolonged seizures or status epilepticus',null,'Some individuals experience prolonged seizure episodes.','Reported in CACNA1A cohorts that include overlapping diagnoses; not a universal DEE42 finding',CACOHORT),
+   feature('Course','Developmental regression',null,'Loss of acquired skills has been reported, sometimes after severe neurologic episodes.','Variable course; broad CACNA1A cohort evidence',CACOHORT)
   ],
   pearls:[pearl('Variant-specific mechanism','Both increased and decreased channel function have been reported in severe developmental epileptic encephalopathies. Functional direction cannot be read from the gene symbol alone.',CA),pearl('Keep associations distinct','Episodic ataxia, familial hemiplegic migraine, and spinocerebellar ataxia 6 are other CACNA1A associations. Their defining findings or repeat mechanism should not be assigned to every DEE42 presentation.',med('gene/cacna1a'))]
  },
@@ -127,6 +163,10 @@ export const clinicalProfiles={
   memory:'A RASopathy is a pathway diagnosis; the gene and allele refine the phenotype and mechanism.',
   patternTitle:'Pulmonary stenosis with short stature',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/9491886/','https://pubmed.ncbi.nlm.nih.gov/16358218/'],
   connection:'SHP-2 is a phosphatase that helps turn RAS/MAPK signaling up. At rest, one of its own domains blocks the active site; many Noonan-associated variants weaken that block and increase activity.',
+  connectionSources:['https://pubmed.ncbi.nlm.nih.gov/9491886/','https://pubmed.ncbi.nlm.nih.gov/16358218/'],
+  significance:evidence('Cardiac findings and bleeding tendency have clinical significance even when growth or learning differences are subtle. Facial features change with age; the same visible pattern is not expected throughout life.',NO),
+  family:evidence('A parent heterozygous for the causal variant has a 50% transmission chance per pregnancy; clinical expression can differ within a family. De novo findings also occur, and parental germline mosaicism can leave a residual recurrence risk.',NO),
+  interpretation:evidence('Noonan syndrome is genetically heterogeneous. Match the PTPN11 allele to its germline association and mechanism rather than transferring findings from multiple-lentigines syndromes or somatic cancer variants.',NO,med('gene/ptpn11')),
   features:[
    feature('Cardiac','Pulmonary valve stenosis','HP:0001642','Narrowing at the pulmonary valve is a particularly informative cardiac feature.','Enriched in PTPN11-related Noonan syndrome',NO,true),
    feature('Growth','Short stature','HP:0004322','Linear growth may be below the expected range.','Variable, not obligatory',NO,true),
@@ -134,7 +174,9 @@ export const clinicalProfiles={
    feature('Hematologic','Bleeding tendency','HP:0001892','Coagulation or platelet abnormalities can contribute to bruising or bleeding.','Variable; clinical history matters',NO,true),
    feature('Genitourinary','Cryptorchidism','HP:0000028','Undescended testes may occur in affected males.','Sex-specific associated feature',med('condition/noonan-syndrome')),
    feature('Development','Learning or language difficulties','HP:0000750','Language and educational support needs differ among individuals.','Intellectual disability is not universal',med('condition/noonan-syndrome')),
-   feature('Lymphatic','Lymphatic dysplasia','HP:0100766','Abnormal lymphatic development can cause fluid accumulation.','Spectrum feature; not specific to PTPN11',NO)
+   feature('Lymphatic','Lymphatic dysplasia','HP:0100766','Abnormal lymphatic development can cause fluid accumulation.','Spectrum feature; not specific to PTPN11',NO),
+   feature('Feeding','Infant feeding difficulties','HP:0008872','Feeding difficulties can contribute to poor weight gain early in life.','Common in Noonan syndrome; often changes with age',NO),
+   feature('Face and neck','Age-dependent facial and neck pattern',null,'Widely spaced eyes, ptosis, low-set ears, and a broad or webbed neck can contribute to recognition.','Variable; facial features can become subtler in adulthood',NO)
   ],
   pearls:[pearl('Cardiac enrichment is not a rule','Pulmonary stenosis is associated with PTPN11-related Noonan syndrome; hypertrophic cardiomyopathy is less frequent than in some other Noonan gene groups. Neither observation is an absolute rule.','https://pubmed.ncbi.nlm.nih.gov/24534818/'),pearl('Allelic context','PTPN11 also has other associations, including Noonan syndrome with multiple lentigines and hematologic disease. Do not transfer the same mechanistic explanation to every allele.',med('gene/ptpn11'))]
  },
@@ -146,13 +188,19 @@ export const clinicalProfiles={
   memory:'Skeleton, antibodies, retina: connect three systems to the minor spliceosome.',
   patternTitle:'Skeleton, antibodies, and retina',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/23074130/'],
   connection:'U4atac does the U4 job in the minor spliceosome, which removes the rare minor-class introns. Biallelic variants impair that processing across many transcripts at once, consistent with findings in several organ systems.',
+  connectionSources:[ROP,'https://pubmed.ncbi.nlm.nih.gov/23074130/'],
+  significance:evidence('Impaired antibody responses can lead to recurrent infections. Retinal disease may affect night vision and progress over time; skeletal, immune, and visual findings need not become apparent together.',ROIMMUNE,ROEYE),
+  family:evidence('When both parents carry a pathogenic RNU4ATAC variant, each pregnancy has a 25% chance of inheriting both variants. The gene spans overlapping conditions, so the genotype and phenotype both inform counseling.',RO),
+  interpretation:evidence('The functional product is RNA, so protein-coding annotation alone is insufficient. Interpret biallelic variants and their phase within the RNU4atac-opathy spectrum; this round’s clinical pattern is specifically Roifman syndrome.',RO,ROP),
   features:[
    feature('Skeleton','Spondyloepiphyseal dysplasia','HP:0002655','Vertebral and epiphyseal development is affected.','Characteristic pattern',ROP,true),
    feature('Immune','Deficient specific antibody response','HP:0005424','Antibody responses to tested antigens were absent in the original series, despite variable total immunoglobulin levels.','Original six-person series; assess the individual immune phenotype',ROP,true),
    feature('Vision','Retinal dystrophy','HP:0000556','Retinal degeneration can affect vision.','Useful multisystem clue; timing varies',ROP,true),
    feature('Growth','Prenatal growth restriction','HP:0001511','Reduced growth can begin before birth.','Reported in the Roifman phenotype',ROP),
    feature('Growth','Short stature','HP:0004322','Growth restriction may persist after birth.','Extent varies',RO),
-   feature('Development','Developmental delay','HP:0001263','Developmental and learning needs vary.','Supportive but nonspecific',RO)
+   feature('Development','Developmental delay','HP:0001263','Developmental and learning needs vary.','Supportive but nonspecific',RO),
+   feature('Immune','Recurrent respiratory infections',null,'Repeated respiratory infections can be a clinical consequence of antibody dysfunction.','Documented in Roifman syndrome; immune severity varies',ROIMMUNE),
+   feature('Course','Night-vision difficulty and retinal progression',null,'Retinal disease can cause night-vision difficulty, with progressive changes in some individuals.','Timing and rate vary; small Roifman cohorts',ROEYE)
   ],
   pearls:[pearl('The RNA is the functional product','RNU4ATAC encodes U4atac RNA in the minor spliceosome. Disrupted processing of minor introns can affect many downstream transcripts.',ROP),pearl('One gene, a spectrum of conditions','Roifman syndrome, MOPD I, and Lowry-Wood syndrome fall within RNU4atac-opathy. Historical labels describe patterns with overlap; this round specifically teaches Roifman syndrome.',RO)]
  },
@@ -164,13 +212,18 @@ export const clinicalProfiles={
   memory:'Skin plus lung inflammation can reflect a signal that stays active, not an immune response that is absent.',
   patternTitle:'Acral skin lesions with lung disease',caveat:2,
   connection:'In the cGAS–STING pathway shown, cGAS detects DNA in the cytosol and makes cGAMP, which activates STING. SAVI variants activate STING without that trigger, sustaining type I interferon signaling and inflammation.',
+  connectionSources:['https://pubmed.ncbi.nlm.nih.gov/23258413/',STP],
+  significance:evidence('Pulmonary disease can be prominent even without characteristic skin lesions. Organ involvement, age at recognition, and severity vary; the skin–lung pattern is a clue, not a required checklist.',STLUNG),
+  family:evidence('The dominant gain-of-function association may be de novo or inherited. A nonmosaic parent heterozygous for the causal variant has a 50% transmission chance per pregnancy, but organ involvement and severity can differ among relatives.',ST,STLUNG,med('understanding/inheritance/riskassessment')),
+  interpretation:evidence('An interferon signature supports pathway activation but is not specific to SAVI. Interpret the actual variant and its gain-of-function evidence with the clinical picture; an immune-pathway gene name alone is insufficient.',STP),
   features:[
    feature('Skin','Acral skin ulceration','HP:0200042','Inflammatory lesions can affect fingers, toes, ears, or nose and may ulcerate.','Useful distribution; may worsen with cold',ST,true),
    feature('Skin','Livedo reticularis','HP:0033505','A net-like violaceous discoloration can reflect small-vessel involvement.','Variable associated finding',ST),
-   feature('Lung','Interstitial lung disease','HP:0006530','Inflammation and damage can affect pulmonary interstitial tissue.','Important organ involvement; HPO link is the broader morphology term',STP,true),
+   feature('Lung','Interstitial lung disease','HP:0006530','Inflammation and damage can affect pulmonary interstitial tissue.','Important organ involvement',STP,true,{hpoQualifier:'The linked term is interstitial pulmonary abnormality; it describes morphology rather than a complete diagnosis.'}),
    feature('Systemic','Recurrent fever','HP:0001954','Episodes of fever can accompany systemic inflammation.','Reported early manifestation',STP,true),
    feature('Growth','Poor weight gain','HP:0001508','Chronic inflammatory disease can be associated with growth difficulties.','Variable; HPO label is “Failure to thrive”',STP),
-   feature('Lymphatic','Lymphadenopathy','HP:0002716','Enlarged lymph nodes can accompany inflammation.','Variable associated finding',ST)
+   feature('Lymphatic','Lymphadenopathy','HP:0002716','Enlarged lymph nodes can accompany inflammation.','Variable associated finding',ST),
+   feature('Course','Lung-predominant presentation',null,'Pulmonary disease has been reported in families without the typical cutaneous lesions.','Absence of skin findings does not exclude the association',STLUNG)
   ],
   pearls:[pearl('Interferonopathy is a mechanistic category','Excessive signaling through STING can increase type I interferon activity. This explains why an immune gene may cause autoinflammation rather than a simple absence of immune responses.',STP),pearl('A molecular signature is supporting evidence','An interferon-stimulated gene signature supports pathway activation but is not uniquely diagnostic of this condition. The variant and clinical context still matter.',STP),pearl('Interferon is not the whole story','SAVI is grouped with the type I interferonopathies, and patients show an interferon signature. In mouse models, however, vasculopathy developed without IRF3, and lung disease depended on T cells rather than type I interferon. Interferon is central but may not explain every feature.','https://pubmed.ncbi.nlm.nih.gov/28951494/','https://pubmed.ncbi.nlm.nih.gov/30772497/')]
  },
@@ -182,13 +235,18 @@ export const clinicalProfiles={
   memory:'Think beyond exons: an intronic repeat can underlie a late-onset ataxia pattern.',
   patternTitle:'Late-onset ataxia with episodes',caveat:1,
   connection:'An expanded GAA repeat deep in intron 1 of FGF14 underlies this late-onset ataxia. The protein-coding sequence is unchanged, and standard exome sequencing does not reliably detect the expansion.',
+  connectionSources:[FG,'https://www.nejm.org/doi/10.1056/NEJMoa2207406'],
+  significance:evidence('Episodes can precede persistent ataxia and may be triggered by alcohol or physical exertion. The expansion does not precisely predict age at onset, severity, or progression.',FG),
+  family:evidence('A heterozygous parent has a 50% chance of transmitting the expanded allele, whose size can change between generations. Predictive testing of an asymptomatic relative is a personal choice; it cannot reliably predict when or how severely symptoms will develop.',FG),
+  interpretation:evidence('Repeat size, sequence purity, and penetrance matter. Testing a symptomatic person and predictive testing of an asymptomatic relative answer different questions; a negative standard exome does not reliably exclude this expansion.',FG),
   features:[
    feature('Cerebellar','Gait ataxia','HP:0002066','Walking becomes unsteady because of impaired coordination.','Core presentation',FG,true),
    feature('Course','Episodic ataxia','HP:0002131','Intermittent episodes can precede or accompany persistent symptoms.','Useful course feature',FG,true),
    feature('Eye movements','Downbeat nystagmus','HP:0010545','A downward fast phase of eye movement can be an informative clue.','Useful but not disease-specific',FG,true),
    feature('Vision','Diplopia','HP:0000651','Double vision may occur during episodes.','Variable episodic manifestation','https://www.nejm.org/doi/10.1056/NEJMoa2207406'),
    feature('Speech','Dysarthria','HP:0001260','Cerebellar involvement can affect articulation.','May be absent or mild, particularly early','https://pmc.ncbi.nlm.nih.gov/articles/PMC10784672/'),
-   feature('Imaging','Cerebellar atrophy','HP:0001272','Imaging may show cerebellar volume loss.','Variable; imaging is not a molecular diagnosis',FG)
+   feature('Imaging','Cerebellar atrophy','HP:0001272','Imaging may show cerebellar volume loss.','Variable; imaging is not a molecular diagnosis',FG),
+   feature('Course','Alcohol or exertion sensitivity',null,'Episodes may be precipitated by alcohol or physically demanding activity.','A useful historical clue, not a diagnostic test',FG)
   ],
   pearls:[pearl('A testing blind spot','Standard exome sequencing does not reliably detect the relevant intronic GAA expansion. Repeat-focused methods assess size and composition; short-read predictions may require confirmation.',FG),pearl('Repeat architecture matters','Repeat length, purity, and penetrance affect interpretation. A long non-GAA repeat should not automatically be treated as equivalent to a pathogenic GAA expansion.',FG)]
  }
