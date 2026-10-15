@@ -15,7 +15,7 @@ function roundCard({round,done,pieces},first){
  const body=node('div',null,'collection-card-body');
  const meta=node('div',null,'collection-card-meta');meta.append(node('span',`Round ${round.number}`));
  if(done)meta.append(node('span','Complete','collection-card-status'));
- const title=node('h2',done?round.gene:round.title);body.append(meta,title,node('p',done?round.condition:round.topic,'collection-card-description'));
+ const title=node('h2',round.gene);body.append(meta,title,node('p',round.condition,'collection-card-description'));
  const action=node('div',null,'collection-card-action');
  action.append(node('span',done?'View round':pieces?`Continue · ${pieces} / 12`:first?'Start here':'Start round'));
  const arrow=node('span','→');arrow.setAttribute('aria-hidden','true');action.append(arrow);
