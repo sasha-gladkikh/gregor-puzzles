@@ -1,0 +1,22 @@
+/* Floating explanations connect the image to its notes without moving the board. */
+.discovery-popout{position:fixed;z-index:90;display:flex;flex-direction:column;box-sizing:border-box;width:320px;max-height:min(420px,70dvh);padding:0;border:1px solid #b7ccf4;border-radius:16px;background:#fff;color:#17233d;box-shadow:0 16px 48px #112b5b26,0 3px 12px #112b5b12;font-family:inherit;overflow:hidden;isolation:isolate}
+.discovery-popout[hidden]{display:none}
+.discovery-popout-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 17px 9px;background:linear-gradient(135deg,#eff5ff,#f9fbff);border-bottom:1px solid #e1e9f8;flex:none}
+.discovery-popout-label{color:#164abb;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;line-height:1.45}
+.discovery-popout-count{font-size:11px;line-height:1.45;color:#52637e;white-space:nowrap;font-variant-numeric:tabular-nums}
+.discovery-popout-copy{overflow-y:auto;overscroll-behavior:contain;padding:15px 17px 17px;scrollbar-width:thin}
+.discovery-popout h3{margin:0 0 7px;font-size:17px;font-weight:650;letter-spacing:-.2px;line-height:1.35}
+.discovery-popout p{margin:0;color:#42516a;font-size:14px;line-height:1.6}
+.discovery-popout-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;border-top:1px solid #e6ecf7;background:#fafcff;padding:10px 12px 10px 17px}
+.discovery-popout-footer>span{font-size:10px;line-height:1.4;color:#5b6b82;max-width:100px}
+.discovery-keep{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 13px;border:1px solid #064dff;border-radius:8px;background:#064dff;color:#fff;font-family:inherit;font-size:12px;font-weight:650;line-height:1.35;white-space:nowrap;cursor:pointer}
+.discovery-keep:hover{background:#0039ce;border-color:#0039ce}
+.discovery-keep:focus-visible{outline:3px solid #769cff;outline-offset:3px}
+.discovery-origin-glow{position:fixed;z-index:89;pointer-events:none;width:58px;height:58px;box-sizing:border-box;border:2px solid #064dff;border-radius:50%;box-shadow:0 0 0 8px #064dff19,0 0 24px #064dff38}
+.discovery-connection,.discovery-hint-trail{position:fixed;inset:0;z-index:88;pointer-events:none;overflow:visible}
+.discovery-travel-chip{position:fixed;z-index:91;pointer-events:none;display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;width:76px;height:32px;border:1px solid #8eafff;border-radius:20px;color:#064dff;background:#fff;box-shadow:0 4px 14px #064dff20;font-family:inherit;font-size:12px;font-weight:650;line-height:1.2;white-space:nowrap}
+.discovery-announcer{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:700px){.discovery-popout{max-height:42dvh;border-radius:16px;box-shadow:0 8px 44px #112b5b33}.discovery-popout-head{padding:11px 15px 8px}.discovery-popout-copy{padding:12px 15px}.discovery-popout h3{font-size:16px}.discovery-popout p{font-size:13px;line-height:1.55}.discovery-popout-footer{padding:7px 10px 7px 15px}.discovery-popout-footer>span{max-width:none}}
+@media(prefers-reduced-motion:reduce){.discovery-popout,.discovery-origin-glow,.discovery-travel-chip{animation:none!important;transition:none!important}.discovery-connection,.discovery-hint-trail{display:none}}
+@media(forced-colors:active){.discovery-popout{border:2px solid CanvasText;background:Canvas;color:CanvasText}.discovery-popout-head,.discovery-popout-footer{background:Canvas;border-color:CanvasText}.discovery-popout-label,.discovery-popout p,.discovery-popout-count,.discovery-popout-footer>span{color:CanvasText}.discovery-keep{background:ButtonFace;color:ButtonText;border-color:ButtonText}.discovery-keep:focus-visible{outline-color:Highlight}.discovery-origin-glow{border-color:Highlight}.discovery-travel-chip{background:Canvas;color:CanvasText;border-color:Highlight}}
+@media print{.discovery-popout,.discovery-origin-glow,.discovery-connection,.discovery-hint-trail,.discovery-travel-chip,.discovery-announcer{display:none!important}}

@@ -8,6 +8,9 @@ import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,roundCo
 import {reduceMotion as reducedMotion,soundFeedback,illustrationWalkthrough,highlightStructure,assembleLogo} from './experience.mjs';
 import {renderSite} from './site.mjs';
 import {relatedRoundLinks} from './collection-data.mjs';
+import {geneBank} from './gene-bank.mjs';
+import {biologyMotion} from './biology-motion.mjs';
+import {discoveryMotion,hintTrail} from './discovery-motion.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
@@ -27,7 +30,8 @@ let {state,timed} = restoreSession(stored);
 let selected = null, hinted = null, peek = false, drag = null;
 let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
 let lastCount = -1, extrasShown = false;
-let walkthrough=null,completionTimer=null,lastCollectionCount=null;
+let walkthrough=null,biology=null,completionTimer=null,lastCollectionCount=null;
+let cancelHint=()=>{};
 let cancelCollectionCelebration=()=>{};
 const walkthroughLayout=matchMedia('(min-width: 1101px)');
 function positionWalkthrough(){
@@ -37,12 +41,21 @@ function positionWalkthrough(){
 }
 walkthroughLayout.addEventListener('change',positionWalkthrough);
 const board = $('puzzle');
+const bank=geneBank(rounds,{onChoose:value=>checkGene(value,true)});
+$('geneBankBody').append(bank.element);
+const discoveryGuide=discoveryMotion({board:$('board'),target:()=>{
+  const panel=$('latestDiscovery'),rect=panel.getBoundingClientRect();
+  return walkthroughLayout.matches&&!$('game').classList.contains('focus-view')&&rect.bottom>0&&rect.top<innerHeight?panel:$('discoveriesButton');
+},onKeep:showLatest});
+function showLatest(item){
+  $('latestDiscovery').replaceChildren(node('span',item.kind==='landmark'?'Image note':item.label||'New clue','eyebrow'),node('h2',item.title),node('p',item.text||item.body));
+}
 const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed}));$('saveNotice').hidden=true;} catch {$('saveNotice').hidden=false;} renderCollection(); };
 // Keep feedback brief so new discoveries cannot move the piece tray.
 // Full notes and every unlocked clue remain available from the adjacent control.
 function strip(message,items=[]) {
   const fresh=items.length>0;
-  $('status').replaceChildren(node('p',fresh?`${state.placed.length} of ${SIZE} placed. New discoveries in Clues.`:message,'strip-message'));
+  $('status').replaceChildren(node('p',fresh?`${state.placed.length} of ${SIZE} placed. A new discovery is ready.`:message,'strip-message'));
   if(fresh)$('discoveriesButton').classList.add('has-new');
 }
 function openDiscoveries(noteIndex=null) {
@@ -105,6 +118,7 @@ function buildTray() {
 }
 function select(id,fromKeyboard=false) {
   if(complete(state))return;
+  cancelHint();
   start(); ({selected,hinted}=choosePiece(selected,id)); updateSelection();
   strip(selected===null?'Selection cleared.':`Piece ${trayButton(id).querySelector('.piece-label').textContent} selected. Choose its place.`);
   if(fromKeyboard&&selected!==null)slotAt(Array.from({length:SIZE},(_,i)=>i).find(i=>!state.placed.includes(i)))?.focus();
@@ -128,14 +142,14 @@ function showNote(index) {
     markers.forEach((m,i)=>{m.classList.toggle('is-active',i===index);m.setAttribute('aria-pressed',String(i===index));});
     return;
   }
-  openDiscoveries(index);
+  discoveryGuide.clear();
+  discoveryGuide.show([{...noteFor(index),point:round.illustration.landmarks[index]}]);
   markers.forEach((m,i)=>m.classList.toggle('is-active',i===index));
-  highlightStructure($('board'),round.illustration.landmarks[index]);
 }
 function discoveries(before,previous) {
   const clues=round.clues.filter(c=>c.at>before&&c.at<=state.placed.length&&c.at<SIZE).map(c=>({kind:'clue',...c}));
   const notes=landmarkPieces.map((piece,index)=>state.placed.includes(piece)&&!previous.includes(piece)?noteFor(index):null).filter(Boolean);
-  return [...clues,...notes];
+  return [...notes,...clues];
 }
 function flyIn(id,from) {
   if(reducedMotion())return;
@@ -152,6 +166,7 @@ function flyIn(id,from) {
   ghost.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(${scale*1.015})`,offset:.86},{transform:`translate(${dx}px,${dy}px) scale(${scale})`}],{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'}).finished.catch(()=>{}).finally(()=>{ghost.remove();g.style.opacity='';});
 }
 function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
+  cancelHint();
   finishRound(state);
   const found=discoveries(before,previous);
   const finishing=roundComplete(state)&&before<SIZE;
@@ -161,6 +176,7 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   if(id!==null)flyIn(id,from);
   void sound.play(finishing?'complete':'place');
   if(roundComplete(state)){
+    discoveryGuide.clear();
     strip('Round complete. Your diagram is saved.');
     if(alias)$('roundResults').append(alias);
     if(finishing){
@@ -170,7 +186,8 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
     }
   } else {
     strip(`${state.placed.length} of ${SIZE} placed.`,found);
-    for(const item of found.filter(d=>d.kind==='landmark'))highlightStructure($('board'),round.illustration.landmarks[item.index]);
+    const point=id===null?{x:50,y:50}:{x:(id%COLS+.5)/COLS*100,y:(Math.floor(id/COLS)+.5)/ROWS*100};
+    discoveryGuide.show(found.map(item=>({...item,point:item.kind==='landmark'?round.illustration.landmarks[item.index]:point})));
     $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
   }
 }
@@ -251,6 +268,7 @@ function render(before=state.placed.length) {
   document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed;});
   $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=done;
   $('identityCard').hidden=!done;$('clueDetails').hidden=done;
+  $('latestDiscovery').hidden=done;$('learningHeading').hidden=done;$('typingDetails').hidden=done;
   $('clueSummary').textContent=`${n} of ${SIZE} pieces`;
   $('progressText').textContent=`${n} of ${SIZE} pieces`; $('progressPercent').textContent=Math.round(n/SIZE*100)+'%';
   $('progressFill').style.width=n/SIZE*100+'%'; document.querySelector('.progress-track').setAttribute('aria-valuenow',n);
@@ -265,8 +283,13 @@ function render(before=state.placed.length) {
   }
   $('completion').hidden=!done; $('completionActions').hidden=!done; $('guessForm').hidden=done;
   $('geneHint').hidden=n<8||n>=11;
+  $('bankSymbolHint').hidden=n>=11;
+  $('bankSymbolHint').disabled=n<8;
+  $('bankSymbolHint').textContent=n<8?'Symbol hint at 8 pieces':'Reveal a symbol hint';
   $('hint').disabled=done; $('peek').disabled=done;
   $('hint').hidden=done;$('peek').hidden=done;$('focusButton').hidden=done;$('enlargeButton').hidden=!done;$('discoveriesButton').hidden=done;
+  $('geneBankButton').hidden=done;
+  $('watchMechanism').hidden=!done;
   $('status').hidden=done;
   document.querySelector('.mode-toggle').hidden=done;
   if(done){
@@ -274,6 +297,8 @@ function render(before=state.placed.length) {
     peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');renderResults();
     if(!extrasShown){
       extrasShown=true;
+      biology=biologyMotion(round,{autoplay:n>before});
+      $('identityCard').after(biology.element);
       $('clueDetails').open=false;
       walkthrough=illustrationWalkthrough(round,{board:$('board'),onStep:i=>markers.forEach((m,j)=>{m.classList.toggle('is-active',i===j);m.setAttribute('aria-pressed',String(i===j));}),onClose:()=>markers.forEach(m=>{m.classList.remove('is-active');m.setAttribute('aria-pressed','false');})});
       positionWalkthrough();
@@ -293,24 +318,30 @@ setInterval(()=>{if(timed)$('clock').textContent=formatTime(elapsedSeconds(state
 $('calm').onclick=()=>{if(!state.started){timed=false;render();save();}};
 $('timed').onclick=()=>{if(!state.started){timed=true;render();save();}};
 $('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);strip(peek?'Reference image visible.':'Reference image hidden.');save();};
-$('hint').onclick=()=>{start('image');hinted=selected??order.find(id=>!state.placed.includes(id));selected=hinted;state.hints++;updateSelection();strip(`Hint: ${position(hinted)} is highlighted.`);save();};
-$('guessForm').onsubmit=e=>{
-  e.preventDefault();const value=$('geneGuess').value;
-  if(!normalizeGene(value)){$('guessFeedback').textContent='Enter a gene symbol or product name, or keep building the image.';return;}
+$('hint').onclick=()=>{discoveryGuide.clear();cancelHint();start('image');hinted=selected??order.find(id=>!state.placed.includes(id));selected=hinted;state.hints++;updateSelection();cancelHint=hintTrail(trayButton(hinted),slotAt(hinted));strip(`Piece hint: ${position(hinted)} is highlighted.`);save();};
+function checkGene(value,fromBank=false){
+  if(complete(state))return;
+  const feedback=message=>{if(fromBank)bank.feedback(message);else $('guessFeedback').textContent=message;};
+  if(!normalizeGene(value)){feedback('Enter a gene symbol or product name, or keep building the image.');return;}
   start('guess');const before=state.placed.length,previous=[...state.placed];
   const answer=recognizeGene(value,round);
   if(answer&&answer.kind!=='ambiguous'&&guess(state,round.gene,round.gene)){
     const alias=answer.kind==='product'?` ${answer.name} is encoded by ${round.gene}.`:answer.kind==='alias'?` ${answer.name} is a previous symbol for ${round.gene}.`:'';
+    if(fromBank)$('geneBankDialog').close();
     selected=null;hinted=null;afterProgress(before,previous,{alias});
-  } else if(answer?.kind==='ambiguous'){$('guessFeedback').textContent='That identifies the RNA family. More than one gene encodes it; use the specific gene symbol or finish the image.';}
-  else {$('guessFeedback').textContent='No match for this round. Keep building to discover the gene.';$('geneGuess').setAttribute('aria-invalid','true');}
-};
+  } else if(answer?.kind==='ambiguous'){feedback('That identifies the RNA family. More than one gene encodes it; use the specific gene symbol or finish the image.');}
+  else {feedback('Not this gene. Compare the location and function clues, or keep building the image.');if(!fromBank)$('geneGuess').setAttribute('aria-invalid','true');}
+}
+$('guessForm').onsubmit=e=>{e.preventDefault();checkGene($('geneGuess').value);};
 $('geneHint').onclick=()=>{
  const hint=revealGeneHint(state,round.gene);if(!hint)return;
  $('guessFeedback').textContent=hint;save();
 };
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
-function openDialog(id){walkthrough?.pause();$(id).showModal();}
+function openDialog(id){walkthrough?.pause();biology?.pause();discoveryGuide.clear();cancelHint();$(id).showModal();}
+$('geneBankButton').onclick=()=>{openDialog('geneBankDialog');bank.focus();};
+$('closeGeneBank').onclick=()=>$('geneBankDialog').close();
+$('bankSymbolHint').onclick=()=>{const hint=revealGeneHint(state,round.gene);if(hint){bank.feedback(hint);save();}};
 $('discoveriesButton').onclick=()=>openDiscoveries();
 $('closeDiscoveries').onclick=()=>$('discoveriesDialog').close();
 $('libraryButton').onclick=()=>{renderCollection();openDialog('libraryDialog');};
@@ -319,17 +350,19 @@ $('collectionReview').onclick=()=>{renderCollection();openDialog('libraryDialog'
 $('helpButton').onclick=()=>openDialog('helpDialog');$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
 $('focusButton').onclick=()=>{const on=!$('game').classList.contains('focus-view');$('game').classList.toggle('focus-view',on);$('focusButton').setAttribute('aria-pressed',String(on));$('focusButton').textContent=on?'Exit focus view':'Focus view';};
 $('enlargeButton').onclick=()=>{if(complete(state))openDialog('figureDialog');};
+$('watchMechanism').onclick=()=>{if(!biology)return;biology.element.scrollIntoView({behavior:reducedMotion()?'instant':'smooth',block:'center'});biology.element.querySelector('.biology-motion-toggle')?.focus({preventScroll:true});biology.play({whenVisible:true});};
 $('closeFigure').onclick=()=>$('figureDialog').close();
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
-  clearTimeout(completionTimer);completionTimer=null;walkthrough?.dispose();walkthrough=null;sound.stop();
+  clearTimeout(completionTimer);completionTimer=null;walkthrough?.dispose();walkthrough=null;biology?.dispose();biology=null;discoveryGuide.clear();cancelHint();bank.reset();sound.stop();
   positionWalkthrough();
   $('board').classList.remove('finishing');$('completion').classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
   state=newState();selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;order=shuffled(order);
   $('discoveriesButton').classList.remove('has-new');
   $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
-  $('clueDetails').open=true;$('revealExtras').open=false;
+  $('clueDetails').open=false;$('typingDetails').open=false;$('revealExtras').open=false;
+  $('latestDiscovery').replaceChildren(node('p','Place pieces to uncover the biology. New discoveries arrive here.','learning-placeholder'));
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
   $('guessFeedback').textContent='Optional. A gene symbol or unambiguous product name completes the image.';$('geneHint').disabled=false;
   markers.forEach(m=>{m.hidden=true;m.classList.remove('is-new');});
@@ -343,7 +376,7 @@ $('confirmNewPlayer').onclick=()=>{
   location.href=`./?level=${rounds[0].number}`;
 };
 window.addEventListener('keydown',e=>{
-  if(e.key!=='Escape'||selected===null||document.querySelector('dialog[open]'))return;
+  if(e.defaultPrevented||e.key!=='Escape'||selected===null||document.querySelector('dialog[open]'))return;
   const back=selected,onBoard=document.activeElement?.classList.contains('slot');
   selected=null;hinted=null;updateSelection();strip('Selection cleared.');
   if(onBoard)trayButton(back)?.focus();
@@ -383,6 +416,11 @@ $('largeFigure').src=round.artwork;$('largeFigure').alt=diagramDescription;$('la
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
 $('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
 buildBoard();buildTray();render();save();
+if(!roundComplete(state)&&state.placed.length){
+  const latest=round.clues.filter(clue=>clue.at<=state.placed.length).at(-1);
+  const lastNote=[...state.placed].reverse().map(id=>landmarkPieces.indexOf(id)).find(i=>i>=0);
+  if(latest)showLatest({kind:'clue',...latest});else if(lastNote!==undefined)showLatest(noteFor(lastNote));
+}
 if(roundComplete(state))strip('Round complete. Your diagram and results are saved.');
 else if(state.started)strip('Your progress is restored.'+(timed?' Elapsed time continues.':''));
 

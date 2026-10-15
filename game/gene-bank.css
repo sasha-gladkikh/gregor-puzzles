@@ -1,0 +1,26 @@
+/* Ten candidates stay visible together, with the selection checked separately. */
+#geneBankDialog{max-width:540px;max-height:calc(100dvh - 32px)}
+#geneBankTitle{margin:8px 0 12px;font-size:27px;line-height:1.2}
+#bankSymbolHint{margin-top:10px;font-size:13px}
+.gene-bank-intro{margin:0 0 22px;color:var(--muted);font-size:15px;line-height:1.55}
+.gene-bank-choices{margin:0;padding:0;border:0;min-width:0}
+.gene-bank-choices legend{margin:0 0 12px;font-size:12px;font-weight:650;color:#4d5e78;letter-spacing:.06em;text-transform:uppercase}
+.gene-bank-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gene-bank-option{position:relative;display:flex;align-items:center;gap:10px;min-width:0;min-height:56px;padding:13px 15px;border:1px solid #cbd5e6;border-radius:10px;background:#fff;cursor:pointer;transition:background .16s,border-color .16s,box-shadow .16s}
+.gene-bank-option:hover{border-color:#839bc6;background:#f8faff}
+.gene-bank-option:has(input:checked){border-color:var(--accent);background:#edf3ff;box-shadow:inset 0 0 0 1px var(--accent)}
+.gene-bank-option:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:3px}
+.gene-bank-option input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.gene-bank-symbol{min-width:0;color:var(--ink);font-size:16px;font-weight:650;letter-spacing:.02em}
+.gene-bank-indicator{display:flex;align-items:center;justify-content:center;flex:none;width:20px;height:20px;margin-left:auto;border:1px solid #b9c6da;border-radius:50%;font-size:12px;line-height:1;color:transparent;background:#fff}
+.gene-bank-option:has(input:checked) .gene-bank-indicator{background:var(--accent);border-color:var(--accent);color:#fff;animation:gene-bank-select .22s ease-out}
+.gene-bank-actions{display:grid;gap:14px;margin-top:20px}
+.gene-bank-status{margin:0;min-height:42px;font-size:14px;line-height:1.5;color:var(--muted)}
+.gene-bank-status.is-feedback{padding:10px 12px;border-left:3px solid var(--accent);border-radius:5px;background:var(--brand-soft,#edf3ff);color:var(--ink)}
+.gene-bank-status.is-correct{border-left-color:#006b60;background:#eaf5f1}
+.gene-bank-check{width:100%;min-height:48px;padding:11px 18px;font-size:15px;font-weight:650}
+.gene-bank-check:disabled{background:#edf0f5;color:#606b7c;box-shadow:none}
+@keyframes gene-bank-select{from{transform:scale(.7);opacity:.4}to{transform:scale(1);opacity:1}}
+@media(max-width:600px){#geneBankDialog{padding:22px 20px}#geneBankTitle{font-size:26px}.gene-bank-option{padding:11px 12px;min-height:50px}.gene-bank-grid{gap:8px}.gene-bank-intro{margin-bottom:16px}.gene-bank-choices legend{margin-bottom:10px}.gene-bank-actions{margin-top:14px;gap:10px}}
+@media(prefers-reduced-motion:reduce){.gene-bank-option{transition:none}.gene-bank-option:has(input:checked) .gene-bank-indicator{animation:none}}
+@media(forced-colors:active){.gene-bank-option,.gene-bank-indicator{border-color:ButtonText}.gene-bank-option:has(input:checked){border-color:Highlight;box-shadow:inset 0 0 0 1px Highlight}.gene-bank-option:has(input:checked) .gene-bank-indicator{background:Highlight;color:HighlightText;forced-color-adjust:none}.gene-bank-status.is-feedback{border-left-color:Highlight}}

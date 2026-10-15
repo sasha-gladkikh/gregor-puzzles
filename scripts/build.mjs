@@ -12,6 +12,8 @@ const files = [
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork.css',
   'experience.mjs', 'experience.css',
+  'gene-bank.mjs', 'gene-bank.css', 'discovery-motion.mjs', 'discovery-motion.css',
+  'biology-motion.mjs', 'biology-motion.css',
   'site.mjs', 'site.css', 'about.html', 'about.mjs', 'play.css',
   'science.html', 'science.mjs', 'science.css', 'science-ui.mjs',
   'collection.html', 'collection-page.mjs', 'collection-page.css', 'collection-data.mjs',

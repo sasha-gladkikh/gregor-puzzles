@@ -163,3 +163,34 @@ body{background:var(--surface)}
 
 #game .guess-optional{font-size:12px;color:var(--muted);font-weight:400;margin-left:5px}
 #game .gene-hint{font-size:13px;min-height:44px;margin-top:4px}
+
+/* Keep each new explanation in sight without moving the board or tray. */
+#game .learning-heading{font-size:18px;line-height:1.3;margin:0 0 14px;font-weight:650}
+#game .latest-discovery{padding:18px;border:1px solid #cddcf2;border-left:3px solid var(--accent);border-radius:8px;background:#f1f5ff;min-height:140px}
+#game .latest-discovery h2{font-size:20px;line-height:1.25;margin:8px 0 10px}
+#game .latest-discovery p{font-size:16px;line-height:1.6;margin:0}
+#game .latest-discovery .eyebrow{font-size:12px;color:var(--accent);letter-spacing:.03em}
+#game .learning-placeholder{color:var(--muted)}
+#game .typing-details{padding:10px 0;border-bottom:1px solid var(--line);margin:4px 0 8px}
+#game .typing-details>summary{padding:10px 0;min-height:44px;font-size:14px;font-weight:600;cursor:pointer}
+#game .typing-details .guess-form{margin:0;padding:0;border:0}
+#game .clue-details>summary{font-size:15px;gap:6px}
+#game #clueSummary{font-size:11px}
+#game .figure-tools .gene-bank-trigger{background:var(--accent);border-color:var(--accent);color:white;font-weight:650}
+#game .figure-tools .gene-bank-trigger:hover{background:#003fd2}
+#game .figure-tools #hint{border-color:#a1b7d9;font-weight:600}
+#game .assembly-area>.biology-motion{grid-column:1/-1;width:100%}
+#game.round-complete .assembly-area>.biology-motion{grid-row:4}
+#game.round-complete .completion-actions{grid-row:5}
+#game.round-complete .assembly-area>.walkthrough{grid-row:6}
+#game.round-complete .completion{grid-row:7}
+#game.round-complete .board-caption{grid-row:8}
+#game.round-complete .diagram-description{grid-row:9}
+#game.round-complete .round-settings{grid-row:10}
+@media(min-width:1101px){#game .discovery{position:sticky;top:20px;align-self:start;max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:4px}}
+@media(max-width:1100px){#game .learning-heading{margin-top:8px}#game .latest-discovery{min-height:0}}
+@media(max-width:600px){#game .figure-tools{gap:6px}#game .figure-tools .tool{padding:8px;font-size:12px}#game .figure-tools .tool svg{width:15px;height:15px}#game .assembly-area>.biology-motion{margin-top:20px}}
+
+#game .figure-tools .watch-mechanism{color:var(--accent);border-color:#9db9ef;background:#edf3ff;font-weight:650;animation:watch-cue .9s ease-out 2}
+@keyframes watch-cue{0%,100%{box-shadow:0 0 0 0 #064dff00}50%{box-shadow:0 0 0 5px #064dff18}}
+@media(prefers-reduced-motion:reduce){#game .figure-tools .watch-mechanism{animation:none}}

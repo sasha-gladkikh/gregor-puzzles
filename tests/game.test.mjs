@@ -224,7 +224,7 @@ test('completion cards, mechanism figures, and comparisons cite listed sources',
  assert.deepEqual(Object.keys(mechanisms).sort(),['05','07','09']);
  for(const m of Object.values(mechanisms)){assert.equal(m.captions.length,2);assert.equal(m.toggle.length,2);assert.match(m.svg,/class="m-after"/);}
 });
-test('nothing shown during play names the gene, its product, or the condition',()=>{
+test('automatic early clues and image notes do not name the gene, product, or condition',()=>{
  const conditions=['SAVI','SCA27B','ReNU','Noonan','Roifman','Shwachman','myotonia','DFNB1','H syndrome'];
  const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  for(const r of allRounds){
