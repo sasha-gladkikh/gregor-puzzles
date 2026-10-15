@@ -12,7 +12,9 @@ A checklist for running GREGoR Puzzles on a shared device at ASHG, and for testi
 ## On the booth device
 
 - Start at round 01, the recommended first round. **Practice** is the default.
-- Between visitors, open **All rounds → New player → Start fresh**. This clears every round's pieces, hints, and times in that browser and keeps editorial notes.
+- Between visitors, open **Browse rounds → New player → Start fresh**. This clears every round's pieces, hints, and times in that browser and keeps editorial notes.
+- **Collection** shows saved progress and a teaching map of the illustrated processes. Its field guide contains only completed rounds and can be printed or saved as a PDF through the browser's print dialog.
+- **Science & sources** opens full gene profiles without requiring puzzle completion. **Editorial review**, linked there and in the footer, is the separate review workspace.
 - On an iPad, use Guided Access (Settings → Accessibility) to keep the game in Safari.
 - Quiet placement and completion sounds start on. Mute them with the header sound control if needed; the choice is saved across rounds and reloads. New player resets sound to on. There is no shared ranking. Timed results include reading time, and entering the gene ends the puzzle early, so times are not comparable between visitors.
 
@@ -25,7 +27,7 @@ Record:
 - Time to the first correct placement.
 - Scrolling up and down between the board and the pieces (should now be rare).
 - Whether they notice a new clue or image note within about 5 seconds.
-- Seconds spent on the completion card before **Continue**.
+- Seconds spent on the completion card before **Next round**.
 - Any question they ask without prompting.
 
 Afterward, ask each person to explain the round's gene–mechanism–clinical connection in their own words. This is an observation for design, not evidence that the game improves learning.
@@ -39,9 +41,14 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Portrait and landscape; Safari text size at 125% and 150%.
 - Private Browsing (progress clears when the tab closes).
 - Reduce Motion on: pieces place without movement; walkthroughs use Previous/Next and do not auto-advance. Nothing essential is lost.
-- Complete a round, open **See it work**, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
+- Complete a round, open **Explore the illustration**, select numbered structures, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
+- Complete a round in **Focus view** and confirm completion restores the scientific column and accessible figure guide. Enlarge the finished figure, then close it and restart the round.
+- Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, Science & sources, and Editorial review navigation on a narrow screen.
+- Complete two rounds, open the field guide from Collection, and print to PDF. Only the completed rounds should appear, with readable figures, references, and review status.
 - Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
 - Complete the collection and scroll to the completion banner: the logo assembles once, without moving the board.
 - VoiceOver: complete one round; pieces announce their position.
 - Airplane mode after loading: switch rounds and note what fails.
 - Connect the phone to a Mac and use Safari Web Inspector for console errors.
+
+Scientific sign-off, physical iPhone/Safari checks, VoiceOver testing, and testing on the final booth hardware remain pending. Browser-width checks do not replace these steps.

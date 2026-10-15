@@ -12,6 +12,10 @@ const files = [
   'clinical.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork.css',
   'experience.mjs', 'experience.css',
+  'site.mjs', 'site.css', 'about.html', 'about.mjs', 'play.css',
+  'science.html', 'science.mjs', 'science.css', 'science-ui.mjs',
+  'collection.html', 'collection-page.mjs', 'collection-page.css', 'collection-data.mjs',
+  'field-guide.html', 'field-guide.mjs', 'field-guide.css',
 ];
 // With approval required, refuse to publish an empty collection.
 const {rounds} = await import(new URL('rounds.mjs', new URL('../game/', import.meta.url)));
@@ -27,14 +31,15 @@ async function hashArtwork(directory) {
 }
 await hashArtwork('artwork');
 await hashArtwork('icons');
+await hashArtwork('fonts');
 const revision = hash.digest('hex').slice(0, 12);
 await rm(output, {recursive: true, force: true});
 await mkdir(output, {recursive: true});
 // Shared revisions prevent a browser from mixing files from different releases.
 for (const [i, file] of files.entries()) {
-  const text = contents[i].replace(/(['"])(\.\/[^'"?]+\.(?:mjs|css|webp|png|svg))(?:\?[^'"]*)?\1/g,
+  const text = contents[i].replace(/(['"])(\.\/[^'"?]+\.(?:mjs|css|webp|png|svg|woff2))(?:\?[^'"]*)?\1/g,
     (_, quote, path) => `${quote}${path}?v=${revision}${quote}`);
   await writeFile(join(output, file), text);
 }
-for (const directory of ['artwork', 'icons']) await cp(join(source, directory), join(output, directory), {recursive: true});
+for (const directory of ['artwork', 'icons', 'fonts']) await cp(join(source, directory), join(output, directory), {recursive: true});
 console.log(`Built GREGoR Puzzles in dist/ (${revision})`);

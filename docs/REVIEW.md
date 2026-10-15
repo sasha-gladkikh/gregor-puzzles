@@ -1,14 +1,15 @@
 # Scientific review
 
-Open the game and select **Editorial review**. Search by gene, condition, clinical term, or HPO identifier. All content and answers are available without completing a puzzle.
+Open **Science & sources** for the full scientific profile, then **Editorial review** for reviewer checks and player-facing wording. Editorial review is also linked in the footer. Both pages support searches by gene, condition, clinical term, or HPO identifier; puzzle completion is not required.
 
 For each round, assess:
 
 - **Association:** condition identifier, inheritance, and variant mechanism.
-- **Mechanism:** illustration, causal explanation, and stated exceptions. Every round now offers **See it work** on the completion screen and editorial page. It sequences the same three cited image notes with a moving attention spotlight, not a simulation of molecular movement. Check the note order and highlighted structure, including on a phone. Rounds 05, 07, and 09 also have a before/after mechanism figure; rounds 05 and 08 share a major/minor spliceosome comparison.
+- **Mechanism:** illustration, causal explanation, and stated exceptions. **Explore the illustration** on the completion screen and editorial page sequences the three cited image notes with an attention spotlight. This is not a simulation of molecular movement. On Science & sources, selecting a structure connects it to its explanation and reference. Check both presentations, including on a phone. Rounds 05, 07, and 09 also have a before/after mechanism figure; rounds 05 and 08 share a major/minor spliceosome comparison.
 - **Phenotype:** clinical pattern, age and course, variability, and HPO mappings.
 - **Teaching:** progressive clues, image notes (each appears when the piece containing it is placed, in anonymous wording until the round is complete; review both versions), and the completion card shown to players: the connection sentence, clinical pattern, and one caveat.
 - **Evidence:** whether each source supports the associated claim.
+- **Cross-round teaching:** related-round links, the process map, and the printable field guide. The map groups illustrated processes rather than asserting exclusive localization or direct interaction. The field guide reproduces completed rounds' mechanisms, clinical patterns, interpretation notes, and selected references; it is not independently approved content.
 
 ## Recording sign-off
 
@@ -18,6 +19,10 @@ Set `requireApproval` to `true` to make only approved rounds playable. Editorial
 
 [Report a scientific correction](https://github.com/sasha-gladkikh/gregor-puzzles/issues/new?template=scientific-feedback.yml). Include the round, exact statement, proposed correction, and supporting source. Do not include patient information.
 
-Editorial notes save in your browser only. They are not submitted to the team and do not constitute approval. Printing expands the educational sections and excludes personal notes.
+Editorial notes save in your browser only. **Copy review notes** collects all nonempty notes, including notes hidden by a search, for you to paste into a message or document. If automatic copying is unavailable, a selected text field provides a manual-copy fallback. Nothing is submitted to the team, and notes do not constitute approval. Printing the editorial page expands its content sections and excludes personal notes.
+
+For a learner-facing handout, open **Collection → Field guide**. It includes only rounds completed in the same browser. Use its print control to print or save a PDF. Review status remains visible on each page.
 
 **All ten rounds remain pending scientific review, including the illustration walkthroughs.**
+
+Physical iPhone/Safari, VoiceOver, and booth-hardware testing also remain pending; see [BOOTH.md](BOOTH.md).

@@ -1,0 +1,129 @@
+/* A stable figure, a visible piece tray, and a separate reading column. */
+body{background:var(--surface)}
+#game{max-width:1320px;padding:14px 28px 0}
+#game .collection-bar{gap:14px;margin-bottom:12px}
+#game .collection-track{width:80px}
+#game .library-button{border-color:var(--line);border-radius:6px;font-size:14px;font-weight:600;min-height:40px;background:#fff}
+#game .nav-arrow{min-height:40px;color:var(--ink)}
+#game .game-layout{grid-template-columns:minmax(0,1fr) 264px;gap:24px}
+#game .puzzle-section{background:transparent;overflow:visible;border:0;border-radius:0;box-shadow:none}
+#game .section-bar{padding:8px 0 18px;background:none}
+#game .section-bar h1{font-size:26px;line-height:1.25;margin:5px 0 0;letter-spacing:-.5px}
+#game .section-bar .eyebrow{display:block;font-size:12px;line-height:1.3;letter-spacing:.3px;text-transform:none;color:var(--muted)}
+#game .assembly-area{display:grid;grid-template-columns:minmax(0,1fr) 164px;grid-template-rows:min-content auto;gap:12px 16px;padding:0;align-items:start}
+#game .board-frame{grid-column:1;grid-row:1;margin:0;align-self:start;width:100%;max-width:640px;justify-self:center;border:1px solid #b5c4d7;border-radius:7px;box-shadow:none}
+#game .board{border-radius:6px}
+#game .board-watermark{left:20%;right:20%;top:44%;padding:9px 12px;border:0;background:#ffffffed;border-radius:5px}
+#game .board-watermark p{font-size:14px;font-weight:500;margin:0}
+#game .status-strip{grid-column:1;grid-row:2;margin:0;padding:9px 12px;border:0;border-left:2px solid var(--accent);border-radius:0;background:#edf2fa;font-size:14px;min-height:40px}
+#game .strip-item{line-height:1.55}
+#game .piece-bank,#game .figure-identity{grid-column:2;grid-row:1 / span 2;min-width:0;margin:0;padding:0;border:0}
+#game .tray-heading{display:flex;flex-direction:row;gap:8px;margin:0 0 9px;align-items:center;justify-content:space-between}
+#game .tray-heading>span{font-size:12px;color:var(--muted);font-weight:500}
+#game .tray{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#game .piece{aspect-ratio:1/1.06;padding:0 0 13px;border-radius:6px;box-shadow:none;background:#edf2f8;border-color:#c3cfde}
+#game .piece svg{filter:drop-shadow(0 2px 1px #22395450)}
+#game .piece-label{font-size:11px;bottom:3px;font-weight:600}
+#game .piece[aria-pressed=true]{background:#e4edff}
+#game .assembly-area>.completion,#game .assembly-area>.completion-actions,#game .assembly-area>.puzzle-tools,#game .assembly-area>.board-caption,#game .assembly-area>.diagram-description,#game .assembly-area>.image-guide-details{grid-column:1 / -1}
+#game .puzzle-tools{margin-top:2px;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+#game .puzzle-tools .tool,#game .mode-toggle button{font-size:13px;padding:6px 9px;min-height:40px}
+#game .puzzle-tools .tool{border-color:var(--line);border-radius:5px}
+#game .mode-toggle{border:0;padding:2px;border-radius:5px}
+#game .board-caption{margin:0;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0}
+#game .diagram-description{font-size:14px;margin:0}
+#game .diagram-description p{font-size:16px}
+#game .discovery{padding:0 0 0 22px;border:0;border-left:1px solid var(--line);border-radius:0;background:none;box-shadow:none;margin-top:10px}
+#game .clue-details>summary{font-size:18px;font-weight:600;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none}
+#game .clue-details>summary::after{content:'+';font-weight:400;color:var(--muted)}
+#game .clue-details[open]>summary::after{content:'−'}
+#game #clueSummary{font-size:12px;font-weight:400;color:var(--muted);margin-left:auto;white-space:nowrap}
+#game .progress-label{display:none}
+#game .progress-track{margin:4px 0 14px;height:3px;background:#dce3ed}
+#game .clue{padding:12px 0;gap:8px}
+#game .clue-number{background:transparent;width:23px;height:25px;border-radius:0;font-size:12px}
+#game .clue.unlocked .clue-number{background:none}
+#game .clue.locked{padding:10px 0}
+#game .clue.locked .unlock{font-size:12px}
+#game .clue h3{font-size:17px;margin:5px 0}
+#game .clue.final.unlocked{background:none}
+#game .clue.final.unlocked h3{color:var(--ink)}
+#game .clue p{font-size:16px;line-height:1.5}
+#game .clue-label{font-size:13px}
+#game .guess-form{padding-top:16px;margin-top:8px}
+#game .guess-form label{font-size:16px;margin-bottom:8px}
+#game .guess-input input{font-size:16px;padding:10px}
+#game .guess-form p{font-size:13px}
+#game .notes-found h3{font-size:16px}
+#game .notes-found li,#game .notes-found p{font-size:15px}
+#game .figure-identity{padding:12px 0 0 16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+#game .figure-identity .eyebrow{font-size:12px;text-transform:none;letter-spacing:0}
+#game #identityGene{font-size:24px;line-height:1.2;font-weight:650;overflow-wrap:anywhere}
+#game #identityCondition{margin:0;font-size:16px;line-height:1.4}
+#game #identityInheritance{font-size:13px;color:var(--muted)}
+#game #identityOmim{font-size:13px;color:var(--accent);text-underline-offset:3px}
+#game .figure-identity .tool{white-space:normal;line-height:1.4;font-size:14px;justify-content:center;text-align:center;border-radius:5px;border-color:var(--line)}
+#game .figure-identity .primary{font-size:14px;padding:10px 8px;gap:4px;border-radius:5px;box-shadow:none}
+#game .completion{padding:22px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin:12px 0 0}
+#game .completion-badge{background:none;padding:0;border-radius:0}
+#game .completion-badge>img{display:none}
+#game #revealGene{font-size:28px;color:var(--ink);margin-bottom:5px}
+#game #revealCondition{font-size:20px;color:var(--ink);line-height:1.4}
+#game .completion h2{margin:8px 0 12px}
+#game .reveal-alias:empty{display:none}
+#game .reveal-alias{font-size:14px;margin:0 0 12px;color:var(--muted)}
+#game .reveal-metadata{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;font-size:14px;color:var(--muted);margin-bottom:22px}
+#game .reveal-lines{display:block}
+#game .reveal-lines>div{margin:0 0 22px}
+#game .reveal-lines>div:first-child{border:0;padding:0}
+#game .reveal-lines dt{font-size:13px;text-transform:none;letter-spacing:0;color:var(--muted);font-weight:600}
+#game .reveal-lines dd{font-size:17px;line-height:1.6;margin:7px 0 0;max-width:72ch}
+#game .reveal-results,#game .source-note{font-size:12px;margin-top:14px}
+#game .completion-actions{margin-top:0}
+#game .completion-actions .tool{white-space:normal;font-size:15px;text-decoration:none;border-color:var(--line)}
+#game .completion-actions .primary{box-shadow:none;border-radius:5px}
+#game .related-rounds{border-top:1px solid var(--line);padding:16px 0;margin-top:14px}
+#game .related-rounds:empty{display:none}
+#game .related-rounds h3{font-size:16px;margin:0 0 8px}
+#game .related-rounds a{display:block;color:var(--accent);font-size:15px;margin:6px 0}
+#game .mechanism-details>summary{font-size:16px;font-weight:600;min-height:44px;padding:10px 0}
+#game .mechanism-details{border-top:1px solid var(--line)}
+#game .walkthrough{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:0 0 20px;background:none}
+#game .walkthrough h3{font-size:18px;font-weight:600;line-height:1.4}
+#game .walkthrough h4{font-size:18px}
+#game .walkthrough-caption{min-height:0}
+#game .walkthrough-caption p{font-size:16px;line-height:1.6}
+#game .walkthrough-intro{gap:12px}
+#game .walkthrough-launch{white-space:normal;text-align:left;font-size:14px;border-color:var(--line)}
+#game .walkthrough-note{font-size:12px;line-height:1.55}
+#game .walkthrough-controls .tool{white-space:normal}
+#game .image-guide-details{margin-top:0;padding-top:12px}
+#game.focus-view .game-layout{grid-template-columns:1fr;max-width:1030px;margin:auto}
+#game.focus-view .discovery{display:none}
+#game.focus-view .board-frame{max-width:700px}
+#figureDialog{max-width:1060px;padding:26px}
+#figureDialog figure{margin:0}
+#figureDialog img{display:block;width:100%;max-height:65dvh;object-fit:contain}
+#figureDialog figcaption{font-size:14px;color:var(--muted);line-height:1.5;margin-top:12px}
+#helpDialog{max-width:560px;border-top-width:1px}
+#helpDialog h2{font-size:28px;margin-top:0}
+.quick-instructions li{margin:16px 0}
+.quick-instructions strong{display:block}
+.help-detail{border-top:1px solid var(--line);padding:8px 0;font-size:15px}
+.help-detail>summary{min-height:36px;padding:6px 0;font-weight:600}
+#helpDialog .help-detail p{font-size:15px;margin:8px 0 12px}
+#helpDialog .help-qr{margin:12px 0;display:flex;gap:18px;align-items:center;background:none;padding:0;border:0}
+#helpDialog .help-qr img{width:92px;height:92px}
+#helpDialog .help-qr figcaption{font-size:14px;color:var(--muted)}
+#libraryDialog{border-top-width:1px;border-radius:8px}
+#libraryDialog .level-card{border-radius:7px;box-shadow:none}
+#libraryDialog .level-card p{font-size:13px}
+#libraryDialog .level-card .level-status{font-size:13px}
+@media(min-width:801px) and (max-height:850px){#game .board-frame{max-width:600px}#game .section-bar{padding-bottom:14px}#game .assembly-area{grid-template-columns:minmax(0,1fr) 152px}#game .tray{gap:6px}#game .piece{aspect-ratio:1/1.04}}
+@media(max-width:1100px) and (min-width:801px){#game{padding-inline:20px}#game .game-layout{grid-template-columns:minmax(0,1fr) 230px;gap:18px}#game .discovery{padding-left:16px}#game .assembly-area{grid-template-columns:minmax(0,1fr) 140px;gap:12px}#game .section-bar h1{font-size:24px}}
+@media(max-width:800px){#game .game-layout{grid-template-columns:1fr;gap:20px}#game .discovery{padding:0;border:0;margin-top:0}#game .assembly-area{grid-template-columns:minmax(0,1fr) 164px}#game .clue-details{padding:12px 0;border-top:1px solid var(--line)}#game .clue-details>summary{font-size:18px}#game .assembly-area>.walkthrough{grid-column:1/-1}#game .figure-identity{padding-left:12px}#game .section-bar h1{font-size:24px}#game .clues{display:block}}
+@media(max-width:600px){#game{padding:8px 12px 0}#game .collection-bar{margin:0 0 7px;gap:8px}#game .collection-progress{font-size:12px;margin-left:0}#game .nav-arrow{min-width:36px;min-height:40px;padding:4px}#game .library-button{font-size:13px;min-height:40px;padding:4px 8px}#game .section-bar{padding:4px 0 12px}#game .section-bar h1{font-size:22px;line-height:1.2;margin-top:4px}#game .section-bar .eyebrow{font-size:12px}#game .assembly-area{display:flex;flex-direction:column;gap:0}#game .board-frame{width:100%;max-width:none}#game .board-watermark{left:18%;right:18%;top:43%;padding:7px}#game .board-watermark p{font-size:13px}#game .status-strip{margin-top:8px;min-height:36px;padding:8px 10px;font-size:14px;line-height:1.45}#game .piece-bank{margin:10px 0 0;width:100%}#game .tray-heading{margin-bottom:7px}#game .tray{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}#game .piece{aspect-ratio:1.12/1;padding:0 0 12px}#game .piece-label{font-size:11px}#game .puzzle-tools{margin-top:14px;gap:7px}#game .puzzle-tools .tool{font-size:13px}#game .board-caption{margin-top:12px}#game .diagram-description{margin-top:12px}#game .figure-identity{display:none}#game .walkthrough{margin-top:18px;width:100%;padding:0 0 16px}#game .walkthrough-intro{flex-direction:row;align-items:center;gap:12px}#game .walkthrough h3{font-size:17px}#game .walkthrough-launch{flex:0 0 120px;font-size:13px;padding:8px;min-height:44px}#game .completion{padding-top:18px;margin-top:18px;width:100%}#game .completion h2{margin-top:8px}#game #revealGene{font-size:27px}#game #revealCondition{font-size:20px}#game .reveal-lines dd{font-size:17px}#game .completion-actions{margin-top:18px;width:100%;gap:12px}#game .completion-actions .primary{flex:1}#game .completion-actions .tool{font-size:14px}#game .image-guide-details{margin-top:14px;width:100%}#game .collection-track{display:none}#game.focus-view .board-frame{max-width:none}#figureDialog{padding:20px 16px}#figureDialog h2{font-size:22px}#helpDialog .help-qr{display:none}#helpDialog #startButton{margin-top:18px}}
+@media(min-width:601px) and (max-width:800px){#game .assembly-area{grid-template-columns:minmax(0,1fr) 204px}#game .tray{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}}
+@media(max-width:600px){#game .collection-bar{margin-bottom:4px}#game .section-bar{padding-top:2px;padding-bottom:10px}#game .status-strip{width:100%}}
+@media(forced-colors:active){#game .figure-identity{border-color:CanvasText}#game .piece{border-color:CanvasText}}
+@media print{#game .puzzle-tools,#game .figure-identity,#game .piece-bank{display:none}}

@@ -14,8 +14,8 @@ test('production build resolves every local file reference and excludes developm
   const names = await readdir(dist);
   assert.ok(names.includes('index.html'));
   assert.ok(names.includes('review.html'));
-  // Keep both entry points unlisted even if moved to a different static host.
-  for (const page of ['index.html', 'review.html']) {
+  // Every public entry point retains the same indexing preference.
+  for (const page of ['index.html', 'review.html', 'science.html', 'collection.html', 'field-guide.html', 'about.html']) {
     const html = await readFile(join(dist, page), 'utf8');
     const head = html.split('</head>')[0];
     assert.match(head, /<meta name="robots" content="[^\"]*\bnoindex\b[^\"]*">/, page);
@@ -25,13 +25,14 @@ test('production build resolves every local file reference and excludes developm
   }
   for (const name of names.filter(n => /\.(html|mjs|css)$/.test(n))) {
     const content = await readFile(join(dist, name), 'utf8');
-    for (const match of content.matchAll(/['"]\.\/([^'"?]+\.(?:mjs|css|webp|html|png|svg))(?:\?[^'"]*)?['"]/g)) {
+    for (const match of content.matchAll(/['"]\.\/([^'"?]+\.(?:mjs|css|webp|html|png|svg|woff2))(?:\?[^'"]*)?['"]/g)) {
       if (match[1].includes('${')) continue;
       assert.ok((await stat(join(dist, match[1]))).isFile(), `${name}: ${match[1]}`);
     }
   }
   assert.equal((await readdir(join(dist, 'artwork'))).filter(n => n.endsWith('.webp')).length, 10);
   for (const icon of ['apple-touch-icon.png', 'play-qr.svg']) assert.ok((await stat(join(dist, 'icons', icon))).isFile(), icon);
+  assert.ok((await stat(join(dist, 'fonts', 'OFL.txt'))).isFile());
 });
 
 test('every game module parses, including browser-only pages', async () => {

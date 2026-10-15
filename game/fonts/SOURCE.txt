@@ -1,0 +1,6 @@
+Source Sans 3 variable upright, version distributed by Adobe.
+Original file: SourceSans3VF-Upright.ttf.woff2 (unmodified).
+Source: https://github.com/adobe-fonts/source-sans/tree/release/WOFF2/VF
+Downloaded: 2026-10-14
+License: SIL Open Font License 1.1; see OFL.txt in this directory.
+Only the filename was shortened. Font data and internal naming are unchanged.
