@@ -18,7 +18,7 @@
 .status-strip{border-radius:9px;border-color:var(--brand-border);border-left-color:var(--accent);background:#f3f7ff}
 .clue-number{border-radius:8px;background:#eef2f9}.clue.unlocked .clue-number{background:#e2ecff;color:#0035c9}
 .discovery-heading .eyebrow,.section-bar .eyebrow{color:#415c8d}
-.guess-input,.review-search input,.review-editor-notes textarea{border-radius:9px}.guess-input button{border-radius:0}
+.guess-input,.review-search input{border-radius:9px}.guess-input button{border-radius:0}
 .primary{border-radius:9px;box-shadow:0 2px 0 #0035c9}.primary:hover{background:#0035c9}
 .tool,.text-button{border-radius:9px}.mode-toggle{border-radius:10px}.mode-toggle button{border-radius:7px}
 .completion{border-radius:13px;background:#fbfcff;border-color:var(--brand-border);border-top-color:var(--accent)}

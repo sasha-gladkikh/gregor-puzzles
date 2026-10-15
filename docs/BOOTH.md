@@ -12,7 +12,7 @@ A checklist for running GREGoR Puzzles on a shared device at ASHG, and for testi
 ## On the booth device
 
 - Start at round 01, the recommended first round. **Practice** is the default.
-- Between visitors, open **Browse rounds → New player → Start fresh**. This clears every round's pieces, hints, and times in that browser and keeps editorial notes.
+- Between visitors, open **Browse rounds → New player → Start fresh**. This clears every round's pieces, hints, and times in that browser.
 - **Collection** shows saved progress and a teaching map of the illustrated processes. Its field guide contains only completed rounds and can be printed or saved as a PDF through the browser's print dialog.
 - **Science** opens full gene profiles without requiring puzzle completion. Its **Editorial review** link opens the reviewer workspace.
 - On an iPad, use Guided Access (Settings → Accessibility) to keep the game in Safari.

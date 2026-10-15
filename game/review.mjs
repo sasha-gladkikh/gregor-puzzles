@@ -38,14 +38,8 @@ for(const round of rounds){
  const playNotes=node('ol',null,'review-clues');round.illustration.landmarks.forEach((l,i)=>{const li=node('li');li.append(node('strong',`Image note ${i+1}: ${l.playTitle} `),document.createTextNode(l.playText));playNotes.append(li);});
  clues.append(node('h4','Anonymous image notes'),node('p','This wording is shown during play. Gene and condition names are revealed at the end of the round.','small'),playNotes);content.append(clues);
  const references=panel('References');references.append(referenceList(round,{heading:''}));content.append(references);
- const notes=panel('Personal editorial notes');notes.classList.add('review-editor-notes');const id=`notes-${round.number}`,key=`gregor-puzzles:review-notes:${round.id}`;
- const label=node('label',`Notes for ${round.gene}`);label.htmlFor=id;const textarea=node('textarea');textarea.id=id;textarea.rows=4;textarea.maxLength=12000;textarea.placeholder='Correction, supporting reference, or teaching suggestion. Use no patient details.';
- const status=node('p','Saved only in this browser. Use Copy review notes to share them yourself.','clinical-note');status.setAttribute('role','status');
- try{textarea.value=localStorage.getItem(key)??'';}catch{status.textContent='Local saving is unavailable. Copy your notes before leaving.';}
- textarea.addEventListener('input',()=>{try{localStorage.setItem(key,textarea.value);status.textContent='Saved in this browser.';}catch{status.textContent='Could not save locally. Copy your notes before leaving.';}});
- notes.append(label,textarea,status);content.append(notes);
  body.append(visual,content);card.append(body);document.getElementById('reviewRounds').append(card);
- cards.push({card,round,walkthrough,textarea,search:[round.gene,round.condition,round.topic,p.pattern,...p.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase()});
+ cards.push({card,walkthrough,search:[round.gene,round.condition,round.topic,p.pattern,...p.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase()});
 }
 const search=document.getElementById('reviewSearch');search.addEventListener('input',()=>{
  const query=search.value.trim().toLowerCase();let count=0;
@@ -55,14 +49,6 @@ const search=document.getElementById('reviewSearch');search.addEventListener('in
 });
 document.getElementById('clearSearch').onclick=()=>{search.value='';search.dispatchEvent(new Event('input'));search.focus();};
 document.getElementById('collapseProfiles').onclick=()=>{for(const {card,walkthrough}of cards)if(!card.hidden){card.querySelectorAll('.learning-panel').forEach(d=>d.open=false);walkthrough.close();}};
-document.getElementById('copyReviewNotes').addEventListener('click',async()=>{
- const status=document.getElementById('copyStatus'),fallback=document.getElementById('copyFallback');
- const notes=cards.filter(c=>c.textarea.value.trim()).map(({round,textarea})=>`Round ${round.number} · ${round.gene}\n${round.condition}\n${textarea.value.trim()}`);
- if(!notes.length){status.textContent='No notes yet. Open Personal editorial notes under a round to add feedback.';fallback.hidden=true;return;}
- const text=`GREGoR Puzzles · Editorial notes\n\n${notes.join('\n\n')}`;
- try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText(text);status.textContent=`Copied notes for ${notes.length} ${notes.length===1?'round':'rounds'}. Paste them into your message or document.`;fallback.hidden=true;}
- catch{fallback.hidden=false;const area=document.getElementById('copyFallbackText');area.value=text;area.focus();area.select();status.textContent='Automatic copying is unavailable. Your notes are selected below; copy them manually.';}
-});
 if(/^#(?:round-|ref-)/.test(location.hash))requestAnimationFrame(()=>{const target=document.getElementById(location.hash.slice(1));if(!target)return;for(let parent=target.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;target.scrollIntoView();});
-window.addEventListener('beforeprint',()=>{document.querySelectorAll('.learning-panel:not(.review-editor-notes)').forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});});
+window.addEventListener('beforeprint',()=>{document.querySelectorAll('.learning-panel').forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});});
 window.addEventListener('afterprint',()=>{document.querySelectorAll('[data-was-open]').forEach(d=>{d.open=d.dataset.wasOpen==='true';delete d.dataset.wasOpen;});});

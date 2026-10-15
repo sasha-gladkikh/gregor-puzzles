@@ -10,7 +10,7 @@ Select a piece, then its position. Scientific clues appear as the image takes sh
 
 - **Collection:** browse rounds, explore the process map, and print a field guide of completed rounds.
 - **Science:** read the mechanism, clinical pattern, interpretation, and references for each gene.
-- **Editorial review:** check player-facing content and record personal notes. Open it from Science.
+- **Editorial review:** inspect player-facing content. Open it from Science.
 
 Progress stays in this browser. Previous saved rounds remain compatible.
 

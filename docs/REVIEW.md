@@ -1,6 +1,6 @@
 # Scientific review
 
-Open **Science** for the full scientific profile, then **Editorial review** for player-facing wording and personal notes. Both pages support searches by gene, condition, clinical term, or HPO identifier; puzzle completion is not required.
+Open **Science** for the full scientific profile, then **Editorial review** for player-facing wording. Both pages support searches by gene, condition, clinical term, or HPO identifier; puzzle completion is not required.
 
 For each round, assess:
 
@@ -19,7 +19,7 @@ Set `requireApproval` to `true` to make only approved rounds playable. Editorial
 
 [Report a scientific correction](https://github.com/sasha-gladkikh/gregor-puzzles/issues/new?template=scientific-feedback.yml). Include the round, exact statement, proposed correction, and supporting source. Do not include patient information.
 
-Editorial notes save in your browser only. **Copy review notes** collects all nonempty notes, including notes hidden by a search, for you to paste into a message or document. If automatic copying is unavailable, a selected text field provides a manual-copy fallback. Nothing is submitted to the team, and notes do not constitute approval. Printing the editorial page expands its content sections and excludes personal notes.
+Printing the editorial page expands its content sections.
 
 For a learner-facing handout, open **Collection → Field guide**. It includes only rounds completed in the same browser. Use its print control to print or save a PDF.
 
