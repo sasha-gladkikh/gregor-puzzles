@@ -74,17 +74,20 @@ export function sampleArtworkStage(elapsed,pointer={x:0,y:0}){
   const time=Math.max(0,elapsed),intro=clamp(time/1900);
   const ease=intro*intro*(3-2*intro),trace=clamp((time-160)/1700);
   const glint=clamp((time-380)/2400);
+  const sweep=clamp((time-280)/2200);
   const arrival=time<3000?Math.sin(Math.PI*clamp(time/3000)):0;
   return {
     y:-ease*(4.4+1.4*Math.sin(time/7800*Math.PI*2)),
     rotateX:-signed(pointer.y)*.55*ease,
     rotateY:signed(pointer.x)*.7*ease,
     trace:trace*trace*(3-2*trace),
-    borderOpacity:ease*(.28+arrival*.38),
+    borderOpacity:ease*(.3+arrival*.46),
     depth:ease,
-    halo:Math.max(0,arrival)*.12,
+    halo:Math.max(0,arrival)*.16,
     glint,
-    glintOpacity:time<2780?Math.sin(Math.PI*glint)*.84:0
+    glintOpacity:time<2780?Math.sin(Math.PI*glint)*.92:0,
+    sweepX:-320+1460*sweep*sweep*(3-2*sweep),
+    sweepOpacity:time>280&&time<2480?Math.sin(Math.PI*sweep)*.24:0
   };
 }
 
@@ -96,12 +99,27 @@ export function createArtworkStage(board,prefix){
   const defs=svgNode('defs'),gradient=svgNode('linearGradient',{id:`${prefix}-rim`,x1:'0%',y1:'100%',x2:'100%',y2:'0%'});
   gradient.append(svgNode('stop',{offset:'0%', 'stop-color':'#4c7cff'}),svgNode('stop',{offset:'55%', 'stop-color':'#3a91eb'}),svgNode('stop',{offset:'100%', 'stop-color':'#6cd5e4'}));defs.append(gradient);
   const attrs={x:1.5,y:1.5,width:797,height:597,rx:8,fill:'none',pathLength:1000,'vector-effect':'non-scaling-stroke'};
-  const line=svgNode('rect',{...attrs,stroke:`url(#${prefix}-rim)`,'stroke-width':1.6,'stroke-dasharray':'1000 1000','stroke-dashoffset':1000});
-  const glint=svgNode('rect',{...attrs,stroke:'#b5edff','stroke-width':2.7,'stroke-linecap':'round','stroke-dasharray':'42 1000',opacity:0});
-  rim.append(defs,line,glint);rim.setAttribute('hidden','');frame.append(rim);
-  let active=false,lastHalo=null;
+  const line=svgNode('rect',{...attrs,stroke:`url(#${prefix}-rim)`,'stroke-width':1.85,'stroke-dasharray':'1000 1000','stroke-dashoffset':1000});
+  const glow=svgNode('rect',{...attrs,stroke:'#78d6ff','stroke-width':7,'stroke-linecap':'round','stroke-dasharray':'66 1000',opacity:0});
+  const glint=svgNode('rect',{...attrs,stroke:'#d5f6ff','stroke-width':2.7,'stroke-linecap':'round','stroke-dasharray':'66 1000',opacity:0});
+  rim.append(defs,line,glow,glint);rim.setAttribute('hidden','');frame.append(rim);
+  // A brief studio-light reflection marks completion. It is above the artwork,
+  // below its annotations, and disappears entirely after the opening sequence.
+  const sheen=svgNode('svg',{class:'artwork-stage-sheen',viewBox:'0 0 800 600',preserveAspectRatio:'none','aria-hidden':'true',focusable:'false'});
+  const lightDefs=svgNode('defs'),light=svgNode('linearGradient',{id:`${prefix}-light`,x1:'0%',y1:'0%',x2:'100%',y2:'0%'});
+  for(const [offset,opacity] of [['0%',0],['24%',.03],['48%',.38],['58%',1],['70%',.24],['100%',0]])light.append(svgNode('stop',{offset,'stop-color':'#effcff','stop-opacity':opacity}));
+  lightDefs.append(light);
+  const ray=svgNode('path',{d:'M-300 -80H-20L210 680H-70Z',fill:`url(#${prefix}-light)`});
+  sheen.append(lightDefs,ray);sheen.setAttribute('hidden','');board.append(sheen);
+  let active=false,settled=false;
+  const styles=new Map(),attributes=new WeakMap();
+  const style=(name,value)=>{if(styles.get(name)!==value){frame.style.setProperty(name,value);styles.set(name,value);}};
+  const attribute=(element,name,value)=>{
+    let values=attributes.get(element);if(!values){values=new Map();attributes.set(element,values);}
+    if(values.get(name)!==value){element.setAttribute(name,value);values.set(name,value);}
+  };
   const clear=()=>{
-    active=false;rim.setAttribute('hidden','');lastHalo=null;
+    active=false;settled=false;rim.setAttribute('hidden','');sheen.setAttribute('hidden','');styles.clear();
     frame.classList.remove('artwork-stage-active','artwork-stage-playing');
     for(const key of ['--artwork-stage-y','--artwork-stage-rx','--artwork-stage-ry','--artwork-stage-halo','--artwork-stage-depth'])frame.style.removeProperty(key);
   };
@@ -111,19 +129,25 @@ export function createArtworkStage(board,prefix){
     draw(elapsed,pointer){
       if(!active)return;
       const sample=sampleArtworkStage(elapsed,pointer);
-      frame.style.setProperty('--artwork-stage-y',`${sample.y.toFixed(3)}px`);
-      frame.style.setProperty('--artwork-stage-rx',`${sample.rotateX.toFixed(3)}deg`);
-      frame.style.setProperty('--artwork-stage-ry',`${sample.rotateY.toFixed(3)}deg`);
-      frame.style.setProperty('--artwork-stage-depth',sample.depth.toFixed(3));
-      const halo=sample.halo.toFixed(3);
-      if(halo!==lastHalo){frame.style.setProperty('--artwork-stage-halo',halo);lastHalo=halo;}
-      line.setAttribute('stroke-dashoffset',String(1000*(1-sample.trace)));
-      line.setAttribute('opacity',String(sample.borderOpacity));
-      glint.setAttribute('stroke-dashoffset',String(-1000*sample.glint));
-      glint.setAttribute('opacity',String(sample.glintOpacity));
+      style('--artwork-stage-y',`${sample.y.toFixed(3)}px`);
+      style('--artwork-stage-rx',`${sample.rotateX.toFixed(3)}deg`);
+      style('--artwork-stage-ry',`${sample.rotateY.toFixed(3)}deg`);
+      // Once the arrival ends, only the compositor transform keeps changing.
+      if(settled&&elapsed>=3000)return;
+      style('--artwork-stage-depth',sample.depth.toFixed(3));
+      style('--artwork-stage-halo',sample.halo.toFixed(3));
+      attribute(line,'stroke-dashoffset',(1000*(1-sample.trace)).toFixed(3));
+      attribute(line,'opacity',sample.borderOpacity.toFixed(3));
+      for(const edge of [glow,glint])attribute(edge,'stroke-dashoffset',(-1000*sample.glint).toFixed(3));
+      attribute(glow,'opacity',(sample.glintOpacity*.24).toFixed(3));
+      attribute(glint,'opacity',sample.glintOpacity.toFixed(3));
+      attribute(ray,'transform',`translate(${sample.sweepX.toFixed(3)} 0)`);
+      attribute(sheen,'opacity',sample.sweepOpacity.toFixed(3));
+      if(sample.sweepOpacity>0)sheen.removeAttribute('hidden');else sheen.setAttribute('hidden','');
+      settled=elapsed>=3000;
     },
     reset:clear,
-    dispose(){clear();rim.remove();}
+    dispose(){clear();rim.remove();sheen.remove();}
   };
 }
 function loadedImage(source,images){

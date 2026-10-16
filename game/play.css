@@ -99,6 +99,7 @@ body{background:var(--surface)}
 #game .image-guide-details{margin-top:0;padding-top:12px}
 #game.focus-view .game-layout{grid-template-columns:1fr;max-width:1030px;margin:auto}
 #game.focus-view .discovery{display:none}
+#game.focus-view .assembly-area>.walkthrough{grid-column:1/-1}
 #game.focus-view .board-frame{max-width:none}#game.focus-view .section-bar,#game.focus-view .assembly-area{max-width:900px}
 #figureDialog{max-width:1060px;padding:26px}
 #figureDialog figure{margin:0}
@@ -189,3 +190,33 @@ body{background:var(--surface)}
 
 #artworkPlayback{display:contents}
 #artworkPlayback[hidden]{display:none}
+
+/* The expanded view carries the same living board, not a second static image. */
+.figure-placeholder{visibility:hidden;pointer-events:none}
+#figureDialog{width:calc(100% - 48px);max-width:1080px;max-height:calc(100dvh - 32px);padding:26px 32px 22px;border:1px solid #c4d3e9;border-radius:16px;background:linear-gradient(145deg,#fff 40%,#f1f6fd);box-shadow:0 28px 100px #060c3452}
+#figureDialog::backdrop{background:#080e2ac7;backdrop-filter:blur(10px)}
+#figureDialog .figure-dialog-heading{padding:0 40px 18px 0}
+#figureDialog .eyebrow{color:#526a88;font-size:10px;font-weight:650;letter-spacing:.12em}
+#figureDialog h2{font-size:28px;line-height:1.15;margin:8px 0 5px;letter-spacing:-.5px}
+#figureDialog .figure-dialog-heading p{font-size:15px;line-height:1.4;margin:0;color:var(--muted)}
+#figureDialog .figure-stage{width:min(100%,calc((100dvh - 260px) * 4 / 3),940px);margin:0 auto}
+#figureDialog .board-frame{padding:0;border-radius:9px;overflow:visible;background:#fff;box-sizing:border-box}
+#figureDialog .board{border-radius:8px;aspect-ratio:4/3;overflow:hidden}
+#figureDialog .artwork-markers{display:none}
+#figureDialog .piece-on-board{animation:none}
+#figureDialog .figure-playback{display:flex;justify-content:center;align-items:center;min-height:60px;margin:8px 0}
+#figureDialog .artwork-motion-toggle{padding:10px 16px;font-size:14px;font-weight:600;border:1px solid #b3c7ef;border-radius:9px;background:#f9fbff;box-shadow:inset 0 1px 0 #fff}
+#figureDialog .artwork-motion-toggle[aria-pressed=true]{background:#eaf1ff;border-color:#a1bbed}
+#figureDialog figcaption{font-size:12px;line-height:1.55;max-width:78ch;text-align:center;margin:0 auto;color:#53647d}
+#figureDialog .dialog-close{top:16px;right:16px;border-radius:50%;background:#eaf0f9;font-size:25px;width:40px;height:40px;min-height:40px}
+#figureDialog .dialog-close:hover{background:#dce6f5}
+@media(max-width:600px){
+ #figureDialog{width:calc(100% - 8px);padding:24px 3px 20px;border-radius:12px}
+ #figureDialog .figure-dialog-heading{padding:0 52px 20px 14px}
+ #figureDialog h2{font-size:25px}#figureDialog .figure-dialog-heading p{font-size:14px}
+ #figureDialog .dialog-close{top:14px;right:12px}
+ #figureDialog .figure-stage{width:100%}
+ #figureDialog figcaption{padding:0 14px}
+}
+@media(prefers-reduced-motion:reduce){#figureDialog .figure-playback:has(.artwork-motion-controls[hidden]){display:none}}
+@media(forced-colors:active){#figureDialog{background:Canvas;border-color:CanvasText}#figureDialog::backdrop{backdrop-filter:none}#figureDialog .artwork-motion-toggle{border-color:ButtonText}}

@@ -108,20 +108,32 @@ test('the completion frame rises smoothly without scaling the image or replaying
 });
 
 test('frame levitation stays continuous at both its introduction and later cycle boundaries',()=>{
-  for(const center of [0,1900,2780,3000,7800,15600]){
+  for(const center of [0,280,1900,2480,2780,3000,7800,15600]){
     const before=sampleArtworkStage(Math.max(0,center-.01)),after=sampleArtworkStage(center+.01);
-    for(const name of ['y','trace','halo','glintOpacity'])assert.ok(Math.abs(before[name]-after[name])<.001,`${center}/${name}: visual discontinuity`);
+    for(const name of ['y','trace','halo','glintOpacity','sweepOpacity'])assert.ok(Math.abs(before[name]-after[name])<.001,`${center}/${name}: visual discontinuity`);
   }
+});
+
+test('the presentation light crosses the illustration once at restrained opacity, then leaves it unobstructed',()=>{
+  assert.equal(sampleArtworkStage(0).sweepOpacity,0);assert.equal(sampleArtworkStage(280).sweepOpacity,0);
+  let previous=-Infinity;
+  for(let elapsed=280;elapsed<=2480;elapsed+=20){
+    const frame=sampleArtworkStage(elapsed);
+    assert.ok(frame.sweepX>=previous);previous=frame.sweepX;
+    assert.ok(frame.sweepOpacity>=0&&frame.sweepOpacity<=.24);
+  }
+  assert.ok(sampleArtworkStage(1380).sweepOpacity>.23);
+  for(const elapsed of [2480,3000,7800,15600,120000])assert.equal(sampleArtworkStage(elapsed).sweepOpacity,0);
 });
 
 function stageDocument(){
   class Element{
-    constructor(tag){this.tag=tag;this.children=[];this.attrs=new Map();this.styles=new Map();this.classes=new Set();this.parent=null;
+    constructor(tag){this.tag=tag;this.children=[];this.attrs=new Map();this.styles=new Map();this.classes=new Set();this.parent=null;this.attributeWrites=0;
       this.style={setProperty:(name,value)=>this.styles.set(name,value),removeProperty:name=>this.styles.delete(name)};
       this.classList={add:(...names)=>names.forEach(name=>this.classes.add(name)),remove:(...names)=>names.forEach(name=>this.classes.delete(name)),toggle:(name,value)=>value?this.classes.add(name):this.classes.delete(name)};
     }
-    setAttribute(name,value){this.attrs.set(name,String(value));}
-    removeAttribute(name){this.attrs.delete(name);}
+    setAttribute(name,value){this.attributeWrites++;this.attrs.set(name,String(value));}
+    removeAttribute(name){this.attributeWrites++;this.attrs.delete(name);}
     append(...nodes){for(const node of nodes){node.parent=this;this.children.push(node);}}
     remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
   }
@@ -152,8 +164,25 @@ test('disposing a playing stage removes its border and every owned presentation 
   const previous=globalThis.document,{document,board,frame}=stageDocument();
   globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
   const stage=createArtworkStage(board,'disposed-stage');stage.activate();stage.playing(true);stage.draw(1200,{x:1,y:-1});stage.dispose();
-  assert.deepEqual(frame.children,[board]);assert.equal(frame.styles.size,0);assert.equal(frame.classes.size,0);
+  assert.deepEqual(frame.children,[board]);assert.equal(board.children.length,0);assert.equal(frame.styles.size,0);assert.equal(frame.classes.size,0);
   stage.draw(4000,{x:1,y:-1});assert.equal(frame.styles.size,0);
+});
+
+test('settled light effects stop DOM updates and reset can replay the complete arrival',context=>{
+  const previous=globalThis.document,{document,board,frame}=stageDocument();
+  globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
+  const stage=createArtworkStage(board,'settled-stage'),sheen=board.children[0];
+  const writes=element=>element.attributeWrites+element.children.reduce((sum,child)=>sum+writes(child),0);
+  stage.activate();stage.draw(1380,{x:0,y:0});
+  assert.equal(sheen.attrs.has('hidden'),false);assert.ok(Number(sheen.attrs.get('opacity'))>.23);
+  stage.draw(3000,{x:0,y:0});assert.equal(sheen.attrs.has('hidden'),true);
+  const settledWrites=writes(frame),previousY=frame.styles.get('--artwork-stage-y');
+  for(let time=3016;time<9000;time+=16)stage.draw(time,{x:0,y:0});
+  assert.equal(writes(frame),settledWrites,'Settled decorative SVG does not mutate every frame');
+  assert.notEqual(frame.styles.get('--artwork-stage-y'),previousY,'Frame continues floating');
+  stage.reset();assert.equal(sheen.attrs.has('hidden'),true);
+  stage.activate();stage.draw(1380,{x:0,y:0});assert.equal(sheen.attrs.has('hidden'),false);
+  stage.dispose();assert.equal(board.children.length,0);
 });
 
 test('asset preloading shares simultaneous requests and retries a failed request',async()=>{

@@ -40,19 +40,22 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 
 - Board, strip, and pieces fit on screen once the board is scrolled to the top.
 - Taps on board positions do not zoom the page.
+- Place a piece, then scroll or resize during its flight. The transient piece should disappear, the placed piece remain visible, and no late contact sound play.
 - Portrait and landscape; Safari text size at 125% and 150%.
 - Private Browsing (progress clears when the tab closes).
 - Reduce Motion on: pieces place without movement; walkthroughs use Previous/Next and do not auto-advance. Nothing essential is lost.
-- Complete a round and check that the original illustration lifts with a brief perimeter glow, then floats while its components move. Pause during the glow and resume: the entrance should continue, not restart. Scroll the board offscreen and return; playback should remain paused until resumed.
+- Complete a round and check that the original illustration lifts with a brief perimeter glow and light sweep, then floats while its components move. Pause during the glow and resume: the entrance should continue, not restart. Scroll the board offscreen and return; playback should remain paused until resumed.
 - Open an image note immediately after the final piece lands. The illustration must stay still for reading. Try restarting while the illustration is loading, and opening and closing a dialog during completion. No delayed animation should override these actions.
 - Enable reduced motion while the illustration is playing. The frame and artwork should return to their static state. Returning to a previously completed round should also remain still until Play is selected.
 - Open **Explore the illustration**, select numbered structures, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
-- Complete a round in **Focus view** and confirm completion restores the scientific column and accessible figure guide. Enlarge the finished figure, then close it and restart the round.
+- Complete a round in **Focus view**. The final piece should land without the board changing size; the illustration guide should remain accessible below it.
+- Enlarge the completed illustration. Playing artwork should continue; paused artwork should remain paused. Close or press Escape and confirm the same board and controls return to their original positions, with focus on Enlarge illustration. On a phone, enlarging must not shrink the image. Restart afterward.
 - Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, and Science on a narrow screen, then open Editorial review from Science.
 - Follow a reference number on a completion card and in Editorial review; the References panel should open at the cited item. Check that each external paper is listed once per round.
 - Try ENT3 in round 03 and confirm it completes the image and teaches SLC29A3. Search Science for ENT3 and H syndrome. Before placing pieces, open Gene hint for a biology clue, then request the optional symbol clue. Enter an incorrect answer and reopen the bank; both hints should remain available and the count should stay at two.
 - Complete two rounds, open the field guide from Collection, and print to PDF. Only the completed rounds should appear, with readable figures and references.
 - Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
+- Mute or restart during a piece flight or completion sound. No delayed placement or completion audio should follow. Confirm sounds align with piece contact when enabled.
 - Complete the collection and scroll to the completion banner: the logo assembles once, without moving the board.
 - VoiceOver: complete one round; pieces announce their position.
 - Airplane mode after loading: switch rounds and note what fails.

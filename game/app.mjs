@@ -11,6 +11,8 @@ import {relatedRoundLinks} from './collection-data.mjs';
 import {geneBank} from './gene-bank.mjs';
 import {animatedArtwork,preloadArtwork,createCompletionPlaybackGate} from './artwork-motion.mjs';
 import {discoveryMotion} from './discovery-motion.mjs';
+import {createPieceMotion} from './piece-motion.mjs';
+import {createFigureView} from './figure-view.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
@@ -30,18 +32,20 @@ let {state,timed} = restoreSession(stored);
 let selected = null, hinted = null, peek = false, drag = null;
 let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
 let lastCount = -1, extrasShown = false;
-let walkthrough=null,artworkAnimation=null,completionTimer=null,lastCollectionCount=null,artworkPrepared=false;
+let walkthrough=null,artworkAnimation=null,lastCollectionCount=null,artworkPrepared=false;
+let feedbackEpoch=0,roundGeneration=0;
 const completionPlayback=createCompletionPlaybackGate();
-document.addEventListener('visibilitychange',()=>{if(document.hidden)completionPlayback.cancel();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();}});
 let cancelCollectionCelebration=()=>{};
 const walkthroughLayout=matchMedia('(min-width: 1101px)');
 function positionWalkthrough(){
-  const panel=document.querySelector('.discovery');panel.classList.toggle('has-walkthrough',Boolean(walkthrough)&&walkthroughLayout.matches);
+  const panel=document.querySelector('.discovery'),sidebar=walkthroughLayout.matches&&!$('game').classList.contains('focus-view');panel.classList.toggle('has-walkthrough',Boolean(walkthrough)&&sidebar);
   if(!walkthrough)return;
-  if(walkthroughLayout.matches)panel.prepend(walkthrough.element);else $('completionActions').after(walkthrough.element);
+  if(sidebar)panel.prepend(walkthrough.element);else $('completionActions').after(walkthrough.element);
 }
 walkthroughLayout.addEventListener('change',positionWalkthrough);
 const board = $('puzzle');
+const pieceMotion=createPieceMotion({board,makePiece:artworkPiece,pathFor,COLS,W,H,CW,CH,pad:PIECE_PAD,reduceMotion:reducedMotion,onCancel:()=>sound.stop()});
 const bank=geneBank(rounds,{onChoose:value=>checkGene(value,true)});
 $('geneBankBody').append(bank.element);
 const discoveryGuide=discoveryMotion({board:$('board'),target:discoveryTarget});
@@ -80,7 +84,7 @@ function openDiscoveries(noteIndex=null) {
   if(!unlocked.length&&!found.length)body.append(node('p','Place pieces to discover scientific clues and image notes. The first clue appears at two pieces.'));
   $('discoveriesButton').classList.remove('has-new');openDialog('discoveriesDialog');
 }
-function start(useRoute = 'image') { if(!artworkPrepared){artworkPrepared=true;void preloadArtwork(round);} startRound(state,timed,useRoute); save(); updateMode(); }
+function start(useRoute = 'image') { void sound.prepare();if(!artworkPrepared){artworkPrepared=true;void preloadArtwork(round);} startRound(state,timed,useRoute); save(); updateMode(); }
 function svgEl(tag,attrs={}) { const n=document.createElementNS(NS,tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); return n; }
 function artworkPiece(id,prefix) {
   const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
@@ -158,20 +162,6 @@ function discoveries(before,previous) {
   const notes=landmarkPieces.map((piece,index)=>state.placed.includes(piece)&&!previous.includes(piece)?noteFor(index):null).filter(Boolean);
   return [...notes,...clues];
 }
-function flyIn(id,from) {
-  if(reducedMotion())return;
-  const g=board.querySelector(`[data-slot="${id}"] .piece-on-board`),b=board.getBoundingClientRect();
-  if(!g?.animate||!b.width)return;
-  const cx=(id%COLS+.5)*CW,cy=(Math.floor(id/COLS)+.5)*CH;
-  g.style.transformOrigin=`${cx}px ${cy}px`;
-  if(!from||from.bottom<0||from.top>innerHeight){g.animate([{transform:'scale(1.025)'},{transform:'none'}],{duration:180,easing:'ease-out'});return;}
-  const ghost=svgEl('svg',{viewBox:`${id%COLS*CW-PIECE_PAD} ${Math.floor(id/COLS)*CH-PIECE_PAD} ${CW+PIECE_PAD*2} ${CH+PIECE_PAD*2}`,'aria-hidden':'true'});
-  ghost.append(artworkPiece(id,`arrival-${id}-`));ghost.classList.add('drag-ghost');
-  Object.assign(ghost.style,{left:from.left+'px',top:from.top+'px',width:from.width+'px',height:from.height+'px',transformOrigin:'center'});document.body.append(ghost);g.style.opacity='0';
-  const dx=b.left+cx*b.width/W-from.left-from.width/2,dy=b.top+cy*b.height/H-from.top-from.height/2;
-  const scale=(CW+PIECE_PAD*2)*b.width/W/from.width;
-  ghost.animate([{transform:'none'},{transform:`translate(${dx}px,${dy}px) scale(${scale*1.015})`,offset:.86},{transform:`translate(${dx}px,${dy}px) scale(${scale})`}],{duration:280,easing:'cubic-bezier(.2,.7,.2,1)'}).finished.catch(()=>{}).finally(()=>{ghost.remove();g.style.opacity='';});
-}
 function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   finishRound(state);
   const found=discoveries(before,previous);
@@ -180,25 +170,24 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   $('completion').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   $('identityCard').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   render(before); save();
-  if(id!==null)flyIn(id,from);
-  void sound.play(finishing?'complete':'place');
+  const epoch=feedbackEpoch,generation=roundGeneration,progress=state.placed.length/SIZE;
+  const settled=id===null?Promise.resolve({cancelled:false}):pieceMotion.place(id,from);
+  settled.then(result=>{if(epoch===feedbackEpoch&&!result.cancelled)void sound.play(finishing?'complete':'place',{progress});});
   if(roundComplete(state)){
     discoveryGuide.clear();
     strip('Round complete. Your illustration is saved.');
     if(alias)$('roundResults').append(alias);
     if(finishing){
-      clearTimeout(completionTimer);
       const takeAutoplay=completionPlayback.arm();
-      const reveal=()=>{
+      settled.then(result=>{
+        if(generation!==roundGeneration)return;
         $('board').classList.remove('finishing');
         for(const panel of [$('identityCard'),$('completion')]){panel.classList.remove('reveal-pending');panel.classList.add('reveal-arriving');}
-        // Reveal the information even when another interaction has cancelled motion.
-        if(takeAutoplay()&&!document.hidden&&!document.querySelector('dialog[open]')){
+        // Always reveal the information. A later interaction can cancel autoplay.
+        if(takeAutoplay()&&!result.cancelled&&epoch===feedbackEpoch&&!document.hidden&&!document.querySelector('dialog[open]')){
           $('revealTitle').focus({preventScroll:true});artworkAnimation?.play();
         }
-        completionTimer=null;
-      };
-      if(reducedMotion())reveal();else completionTimer=setTimeout(reveal,id===null?0:280);
+      });
     }
   } else {
     strip(`${state.placed.length} of ${SIZE} placed.`,found);
@@ -315,13 +304,12 @@ function render(before=state.placed.length) {
   $('geneHint').hidden=done;
   updateGeneHint();
   $('hint').disabled=done; $('peek').disabled=done;
-  $('hint').hidden=done;$('peek').hidden=done;$('focusButton').hidden=done;$('enlargeButton').hidden=!done;$('discoveriesButton').hidden=done;
+  $('hint').hidden=done;$('peek').hidden=done;$('focusButton').hidden=false;$('enlargeButton').hidden=!done;$('discoveriesButton').hidden=done;
   $('geneBankButton').hidden=done;
   $('artworkPlayback').hidden=!done;
   $('status').hidden=done;
   document.querySelector('.mode-toggle').hidden=done;
   if(done){
-    $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
     peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');renderResults();
     if(!extrasShown){
       extrasShown=true;
@@ -371,23 +359,24 @@ function requestGeneHint(){start('guess');bank.hint(revealGeneHint(state,round))
 function openGeneBank(){updateGeneHint();openDialog('geneBankDialog');bank.focus();}
 $('geneHint').onclick=()=>{openGeneBank();if(!state.geneHintsSeen)requestGeneHint();};
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
-function openDialog(id){completionPlayback.cancel();walkthrough?.pause();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
+function openDialog(id){completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();walkthrough?.pause();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
 $('geneBankButton').onclick=openGeneBank;
 $('closeGeneBank').onclick=()=>$('geneBankDialog').close();
 $('bankSymbolHint').onclick=requestGeneHint;
 $('discoveriesButton').onclick=()=>openDiscoveries();
 $('closeDiscoveries').onclick=()=>$('discoveriesDialog').close();
-$('libraryButton').onclick=()=>{renderCollection();openDialog('libraryDialog');};
+$('libraryButton').onclick=()=>{renderCollection(true);openDialog('libraryDialog');};
 $('closeLibrary').onclick=()=>$('libraryDialog').close();
-$('collectionReview').onclick=()=>{renderCollection();openDialog('libraryDialog');};
+$('collectionReview').onclick=()=>{renderCollection(true);openDialog('libraryDialog');};
 $('helpButton').onclick=()=>openDialog('helpDialog');$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
-$('focusButton').onclick=()=>{const on=!$('game').classList.contains('focus-view');$('game').classList.toggle('focus-view',on);$('focusButton').setAttribute('aria-pressed',String(on));$('focusButton').textContent=on?'Exit focus view':'Focus view';};
-$('enlargeButton').onclick=()=>{if(complete(state))openDialog('figureDialog');};
-$('closeFigure').onclick=()=>$('figureDialog').close();
+$('focusButton').onclick=()=>{pieceMotion.clear();discoveryGuide.clear();const on=!$('game').classList.contains('focus-view');$('game').classList.toggle('focus-view',on);$('focusButton').setAttribute('aria-pressed',String(on));$('focusButton').textContent=on?'Exit focus view':'Focus view';positionWalkthrough();};
+const figureView=createFigureView({dialog:$('figureDialog'),frame:$('board').closest('.board-frame'),playback:$('artworkPlayback'),stageHost:$('figureStage'),controlsHost:$('figurePlayback'),motion:()=>artworkAnimation,focusTarget:$('enlargeButton'),onOpen:()=>{completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();discoveryGuide.clear();walkthrough?.close();}});
+$('enlargeButton').onclick=()=>{if(complete(state))figureView.open();};
+$('closeFigure').onclick=()=>figureView.close();
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
   completionPlayback.cancel();
-  clearTimeout(completionTimer);completionTimer=null;walkthrough?.dispose();walkthrough=null;artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
+  feedbackEpoch++;roundGeneration++;pieceMotion.clear();figureView.close();walkthrough?.dispose();walkthrough=null;artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
   positionWalkthrough();
   $('board').classList.remove('finishing');
   for(const panel of [$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
@@ -445,14 +434,14 @@ $('revealLines').replaceChildren(...completionSections.map(([label,text,sources]
 }));
 $('referencesBody').append(referenceList(round,{heading:''}));
 $('profileLink').href=`./science.html?level=${round.number}`;
-$('largeFigure').src=round.artwork;$('largeFigure').alt=diagramDescription;$('largeFigureCaption').textContent=round.illustration.note;
+$('figureDialogTitle').textContent=round.gene;$('figureDialogCondition').textContent=round.condition;$('largeFigureCaption').textContent=round.illustration.note;
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
 $('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
 buildBoard();buildTray();render();save();
 if(roundComplete(state))strip('Round complete. Your illustration and results are saved.');
 else if(state.started)strip('Your progress is restored.'+(timed?' Elapsed time continues.':''));
 
-function renderCollection() {
+function renderCollection(includeCards=false) {
   const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
   const count=progress.filter(p=>p.done).length,anyStarted=progress.some(p=>p.started);
   $('collectionCount').textContent=`${count} of ${rounds.length} complete`;
@@ -465,11 +454,12 @@ function renderCollection() {
   const next=progress.find(p=>Number(p.round.number)>Number(round.number)&&!p.done)??progress.find(p=>!p.done&&p.round.id!==round.id);
   $('nextRound').href=roundLink(next?.round??rounds[0]);
   $('nextRound').textContent=next?`Next round · ${next.round.number} →`:'Explore the collection →';
-  $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();openDialog('libraryDialog');}:null;
+  $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();renderCollection(true);openDialog('libraryDialog');}:null;
   const index=rounds.indexOf(round);
   for(const [id,target] of [['previousRound',rounds[index-1]],['followingRound',rounds[index+1]]]){
     const a=$(id);a.hidden=!target;if(target){a.href=roundLink(target);a.setAttribute('aria-label',`Go to round ${target.number}`);}
   }
+  if(!includeCards)return;
   $('levelGrid').replaceChildren();
   for(const [i,item] of progress.entries()){
     const a=document.createElement('a');a.href=roundLink(item.round);a.className='level-card'+(item.done?' is-complete':'');

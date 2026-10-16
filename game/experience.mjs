@@ -15,37 +15,65 @@ export function createSequence(count,{onStep=()=>{},onState=()=>{},delay=()=>600
 // No audio files, analytics, autoplay, or third-party requests are used.
 export function soundFeedback(button){
   const key='gregor-puzzles:sound';
-  let enabled=true,context=null;
+  let enabled=true,context=null,epoch=0;
   const voices=new Set();
   try{enabled=localStorage.getItem(key)!=='off';}catch{}
   const paint=()=>{button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'Turn sound off':'Turn sound on');button.querySelector('span').textContent=enabled?'Sound on':'Sound off';};
-  const stop=()=>{for(const voice of voices){try{voice.stop();}catch{}}voices.clear();};
-  async function ready(){
-    if(!enabled||document.hidden)return false;
-    try{const Audio=window.AudioContext??window.webkitAudioContext;if(!Audio)return false;context??=new Audio();if(context.state==='suspended')await context.resume();return enabled&&!document.hidden&&context.state==='running';}catch{return false;}
+  const stop=()=>{epoch++;for(const voice of voices){try{voice.oscillator.stop();}catch{}voice.release();}voices.clear();};
+  const current=token=>token===epoch&&enabled&&!document.hidden;
+  async function ready(token){
+    if(!current(token))return false;
+    try{
+      const Audio=window.AudioContext??window.webkitAudioContext;if(!Audio)return false;
+      // Prime while handling the placement gesture; later contact feedback can
+      // use that running context without depending on a second user gesture.
+      if((!context||context.state==='suspended')&&window.navigator?.userActivation?.isActive===false)return false;
+      context??=new Audio();if(context.state==='suspended')await context.resume();
+      return current(token)&&context.state==='running';
+    }catch{return false;}
   }
-  async function play(kind='place'){
-    if(!await ready())return;
-    const notes=kind==='complete'?[523.25,659.25,783.99]:[880];
-    for(const [i,hz] of notes.entries()){
-      const oscillator=context.createOscillator(),gain=context.createGain(),at=context.currentTime+i*.045;
-      oscillator.type='sine';oscillator.frequency.setValueAtTime(hz,at);
-      const length=kind==='complete'?.36:.065;
-      gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(kind==='complete'?.022:.035,at+.006);gain.gain.exponentialRampToValueAtTime(.0001,at+length);
-      oscillator.connect(gain);gain.connect(context.destination);voices.add(oscillator);
-      oscillator.onended=()=>{voices.delete(oscillator);oscillator.disconnect();gain.disconnect();};
-      oscillator.start(at);oscillator.stop(at+length+.02);
+  const prepare=()=>ready(epoch);
+  async function play(kind='place',{progress=0,delay=0}={}){
+    const token=epoch;if(!await ready(token)||!current(token))return;
+    const amount=Number.isFinite(progress)?Math.max(0,Math.min(1,progress)):0;
+    const wait=Number.isFinite(delay)?Math.max(0,Math.min(2000,delay))/1000:0;
+    const base=420+amount*48;
+    // A short, soft contact plus a barely audible upper partial; completion
+    // opens into a warm G-major resolution instead of a sharp notification.
+    const notes=kind==='complete'?[
+      {hz:392,tail:392,at:0,length:.44,volume:.015},
+      {hz:493.88,tail:493.88,at:.065,length:.46,volume:.012},
+      {hz:587.33,tail:587.33,at:.13,length:.50,volume:.010},
+      {hz:783.99,tail:783.99,at:.21,length:.60,volume:.006}
+    ]:[
+      {hz:base,tail:base*.82,at:0,length:.085,volume:.022},
+      {hz:base*2.12,tail:base*1.7,at:.003,length:.045,volume:.0045}
+    ];
+    for(const note of notes){
+      if(!current(token))break;
+      const oscillator=context.createOscillator(),gain=context.createGain(),at=context.currentTime+wait+note.at;
+      oscillator.type='sine';oscillator.frequency.setValueAtTime(note.hz,at);
+      oscillator.frequency.exponentialRampToValueAtTime(note.tail,at+note.length*.8);
+      gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(note.volume,at+(kind==='complete'?.012:.006));gain.gain.exponentialRampToValueAtTime(.0001,at+note.length);
+      oscillator.connect(gain);gain.connect(context.destination);
+      let released=false;
+      const voice={oscillator,release(){if(released)return;released=true;voices.delete(voice);oscillator.disconnect();gain.disconnect();}};
+      voices.add(voice);oscillator.onended=voice.release;
+      oscillator.start(at);oscillator.stop(at+note.length+.02);
     }
   }
+  const save=()=>{try{localStorage.setItem(key,enabled?'on':'off');}catch{}};
   button.addEventListener('click',async()=>{
-    enabled=!enabled;
-    if(enabled&&!await ready())enabled=false;
-    if(!enabled)stop();
-    try{localStorage.setItem(key,enabled?'on':'off');}catch{}
-    paint();if(enabled)void play();
+    enabled=!enabled;stop();paint();save();if(!enabled)return;
+    const token=epoch;
+    if(!await ready(token)){
+      if(token===epoch){enabled=false;paint();save();}
+      return;
+    }
+    if(current(token))void play();
   });
   document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();void context?.suspend().catch(()=>{});}});
-  paint();return {play,stop};
+  paint();return {prepare,play,stop};
 }
 
 // The sequence uses the same three referenced image notes as the editorial page.

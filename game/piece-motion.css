@@ -1,0 +1,7 @@
+/* Decorative cutouts never intercept the next placement or cover an open dialog. */
+.piece-flight{position:fixed;z-index:55;pointer-events:none;overflow:visible;transform-origin:50% 50%;contain:layout style;will-change:transform}
+.piece-flight .piece-outline{fill:none;stroke:#314d73;stroke-width:1;stroke-opacity:.42}
+.piece-contact-trace{fill:none;stroke:#548ef5;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:28 72;opacity:0;pointer-events:none}
+@media(prefers-reduced-motion:reduce){.piece-flight,.piece-contact-trace{display:none!important}}
+@media(forced-colors:active){.piece-contact-trace{stroke:Highlight}}
+@media print{.piece-flight,.piece-contact-trace{display:none!important}}
