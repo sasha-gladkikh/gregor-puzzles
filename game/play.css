@@ -179,18 +179,9 @@ body{background:var(--surface)}
 #game .figure-tools .gene-bank-trigger{background:var(--accent);border-color:var(--accent);color:white;font-weight:650}
 #game .figure-tools .gene-bank-trigger:hover{background:#003fd2}
 #game .figure-tools #hint{border-color:#a1b7d9;font-weight:600}
-#game .assembly-area>.biology-motion{grid-column:1/-1;width:100%}
-#game.round-complete .assembly-area>.biology-motion{grid-row:4}
-#game.round-complete .completion-actions{grid-row:5}
-#game.round-complete .assembly-area>.walkthrough{grid-row:6}
-#game.round-complete .completion{grid-row:7}
-#game.round-complete .board-caption{grid-row:8}
-#game.round-complete .diagram-description{grid-row:9}
-#game.round-complete .round-settings{grid-row:10}
 @media(min-width:1101px){#game .discovery{position:sticky;top:20px;align-self:start;max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:4px}}
 @media(max-width:1100px){#game .learning-heading{margin-top:8px}#game .latest-discovery{min-height:0}}
-@media(max-width:600px){#game .figure-tools{gap:6px}#game .figure-tools .tool{padding:8px;font-size:12px}#game .figure-tools .tool svg{width:15px;height:15px}#game .assembly-area>.biology-motion{margin-top:20px}}
+@media(max-width:600px){#game .figure-tools{gap:6px}#game .figure-tools .tool{padding:8px;font-size:12px}#game .figure-tools .tool svg{width:15px;height:15px}}
 
-#game .figure-tools .watch-mechanism{color:var(--accent);border-color:#9db9ef;background:#edf3ff;font-weight:650;animation:watch-cue .9s ease-out 2}
-@keyframes watch-cue{0%,100%{box-shadow:0 0 0 0 #064dff00}50%{box-shadow:0 0 0 5px #064dff18}}
-@media(prefers-reduced-motion:reduce){#game .figure-tools .watch-mechanism{animation:none}}
+#artworkPlayback{display:contents}
+#artworkPlayback[hidden]{display:none}

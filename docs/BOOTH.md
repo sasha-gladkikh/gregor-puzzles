@@ -43,11 +43,12 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Portrait and landscape; Safari text size at 125% and 150%.
 - Private Browsing (progress clears when the tab closes).
 - Reduce Motion on: pieces place without movement; walkthroughs use Previous/Next and do not auto-advance. Nothing essential is lost.
-- Complete a round, open **Explore the illustration**, select numbered structures, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
+- Complete a round and check the original illustration animates in the board. Pause and resume it, scroll it offscreen, and return. With reduced motion enabled, it should remain still.
+- Open **Explore the illustration**, select numbered structures, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
 - Complete a round in **Focus view** and confirm completion restores the scientific column and accessible figure guide. Enlarge the finished figure, then close it and restart the round.
 - Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, and Science on a narrow screen, then open Editorial review from Science.
 - Follow a reference number on a completion card and in Editorial review; the References panel should open at the cited item. Check that each external paper is listed once per round.
-- Try ENT3 in round 03 and confirm it completes the image and teaches SLC29A3. Search Science for ENT3 and H syndrome. After eight pieces, open the symbol hint, enter an incorrect answer, then reopen the hint; it should remain available without being counted again.
+- Try ENT3 in round 03 and confirm it completes the image and teaches SLC29A3. Search Science for ENT3 and H syndrome. Before placing pieces, open Gene hint for a biology clue, then request the optional symbol clue. Enter an incorrect answer and reopen the bank; both hints should remain available and the count should stay at two.
 - Complete two rounds, open the field guide from Collection, and print to PDF. Only the completed rounds should appear, with readable figures and references.
 - Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
 - Complete the collection and scroll to the completion banner: the logo assembles once, without moving the board.

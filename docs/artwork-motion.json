@@ -1,0 +1,349 @@
+{
+  "purpose": "Generation provenance for localized clean background patches. Moving structures always use original artwork pixels.",
+  "initialPass": {
+    "tool": "built-in image_gen",
+    "created": "2026-10-15",
+    "purpose": "Local background repairs for original-artwork cutout animation.",
+    "assets": [
+      {
+        "round": "01",
+        "input": "../01.webp",
+        "output": "01-clean.png",
+        "editSpecification": "Create a clean background plate of this exact attached illustration. Keep its exact 4:3 canvas, composition, colors, lighting, gradients, shapes and all unmentioned pixels unchanged. Remove only the specified objects and their small immediate shadows or halos, seamlessly reconstructing the original background beneath each object. Do not move, resize, recolor or redraw any remaining structure. Do not add text, labels, borders or new objects. Coordinates below refer to the original 1200 by 900 image. Remove all ten teal spherical chloride ions: three above the membrane, four inside the two blue channel pores, and three below the channels. Preserve every part of the channel, bilayer, muscle fibers and cytoplasm. Fill each pore ion's footprint with the adjacent dark-blue pore shading; fill other footprints with the local existing background.",
+        "outputDimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": "Use only masked object footprints over the original. All unmasked pixels and every moving object come from the source illustration."
+      },
+      {
+        "round": "02",
+        "input": "../02.webp",
+        "output": "02-clean.png",
+        "editSpecification": "Create a clean background plate of this exact attached illustration. Keep its exact 4:3 canvas, composition, colors, lighting, gradients, shapes and all unmentioned pixels unchanged. Remove only the specified objects and their small immediate shadows or halos, seamlessly reconstructing the original background beneath each object. Do not move, resize, recolor or redraw any remaining structure. Do not add text, labels, borders or new objects. Coordinates below refer to the original 1200 by 900 image. Remove ONLY the three amber spherical molecules already inside the lower open horizontal gap-junction channel: centers (454,555), (599,555), and (743,555), radii about 25–27 pixels. Reconstruct the dark-blue and teal interior pore shading. Preserve both amber arrows inside this channel, every other free amber molecule, both cell membranes, all blue and teal channel structures, and the upper junction.",
+        "outputDimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": "Use only masked object footprints over the original. All unmasked pixels and every moving object come from the source illustration."
+      },
+      {
+        "round": "03",
+        "input": "../03.webp",
+        "output": "03-clean.png",
+        "editSpecification": "Create a clean background plate of this exact attached illustration. Keep its exact 4:3 canvas, composition, colors, lighting, gradients, shapes and all unmentioned pixels unchanged. Remove only the specified objects and their small immediate shadows or halos, seamlessly reconstructing the original background beneath each object. Do not move, resize, recolor or redraw any remaining structure. Do not add text, labels, borders or new objects. Coordinates below refer to the original 1200 by 900 image. Remove ONLY the two small amber nucleoside symbols in the central narrow lumen of the blue lower-right transporter: upper curved oval near center (922,555), bounds (903,532)–(941,578); lower small angular symbol near center (919,615), bounds (901,595)–(936,635). Restore the dark-blue transporter pore behind them. Preserve the white/amber export arrow, every larger linked amber nucleoside inside and outside the lysosome, all RNA fragments, and the entire transporter and lysosomal membrane.",
+        "outputDimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": "Use only masked object footprints over the original. All unmasked pixels and every moving object come from the source illustration."
+      },
+      {
+        "round": "04",
+        "objects": "Remove ONLY the isolated amber/orange oval near the top-right, centered around x733,y107 and bounded x684–782,y48–166, plus its subtle shadow. This is the free released factor. Keep the amber oval attached to the large blue ribosome at x610,y335 unchanged. Keep the large detached cyan ribosomal subunit on the right unchanged. Fill the removed isolated oval with the same clean white background.",
+        "input": "../04.webp",
+        "output": "04-clean.png",
+        "prompt": "Use case: precise-object-edit.\nAsset type: clean background plate for animation of this existing scientific illustration.\nInput image: the attached existing image is the exact edit target, not merely a style reference.\nPrimary request: Remove ONLY the isolated amber/orange oval near the top-right, centered around x733,y107 and bounded x684–782,y48–166, plus its subtle shadow. This is the free released factor. Keep the amber oval attached to the large blue ribosome at x610,y335 unchanged. Keep the large detached cyan ribosomal subunit on the right unchanged. Fill the removed isolated oval with the same clean white background.\nCoordinates refer to the original 1200x900 image. Preserve the exact 4:3 canvas, original framing and scale. Edit only the listed objects' footprints. Every unlisted pixel and object must remain identical: original outlines, blue/teal/orange palette, original gradients, lighting, textures, positions, arrows and scientific structures. Do not redraw, recompose, rescale, restyle, sharpen or add any objects. This is object removal with minimal local background repair. No labels, text, watermark or transparency. Return the clean plate at1200x900 if available.",
+        "output_dimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": {
+          "selected_object_removed": true,
+          "notes": "Free amber oval removed. Adjacent amber arrow was also removed by generation. Composite this plate only within the exact oval contour; preserve original artwork elsewhere."
+        }
+      },
+      {
+        "round": "05",
+        "objects": "Remove ONLY the isolated amber/orange RNA lariat in the upper right, bounded x866–1184,y158–363, plus its subtle shadow. This is the loop-and-tail structure on the white background. Keep the dark blue arrow pointing toward it unchanged, including its tip around x866,y295. Keep all orange RNA inside the central spliceosome unchanged. Keep the lower-right joined blue-and-teal RNA unchanged. Fill the removed lariat with the same clean white background.",
+        "input": "../05.webp",
+        "output": "05-clean.png",
+        "prompt": "Use case: precise-object-edit.\nAsset type: clean background plate for animation of this existing scientific illustration.\nInput image: the attached existing image is the exact edit target, not merely a style reference.\nPrimary request: Remove ONLY the isolated amber/orange RNA lariat in the upper right, bounded x866–1184,y158–363, plus its subtle shadow. This is the loop-and-tail structure on the white background. Keep the dark blue arrow pointing toward it unchanged, including its tip around x866,y295. Keep all orange RNA inside the central spliceosome unchanged. Keep the lower-right joined blue-and-teal RNA unchanged. Fill the removed lariat with the same clean white background.\nCoordinates refer to the original 1200x900 image. Preserve the exact 4:3 canvas, original framing and scale. Edit only the listed objects' footprints. Every unlisted pixel and object must remain identical: original outlines, blue/teal/orange palette, original gradients, lighting, textures, positions, arrows and scientific structures. Do not redraw, recompose, rescale, restyle, sharpen or add any objects. This is object removal with minimal local background repair. No labels, text, watermark or transparency. Return the clean plate at1200x900 if available.",
+        "output_dimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": {
+          "selected_object_removed": true,
+          "notes": "Free upper-right lariat removed; adjacent blue arrow remains. Composite only within the lariat footprint to preserve original pixels elsewhere."
+        }
+      },
+      {
+        "round": "06",
+        "objects": "Remove EXACTLY four small circular particles and their tiny shadows: (1) the teal ion centered x411,y450, radius about15, located in the middle opening of the upper blue channel; (2) the teal ion centered x407,y579,radius about15, on the white space below that channel; (3) the amber/orange particle centered x810,y559,radius about17, in the white synaptic cleft; (4) the amber/orange particle centered x758,y645,radius about18, in the white synaptic cleft. For particle1 reconstruct the dark teal channel-opening background only where that circle was. For particles2–4 fill with the existing white background. Keep EVERY other teal and orange particle exactly where it is, keep all channels, arrows, vesicles, mitochondrion and both cell membranes unchanged.",
+        "input": "../06.webp",
+        "output": "06-clean.png",
+        "prompt": "Use case: precise-object-edit.\nAsset type: clean background plate for animation of this existing scientific illustration.\nInput image: the attached existing image is the exact edit target, not merely a style reference.\nPrimary request: Remove EXACTLY four small circular particles and their tiny shadows: (1) the teal ion centered x411,y450, radius about15, located in the middle opening of the upper blue channel; (2) the teal ion centered x407,y579,radius about15, on the white space below that channel; (3) the amber/orange particle centered x810,y559,radius about17, in the white synaptic cleft; (4) the amber/orange particle centered x758,y645,radius about18, in the white synaptic cleft. For particle1 reconstruct the dark teal channel-opening background only where that circle was. For particles2–4 fill with the existing white background. Keep EVERY other teal and orange particle exactly where it is, keep all channels, arrows, vesicles, mitochondrion and both cell membranes unchanged.\nCoordinates refer to the original 1200x900 image. Preserve the exact 4:3 canvas, original framing and scale. Edit only the listed objects' footprints. Every unlisted pixel and object must remain identical: original outlines, blue/teal/orange palette, original gradients, lighting, textures, positions, arrows and scientific structures. Do not redraw, recompose, rescale, restyle, sharpen or add any objects. This is object removal with minimal local background repair. No labels, text, watermark or transparency. Return the clean plate at1200x900 if available.",
+        "output_dimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": {
+          "selected_objects_removed": "partial",
+          "usable_cleaned_circles_original_coordinates": [
+            {
+              "x": 407,
+              "y": 579,
+              "r": 15
+            },
+            {
+              "x": 758,
+              "y": 645,
+              "r": 18
+            },
+            {
+              "x": 725,
+              "y": 590,
+              "r": 19
+            }
+          ],
+          "do_not_use_for_circles": [
+            {
+              "x": 411,
+              "y": 450
+            },
+            {
+              "x": 810,
+              "y": 559
+            }
+          ],
+          "notes": "Channel ion remains as a flat teal disk and transmitter at810,559 remains. Original transmitter at725,590 was removed unintentionally; recommended mapping uses the three cleared circles only. Preserve all original pixels elsewhere.",
+          "revision": {
+            "tool": "built-in image_gen",
+            "prompt": "Use case: precise-object-edit. This existing 1448x1086 scientific illustration is the exact edit target. Make only TWO tiny local removals:\n1) Remove the small FLAT TEAL DISK inside the center opening of the BLUE ION CHANNEL on the left, center x496,y543, radius about20pixels. This disk was an ion and must be completely absent. Reconstruct the dark NAVY BLUE cavity of the channel behind it, continuing the adjacent opening's shading. Do not leave any teal circular shape or teal flat disk.\n2) Remove the ONE orange spherical bead directly BELOW the downward orange arrow in the white synaptic cleft, center x977,y676,radius about21pixels. Fill its entire footprint with pure clean white matching the surrounding cleft. Keep the orange beads at x939,y630, x1029,y629 and x1019,y730 unchanged.\nKeep the exact same canvas, framing, scale and placement of ALL other pixels, membranes, channels, organelles, arrows and particles. No redrawing, no added objects, no labels. This is a surgical two-object removal, not a new illustration. Opaque background. Return1448x1086.",
+            "status": "failed",
+            "error": "connection failed: error sending request"
+          }
+        }
+      },
+      {
+        "round": "07",
+        "input": "../07.webp",
+        "output": "07-clean.png",
+        "editSpecification": "Create a clean background plate of this exact attached illustration. Keep its exact 4:3 canvas, composition, colors, lighting, gradients, shapes and all unmentioned pixels unchanged. Remove only the specified objects and their small immediate shadows or halos, seamlessly reconstructing the original background beneath each object. Do not move, resize, recolor or redraw any remaining structure. Do not add text, labels, borders or new objects. Coordinates below refer to the original 1200 by 900 image. Remove ONLY the three FREE amber spherical ligand symbols above and left of the upper-left membrane receptor, centered at (83,65), (132,30), and (148,79), radii about21–22. Fill the footprints with white. Preserve the amber ligand already BOUND at (248,100), the curved amber arrow from the free ligands toward that bound ligand, the entire receptor, every intracellular amber marker and all downstream proteins, membranes, arrows and nuclear DNA.",
+        "outputDimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": "Use only masked object footprints over the original. All unmasked pixels and every moving object come from the source illustration."
+      },
+      {
+        "round": "08",
+        "input": "../08.webp",
+        "output": "08-clean.png",
+        "editSpecification": "Create a clean background plate of this exact attached illustration. Keep its exact 4:3 canvas, composition, colors, lighting, gradients, shapes and all unmentioned pixels unchanged. Remove only the specified objects and their small immediate shadows or halos, seamlessly reconstructing the original background beneath each object. Do not move, resize, recolor or redraw any remaining structure. Do not add text, labels, borders or new objects. Coordinates below refer to the original 1200 by 900 image. Remove ONLY the detached amber lariat RNA at the lower left, including the large oval loop, small knot and long rightward tail, outer bounds approximately x119–638,y564–789 and its small soft shadow. Fill with the matching white background. Preserve the descending blue arrow ending near (386,608), every part of the minor-spliceosome assembly and its RNAs, and the separate joined navy/teal exon product to the lower right.",
+        "outputDimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": "Use only masked object footprints over the original. All unmasked pixels and every moving object come from the source illustration."
+      },
+      {
+        "round": "09",
+        "input": "../09.webp",
+        "output": "09-clean.png",
+        "editSpecification": "Create a clean background plate of this exact attached illustration. Keep its exact 4:3 canvas, composition, colors, lighting, gradients, shapes and all unmentioned pixels unchanged. Remove only the specified objects and their small immediate shadows or halos, seamlessly reconstructing the original background beneath each object. Do not move, resize, recolor or redraw any remaining structure. Do not add text, labels, borders or new objects. Coordinates below refer to the original 1200 by 900 image. Remove ONLY the central round blue carrier vesicle AND the pair of blue membrane-protein lobes attached to its lower rim, overall bounds approximately x497–644,y192–329. Fill with the white background. Preserve both adjacent blue trafficking arrows, the entire ER on the left and Golgi on the right, the fixed blue protein copies on the ER and Golgi, and the entire amber/teal downstream signaling path and nucleus.",
+        "outputDimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": "Use only masked object footprints over the original. All unmasked pixels and every moving object come from the source illustration."
+      },
+      {
+        "round": "10",
+        "input": "../10.webp",
+        "output": "10-clean.png",
+        "editSpecification": "Create a clean background plate of this exact attached illustration. Keep its exact 4:3 canvas, composition, colors, lighting, gradients, shapes and all unmentioned pixels unchanged. Remove only the specified objects and their small immediate shadows or halos, seamlessly reconstructing the original background beneath each object. Do not move, resize, recolor or redraw any remaining structure. Do not add text, labels, borders or new objects. Coordinates below refer to the original 1200 by 900 image. Remove ONLY the entire neuron in the LOWER part of the image: teal dendrites, blue/teal cell body and its nucleus, blue axon, blue myelin segments and all right-hand axon terminals. It begins around y435 and extends to y887. Replace its footprint with the existing plain white background. Preserve BOTH DNA helix rows, ALL blue exon markers, BOTH amber repeat sections at their exact lengths, and the central downward blue arrow. Do not change or move any DNA pixels.",
+        "outputDimensions": {
+          "width": 1448,
+          "height": 1086
+        },
+        "qa": "Use only masked object footprints over the original. All unmasked pixels and every moving object come from the source illustration."
+      }
+    ]
+  },
+  "additionalFloatingObjects": [
+    {
+      "tool": "built-in image_gen",
+      "use_case": "precise-object-edit",
+      "purpose": "Additional background patches for floating original-artwork layers",
+      "input_dimensions": {
+        "width": 1448,
+        "height": 1086
+      },
+      "mapping_coordinate_system": {
+        "width": 1200,
+        "height": 900
+      },
+      "status": "generated-and-visually-inspected",
+      "assets": [
+        {
+          "round": "04",
+          "input_sha256": "2256033b1e1c3d11d29854aba287df45096d4c3107c8934406ccbd2d793115e8",
+          "targets_original": [
+            {
+              "name": "Detached teal small ribosomal subunit",
+              "bounds": [
+                812,
+                212,
+                1165,
+                497
+              ]
+            }
+          ],
+          "description": "Remove the ENTIRE isolated teal small ribosomal subunit at the RIGHT, including all of its internal teal RNA drawing and subtle shadow. Its bounds in THIS1448x1086 input are(980,256)–(1406,600). Fill that entire object's footprint with the same white background. Preserve the curved teal joining arrow immediately to its left. Preserve the large blue ribosomal subunit, all attached regulatory proteins, orange attachedoval, upper-left RNA, cell membrane, and lower-right assembled ribosome. The top-right free orange factor was already removed from this background plate; keep that area empty and do not restore it.",
+          "input": "game/artwork/motion/04-clean.png",
+          "output": "game/artwork/motion/04-clean.png",
+          "prompt": "Use case: precise-object-edit.\nAsset type: additional clean background for animation layers of this EXACT existing scientific illustration.\nInput image: exact edit target, not a style reference.\nPrimary request: Remove the ENTIRE isolated teal small ribosomal subunit at the RIGHT, including all of its internal teal RNA drawing and subtle shadow. Its bounds in THIS1448x1086 input are(980,256)–(1406,600). Fill that entire object's footprint with the same white background. Preserve the curved teal joining arrow immediately to its left. Preserve the large blue ribosomal subunit, all attached regulatory proteins, orange attachedoval, upper-left RNA, cell membrane, and lower-right assembled ribosome. The top-right free orange factor was already removed from this background plate; keep that area empty and do not restore it.\nPreserve the exact1448x1086 canvas and4:3 ratio, framing, scale, positions, palette, linework and shading. Remove only the specified additional objects and minimally repair their immediate backgrounds. Every other object must remain as in the input. Do not redraw, recompose, crop, resize, restyle, sharpen, add or restore objects. Existing blank removed-object areas must remainblank. No labels, text, watermarks or transparency. Return1448x1086.",
+          "generated_source": "generated-image/exec-fbdf6912-6b7c-492e-a8f7-d8bbddedc3c5.png",
+          "output_sha256": "d3885acbe5dd095751e74e9ba8f2f38e0cbe29afed2d1027c63ea8c7d4568fa2",
+          "output_dimensions": {
+            "width": 1448,
+            "height": 1086
+          },
+          "qa": "Entire detached teal subunit and its internal RNA removed. Teal joining arrow retained. Previously removed free orange factor remains absent."
+        },
+        {
+          "round": "05",
+          "input_sha256": "aeddb05ba3bb425b59afcba5c95d0fd5a309ed0f9c3c8d5cd94e15873a9b29f0",
+          "targets_original": [
+            {
+              "name": "Upper broad pale-blue fragment",
+              "bounds": [
+                253,
+                44,
+                346,
+                124
+              ]
+            },
+            {
+              "name": "Left middle crescent",
+              "bounds": [
+                25,
+                324,
+                102,
+                422
+              ]
+            },
+            {
+              "name": "Lower-left broad curved fragment",
+              "bounds": [
+                76,
+                421,
+                163,
+                511
+              ]
+            },
+            {
+              "name": "Bottom-left broad curved fragment",
+              "bounds": [
+                143,
+                726,
+                227,
+                815
+              ]
+            }
+          ],
+          "description": "Remove exactly FOUR flat PALE-BLUE background fragments inside the light-blue nuclear background on the LEFT: (1) the upper broad fragment near top center-left, bounds(305,53)–(418,150); (2) the left-middle crescent, bounds(30,391)–(123,509); (3) the broad curved fragment just below it, bounds(92,508)–(197,617); (4) the bottom-left broad curved fragment near bottom-left corner, bounds(173,876)–(274,983). All coordinates are for THIS1448x1086 image. Reconstruct the existing pale-blue nuclear gradient beneath each removed shape. Keep ALL other small pale-blue shapes, the entire continuous blue/orange/teal RNA strands, nuclear boundaries, central spliceosome, both blue arrows, and the lower-right exon product unchanged. The isolated upper-right orange lariat was already removed; keep that region empty and do not restore it.",
+          "input": "game/artwork/motion/05-clean.png",
+          "output": "game/artwork/motion/05-clean.png",
+          "prompt": "Use case: precise-object-edit.\nAsset type: additional clean background for animation layers of this EXACT existing scientific illustration.\nInput image: exact edit target, not a style reference.\nPrimary request: Remove exactly FOUR flat PALE-BLUE background fragments inside the light-blue nuclear background on the LEFT: (1) the upper broad fragment near top center-left, bounds(305,53)–(418,150); (2) the left-middle crescent, bounds(30,391)–(123,509); (3) the broad curved fragment just below it, bounds(92,508)–(197,617); (4) the bottom-left broad curved fragment near bottom-left corner, bounds(173,876)–(274,983). All coordinates are for THIS1448x1086 image. Reconstruct the existing pale-blue nuclear gradient beneath each removed shape. Keep ALL other small pale-blue shapes, the entire continuous blue/orange/teal RNA strands, nuclear boundaries, central spliceosome, both blue arrows, and the lower-right exon product unchanged. The isolated upper-right orange lariat was already removed; keep that region empty and do not restore it.\nPreserve the exact1448x1086 canvas and4:3 ratio, framing, scale, positions, palette, linework and shading. Remove only the specified additional objects and minimally repair their immediate backgrounds. Every other object must remain as in the input. Do not redraw, recompose, crop, resize, restyle, sharpen, add or restore objects. Existing blank removed-object areas must remainblank. No labels, text, watermarks or transparency. Return1448x1086.",
+          "generated_source": "generated-image/exec-98b4ee4c-75ff-4599-8608-d285a014ce25.png",
+          "output_sha256": "b5dfeeb652886721ffbde3ff8d7c50ed5c69dd2ffcf275bc2d737acd701b00d0",
+          "output_dimensions": {
+            "width": 1448,
+            "height": 1086
+          },
+          "qa": "All four requested pale-blue fragments removed. Main spliceosome, continuous RNA, boundaries, arrows and product remain. One extra small upper-left pale-blue fragment was also removed by generation; preserve its original pixels by clipping clean patches to the four intended contours only."
+        },
+        {
+          "round": "06",
+          "input_sha256": "39e09564228508b822c62c33bfd241d93449b9f641a0d11f02b546a56c18e01d",
+          "targets_original": [
+            {
+              "name": "Central closed transmitter vesicle",
+              "bounds": [
+                543,
+                129,
+                739,
+                326
+              ]
+            },
+            {
+              "name": "Upper-right closed transmitter vesicle",
+              "bounds": [
+                761,
+                52,
+                934,
+                219
+              ]
+            },
+            {
+              "name": "Right closed transmitter vesicle",
+              "bounds": [
+                934,
+                193,
+                1083,
+                336
+              ]
+            }
+          ],
+          "description": "Remove the THREE CLOSED CIRCULAR VESICLES inside the UPPER presynaptic cell, each INCLUDING its entire circular double rim, all enclosed orange/amber transmitter spheres, and shadow. Their bounds in THIS1448x1086 image: centralclosedvesicle(655,156)–(892,393); upper-rightclosedvesicle(918,63)–(1127,264); far-rightclosedvesicle(1127,233)–(1307,405). Reconstruct the smooth existing light-blue cytoplasm gradient in the removed circles. Keep the open FUSED vesicle connected to the membrane at center-right unchanged, including all orange particles in that open pocket. Keep the mitochondrion at upperleft unchanged. Keep both cell membranes, all channels, teal/calcium ions, cleft particles and arrows unchanged. Several small cleft particles were already removed earlier from this clean plate; preserve those existing blank spaces and do not recreate particles there.",
+          "input": "game/artwork/motion/06-clean.png",
+          "output": "game/artwork/motion/06-clean.png",
+          "prompt": "Use case: precise-object-edit.\nAsset type: additional clean background for animation layers of this EXACT existing scientific illustration.\nInput image: exact edit target, not a style reference.\nPrimary request: Remove the THREE CLOSED CIRCULAR VESICLES inside the UPPER presynaptic cell, each INCLUDING its entire circular double rim, all enclosed orange/amber transmitter spheres, and shadow. Their bounds in THIS1448x1086 image: centralclosedvesicle(655,156)–(892,393); upper-rightclosedvesicle(918,63)–(1127,264); far-rightclosedvesicle(1127,233)–(1307,405). Reconstruct the smooth existing light-blue cytoplasm gradient in the removed circles. Keep the open FUSED vesicle connected to the membrane at center-right unchanged, including all orange particles in that open pocket. Keep the mitochondrion at upperleft unchanged. Keep both cell membranes, all channels, teal/calcium ions, cleft particles and arrows unchanged. Several small cleft particles were already removed earlier from this clean plate; preserve those existing blank spaces and do not recreate particles there.\nPreserve the exact1448x1086 canvas and4:3 ratio, framing, scale, positions, palette, linework and shading. Remove only the specified additional objects and minimally repair their immediate backgrounds. Every other object must remain as in the input. Do not redraw, recompose, crop, resize, restyle, sharpen, add or restore objects. Existing blank removed-object areas must remainblank. No labels, text, watermarks or transparency. Return1448x1086.",
+          "generated_source": "generated-image/exec-33ccf9bb-68d4-43a7-909e-83365395171b.png",
+          "output_sha256": "3b4e8d35252e01a7f7ff80d6fb33d2c71df6a896a34c5e3823ef249b8cbebf0f",
+          "output_dimensions": {
+            "width": 1448,
+            "height": 1086
+          },
+          "qa": "All three closed vesicles, rims and internal transmitter removed. Open fused vesicle, membrane, mitochondrion and previously verified cleft-particle removals remain. Cytoplasm reconstructed with smooth blue shading."
+        }
+      ],
+      "compositing": "Use clean plates only inside specified object-removal contours. Preserve original artwork pixels everywhere else."
+    },
+    {
+      "tool": "built-in image_gen",
+      "created": "2026-10-15",
+      "pass": "Additional floating objects",
+      "assets": [
+        {
+          "round": "02",
+          "input": "game/artwork/motion/02-clean.png (previous pass)",
+          "output": "game/artwork/motion/02-clean.png",
+          "prompt": "Precise object removal for an animation clean plate. The attached 1448x1086 image is the EXACT edit target. Keep the same 4:3 framing, all positions, proportions, gradients, lighting and colors. Remove only the specified objects, restoring the smooth local background. Preserve every other structure and all areas already empty. No new particles, labels, decorations, arrows, redesign or cropping. Remove all FIVE free amber/orange spheres: centers approximately (275,343), (402,442), (275,520), (1095,477), (1214,611), radii 28–30 pixels. Restore pale-blue cytoplasm for the three on the left and pale-teal cytoplasm for the two on the right. Keep both blue/teal gap junctions, both amber channel arrows, mitochondrion and teal membrane folds unchanged. The lower channel is already empty of spheres: keep it empty.",
+          "qa": "Confirmed requested removals. Render only localized clean patches; source pixels remain everywhere else."
+        },
+        {
+          "round": "03",
+          "input": "game/artwork/motion/03-clean.png (previous pass)",
+          "output": "game/artwork/motion/03-clean.png",
+          "prompt": "Precise object removal for an animation clean plate. The attached 1448x1086 image is the EXACT edit target. Keep the same 4:3 framing, all positions, proportions, gradients, lighting and colors. Remove only the specified objects, restoring the smooth local background. Preserve every other structure and all areas already empty. No new particles, labels, decorations, arrows, redesign or cropping. Remove FOUR isolated pale-blue floating fragments inside the lysosome, in these image-coordinate rectangles: (926,152)–(1018,222), (1100,232)–(1162,297), (701,308)–(784,386), (589,465)–(707,543). They are four small blobby blue fragments with no strands attached. Reconstruct the adjacent pale-blue lysosomal fluid gradient at each footprint. Preserve both long dark-blue RNA strands, all the other fragments, ALL amber paired nucleoside symbols and the transporter. The transporter pore is already clear: keep it clear.",
+          "qa": "Confirmed requested removals. Render only localized clean patches; source pixels remain everywhere else."
+        },
+        {
+          "round": "07",
+          "input": "game/artwork/motion/07-clean.png (previous pass)",
+          "output": "game/artwork/motion/07-clean.png",
+          "prompt": "Precise object removal for an animation clean plate. The attached 1448x1086 image is the EXACT edit target. Keep the same 4:3 framing, all positions, proportions, gradients, lighting and colors. Remove only the specified objects, restoring the smooth local background. Preserve every other structure and all areas already empty. No new particles, labels, decorations, arrows, redesign or cropping. Remove ONLY two free cascade proteins on the right: the irregular BLUE protein within (1004,393)–(1203,568) and the irregular PURPLE protein within (1010,599)–(1223,754). Coordinates are pixels of attached1448x1086 image. Restore white background beneath both. Preserve all amber arrows around and between these proteins, the bound amber receptor ligand, the receptor, the teal membrane-associated protein above, the amber transcription factors below and nuclear structures. The three free upper-left ligands are already removed: keep their area empty.",
+          "qa": "Confirmed requested removals. Render only localized clean patches; source pixels remain everywhere else."
+        },
+        {
+          "round": "08",
+          "input": "game/artwork/motion/08-clean.png (previous pass)",
+          "output": "game/artwork/motion/08-clean.png",
+          "prompt": "Precise object removal for an animation clean plate. The attached 1448x1086 image is the EXACT edit target. Keep the same 4:3 framing, all positions, proportions, gradients, lighting and colors. Remove only the specified objects, restoring the smooth local background. Preserve every other structure and all areas already empty. No new particles, labels, decorations, arrows, redesign or cropping. Remove ONLY the detached joined NAVY BLUE AND TEAL RNA ribbon at lower right, overall rectangle (769,779)–(1448,897) in this1448x1086image, including its soft shadow. It curves horizontally and exits the right edge. Fill its footprint with white. Preserve the blue downward arrow above it, the central spliceosome and every RNA strand attached to it. The lower-left released lariat is already removed: keep that area empty.",
+          "qa": "Confirmed requested removals. Render only localized clean patches; source pixels remain everywhere else."
+        },
+        {
+          "round": "09",
+          "input": "game/artwork/motion/09-clean.png (previous pass)",
+          "output": "game/artwork/motion/09-clean.png",
+          "prompt": "Precise object removal for an animation clean plate. The attached 1448x1086 image is the EXACT edit target. Keep the same 4:3 framing, all positions, proportions, gradients, lighting and colors. Remove only the specified objects, restoring the smooth local background. Preserve every other structure and all areas already empty. No new particles, labels, decorations, arrows, redesign or cropping. Remove ONLY the two free signaling proteins below the Golgi at right: AMBER/orange three-lobed shape bounds(1022,518)–(1144,623), and TEAL multi-lobed shape bounds(1012,681)–(1162,827). Coordinates in attached1448x1086image. Fill onlytheirfootprints with white. Preserve all amber arrows above/between/below them, the Golgi-associated blue protein, the entire Golgi and ER, the nuclear envelope, all blue trafficking arrows and all nuclear DNA/RNA. The central carrier is alreadyremoved: keepthat areaempty.",
+          "qa": "Confirmed requested removals. Render only localized clean patches; source pixels remain everywhere else."
+        }
+      ]
+    }
+  ]
+}

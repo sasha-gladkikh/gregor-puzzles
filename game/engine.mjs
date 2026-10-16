@@ -22,7 +22,7 @@ export function pathFor(id){const r=Math.floor(id/COLS),c=id%COLS,x=c*CW,y=r*CH,
  }
  return s.join(' ')+' Z';
 }
-export function newState(){return {sessionVersion:3,placed:[],hints:0,geneHintSeen:false,peeks:0,solvedByGuess:false,namedAt:null,seconds:0,timingUnavailable:false,started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
+export function newState(){return {sessionVersion:3,placed:[],hints:0,geneHintsSeen:0,peeks:0,solvedByGuess:false,namedAt:null,seconds:0,timingUnavailable:false,started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
 export function place(state,piece,slot){if(!Number.isInteger(piece)||piece<0||piece>=SIZE||piece!==slot||state.placed.includes(piece))return false;state.placed.push(piece);return true;}
 // Case, spaces, and punctuation are ignored: RNU4-2, rnu4 2, and RNU42 match.
 export const normalizeGene=value=>value.toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -37,10 +37,23 @@ export function recognizeGene(value,round){
  if(product)return {kind:round.ambiguousProducts?.includes(product)?'ambiguous':'product',name:product};
  return null;
 }
-export function revealGeneHint(state,gene){
- if(state.placed.length<8||state.placed.length>=11)return null;
- if(!state.geneHintSeen){state.hints++;state.geneHintSeen=true;}
- return `The symbol starts with ${gene.slice(0,3)} and has ${normalizeGene(gene).length} letters and digits. You can also complete the image to reveal it.`;
+const geneHintCount=state=>state.geneHintSeen===true?2:Number.isInteger(state.geneHintsSeen)&&state.geneHintsSeen>=0&&state.geneHintsSeen<=2?state.geneHintsSeen:0;
+// Reading saved hints never reveals another step or changes the hint count.
+export function geneHintText(state,round){
+ const seen=geneHintCount(state);if(!seen)return null;
+ const location=round.clues.find(clue=>clue.label==='Location');
+ const functionClue=round.clues.find(clue=>clue.label==='Function');
+ const biology=`${location.title}. ${functionClue.body}`;
+ if(seen===1)return biology;
+ const symbol=normalizeGene(round.gene);
+ return `${biology}\n\nThe symbol starts with ${symbol.slice(0,3)} and has ${symbol.length} letters and digits.`;
+}
+// Explicit hints are available from the start. Each new step counts once;
+// reopening previously requested help is free, including after a reload.
+export function revealGeneHint(state,round){
+ const seen=geneHintCount(state);
+ if(!complete(state)&&seen<2){state.geneHintsSeen=seen+1;state.hints++;}
+ return geneHintText(state,round);
 }
 export function guess(state,value,gene,aliases=[]){
  const typed=normalizeGene(value);if(!typed||![gene,...aliases].some(symbol=>normalizeGene(symbol)===typed))return false;

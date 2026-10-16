@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints,recognizeGene,revealGeneHint} from '../game/engine.mjs';
+import {SIZE,edges,pathFor,newState,place,guess,revealed,complete,validSave,shuffled,edgePoints,recognizeGene,revealGeneHint,geneHintText} from '../game/engine.mjs';
 import {allRounds as catalog} from '../game/rounds.mjs';
 const round=catalog[0];
 test('every internal boundary is shared and outside boundaries are flat',()=>{for(let i=0;i<SIZE;i++){const e=edges(i);if(i%4<3)assert.equal(e.right,edges(i+1).left);else assert.equal(e.right,0);if(i<8)assert.equal(e.bottom,edges(i+4).top);else assert.equal(e.bottom,0);if(i%4===0)assert.equal(e.left,0);if(i<4)assert.equal(e.top,0);assert.match(pathFor(i),/^M .* Z$/);assert.ok(!pathFor(i).includes('NaN'));}});
@@ -195,15 +195,44 @@ test('Science searches recognize protein names, former symbols, alternative cond
  assert.ok(matches('TMEM173').includes('STING1'));assert.ok(matches('SHP-2').includes('PTPN11'));
  assert.ok(matches('Muscle weakness').includes('CLCN1'));
 });
-test('late symbol hint can be reopened and restored without extra hint counts or an early answer',()=>{
- const state=newState();assert.equal(revealGeneHint(state,'SLC29A3'),null);
- for(let i=0;i<8;i++)place(state,i,i);
- const hint=revealGeneHint(state,'SLC29A3');assert.match(hint,/starts with SLC/);assert.ok(!hint.includes('SLC29A3'));
- assert.equal(state.hints,1);assert.equal(revealGeneHint(state,'SLC29A3'),hint);assert.equal(state.hints,1);
- const resumed=restoreSession({state:JSON.parse(JSON.stringify(state)),timed:false}).state;
- assert.equal(revealGeneHint(resumed,'SLC29A3'),hint);assert.equal(resumed.hints,1);
- for(let i=8;i<11;i++)place(resumed,i,i);assert.equal(revealGeneHint(resumed,'SLC29A3'),null);
- assert.equal(newState().geneHintSeen,false);
+test('requested gene hints are available immediately and biology comes before the symbol',()=>{
+ for(const r of allRounds){
+  const state=newState();assert.equal(geneHintText(state,r),null);assert.equal(state.hints,0);
+  const biology=revealGeneHint(state,r);assert.ok(biology.length>20);assert.equal(state.placed.length,0);
+  assert.equal(state.geneHintsSeen,1);assert.equal(state.hints,1);
+  for(const name of [r.gene,...r.aliases,...r.products])assert.ok(!normalizeGene(biology).includes(normalizeGene(name)),`${r.gene}: first hint reveals ${name}`);
+  assert.equal(geneHintText(state,r),biology);assert.equal(state.hints,1);
+  const both=revealGeneHint(state,r);assert.ok(both.startsWith(biology));
+  assert.ok(both.includes(`starts with ${normalizeGene(r.gene).slice(0,3)}`));
+  assert.ok(both.includes(`${normalizeGene(r.gene).length} letters and digits`));
+  assert.equal(state.geneHintsSeen,2);assert.equal(state.hints,2);
+  assert.equal(revealGeneHint(state,r),both);assert.equal(state.hints,2);
+ }
+});
+test('gene hint steps and counts persist without a reveal when progress is restored',()=>{
+ const r=allRounds.find(r=>r.gene==='SLC29A3'),state=newState();startRound(state,false,'guess');
+ const biology=revealGeneHint(state,r);
+ const first=restoreSession(JSON.parse(JSON.stringify({state,timed:false}))).state;
+ assert.equal(first.geneHintsSeen,1);assert.equal(geneHintText(first,r),biology);assert.equal(first.hints,1);
+ const both=revealGeneHint(first,r);
+ const second=restoreSession(JSON.parse(JSON.stringify({state:first,timed:false}))).state;
+ assert.equal(second.geneHintsSeen,2);assert.equal(geneHintText(second,r),both);assert.equal(second.hints,2);
+ assert.equal(revealGeneHint(second,r),both);assert.equal(second.hints,2);
+ assert.equal(geneHintText(restoreSession({state:newState(),timed:false}).state,r),null);
+});
+test('older symbol hints retain access without adding to the saved hint count',()=>{
+ const r=allRounds.find(r=>r.gene==='RNU4-2');
+ const old={...newState(),geneHintsSeen:undefined,geneHintSeen:true,hints:1,placed:[0,1,2,3,4,5,6,7]};
+ const restored=restoreSession({state:old,timed:false}).state;
+ assert.equal(restored.geneHintsSeen,2);assert.equal('geneHintSeen' in restored,false);
+ assert.match(geneHintText(restored,r),/starts with RNU and has 5 letters and digits/);
+ revealGeneHint(restored,r);assert.equal(restored.hints,1);
+ for(const invalid of [-1,3,1.5,'2',null]){
+  const state=restoreSession({state:{...newState(),geneHintsSeen:invalid},timed:false}).state;
+  assert.equal(state.geneHintsSeen,0);assert.equal(geneHintText(state,r),null);
+ }
+ const finished=newState();guess(finished,r.gene,r.gene);
+ assert.equal(revealGeneHint(finished,r),null);assert.equal(finished.hints,0);
 });
 test('sign-off gates publication only when required and complete',()=>{
  assert.deepEqual(rounds.map(r=>r.id),publishedRounds(allRounds,requireApproval).map(r=>r.id));assert.ok(rounds.length>0);

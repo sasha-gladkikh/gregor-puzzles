@@ -126,21 +126,3 @@ export function discoveryMotion({board,target=()=>null,onKeep=()=>{}}){
     dispose(){disposed=true;clear();if(frame!==null)cancelAnimationFrame(frame);window.removeEventListener('resize',reflow);window.removeEventListener('scroll',reflow);window.visualViewport?.removeEventListener('resize',reflow);window.visualViewport?.removeEventListener('scroll',reflow);document.removeEventListener('visibilitychange',visibility);document.removeEventListener('keydown',escape);media.removeEventListener('change',motionChange);card.remove();announcer.remove();}
   };
 }
-
-// A finite placement cue. The board/tray outlines remain the app's responsibility.
-export function hintTrail(fromElement,toElement){
-  if(reduced()||!fromElement||!toElement)return ()=>{};
-  const from=center(fromElement),to=center(toElement),layer=svgLayer('discovery-hint-trail');
-  const bend=Math.min(80,Math.abs(to.x-from.x)*.2+24),middle=(from.x+to.x)/2;
-  const path=svgNode('path',{d:`M ${from.x} ${from.y} Q ${middle} ${Math.min(from.y,to.y)-bend} ${to.x} ${to.y}`,fill:'none',stroke:'#064dff','stroke-opacity':.24,'stroke-width':2,'stroke-linecap':'round'});
-  const dot=svgNode('circle',{cx:from.x,cy:from.y,r:5,fill:'#064dff',stroke:'#fff','stroke-width':2});layer.append(path,dot);
-  const length=path.getTotalLength();let frame,start=null,stopped=false;
-  const cancel=()=>{if(stopped)return;stopped=true;cancelAnimationFrame(frame);layer.remove();document.removeEventListener('visibilitychange',cancel);window.removeEventListener('resize',cancel);window.removeEventListener('scroll',cancel);};
-  const tick=time=>{
-    if(stopped)return;start??=time;const elapsed=time-start;
-    if(elapsed>=1500){cancel();return;}
-    const progress=Math.min(1,(elapsed%800)/700),point=path.getPointAtLength(length*(1-Math.pow(1-progress,2)));
-    dot.setAttribute('cx',String(point.x));dot.setAttribute('cy',String(point.y));dot.style.opacity=progress===1?'0':'1';frame=requestAnimationFrame(tick);
-  };
-  document.addEventListener('visibilitychange',cancel);window.addEventListener('resize',cancel);window.addEventListener('scroll',cancel,{passive:true});frame=requestAnimationFrame(tick);return cancel;
-}

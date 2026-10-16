@@ -12,6 +12,15 @@ export function geneBank(rounds,{onChoose=()=>{}}={}){
   const element=node('form',null,'gene-bank');
   const intro=node('p','Choose a candidate, then check your answer.','gene-bank-intro');
   intro.id=`${id}-intro`;
+  const hintPanel=node('section',null,'gene-bank-hint');
+  hintPanel.hidden=true;hintPanel.tabIndex=-1;
+  const hintTitle=node('h3','Gene hints'),hintText=node('p');
+  hintTitle.id=`${id}-hint-title`;
+  hintPanel.setAttribute('aria-labelledby',hintTitle.id);
+  hintText.setAttribute('role','status');
+  hintText.setAttribute('aria-live','polite');
+  hintText.setAttribute('aria-atomic','true');
+  hintPanel.append(hintTitle,hintText);
   const choices=node('fieldset',null,'gene-bank-choices');
   choices.setAttribute('aria-describedby',intro.id);
   choices.append(node('legend',`${genes.length} possible genes`));
@@ -49,7 +58,7 @@ export function geneBank(rounds,{onChoose=()=>{}}={}){
   choices.append(grid);
   const actions=node('div',null,'gene-bank-actions');
   actions.append(status,submit);
-  element.append(intro,choices,actions);
+  element.append(intro,hintPanel,choices,actions);
   element.addEventListener('submit',event=>{
     event.preventDefault();
     const selected=inputs.find(input=>input.checked);
@@ -64,12 +73,22 @@ export function geneBank(rounds,{onChoose=()=>{}}={}){
       status.classList.add('is-feedback');
       status.classList.toggle('is-correct',correct);
     },
+    focusHint(){
+      if(hintPanel.hidden)return;
+      hintPanel.focus({preventScroll:true});
+      hintPanel.scrollIntoView({block:'nearest',behavior:'instant'});
+    },
+    hint(message){
+      hintText.textContent=message||'';
+      hintPanel.hidden=!message;
+    },
     reset(){
       element.reset();
       submit.disabled=true;
       status.textContent=`Select one of the ${genes.length} genes.`;
       status.classList.remove('is-feedback','is-correct');
       element.classList.remove('has-selection');
+      hintText.textContent='';hintPanel.hidden=true;
     },
     dispose(){events.abort();element.remove();}
   };
