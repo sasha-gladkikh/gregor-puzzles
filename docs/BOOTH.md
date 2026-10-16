@@ -43,7 +43,9 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Portrait and landscape; Safari text size at 125% and 150%.
 - Private Browsing (progress clears when the tab closes).
 - Reduce Motion on: pieces place without movement; walkthroughs use Previous/Next and do not auto-advance. Nothing essential is lost.
-- Complete a round and check the original illustration animates in the board. Pause and resume it, scroll it offscreen, and return. With reduced motion enabled, it should remain still.
+- Complete a round and check that the original illustration lifts with a brief perimeter glow, then floats while its components move. Pause during the glow and resume: the entrance should continue, not restart. Scroll the board offscreen and return; playback should remain paused until resumed.
+- Open an image note immediately after the final piece lands. The illustration must stay still for reading. Try restarting while the illustration is loading, and opening and closing a dialog during completion. No delayed animation should override these actions.
+- Enable reduced motion while the illustration is playing. The frame and artwork should return to their static state. Returning to a previously completed round should also remain still until Play is selected.
 - Open **Explore the illustration**, select numbered structures, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
 - Complete a round in **Focus view** and confirm completion restores the scientific column and accessible figure guide. Enlarge the finished figure, then close it and restart the round.
 - Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, and Science on a narrow screen, then open Editorial review from Science.

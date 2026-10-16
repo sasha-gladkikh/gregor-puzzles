@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,createArtworkAssetCache,preloadArtwork} from '../game/artwork-motion.mjs';
+import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkStage,createArtworkStage,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork} from '../game/artwork-motion.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -11,6 +11,19 @@ function setup(options={}){
   const advance=ms=>{time+=ms;const callbacks=[...frames.values()];frames.clear();callbacks.forEach(fn=>fn());};
   return {clock,frames,positions,advance};
 }
+
+test('completion autoplay runs once and later player intent cancels it without cancelling the reveal',()=>{
+  const gate=createCompletionPlaybackGate();
+  const first=gate.arm();assert.equal(first(),true);assert.equal(first(),false);
+  for(const interaction of ['image note','walkthrough step','manual playback','dialog','hidden document','restart']){
+    const pending=gate.arm();let revealed=false,played=false;
+    const reveal=()=>{revealed=true;if(pending())played=true;};
+    gate.cancel();reveal();
+    assert.equal(revealed,true,interaction);assert.equal(played,false,interaction);
+  }
+  const stale=gate.arm(),current=gate.arm();
+  assert.equal(stale(),false);assert.equal(current(),true);assert.equal(current(),false);
+});
 
 test('artwork motion completes once and replay restarts without overlapping loops',()=>{
   const {clock,frames,advance}=setup();clock.play();clock.play();assert.equal(frames.size,1);
@@ -75,6 +88,72 @@ test('secondary bobbing is periodic and remains within its supplied amplitudes',
   }
   const before=sampleArtworkMotion(sprite,1250),after=sampleArtworkMotion(sprite,7250);
   for(const key of ['x','y','rotate'])assert.ok(Math.abs(before[key]-after[key])<1e-12);
+});
+
+test('the completion frame rises smoothly without scaling the image or replaying its perimeter glow',()=>{
+  const start=sampleArtworkStage(0);
+  assert.equal(Math.abs(start.y),0);assert.equal(start.trace,0);assert.equal(start.halo,0);assert.equal(start.glintOpacity,0);
+  let lastTrace=0;
+  for(let elapsed=0;elapsed<=120000;elapsed+=100){
+    const frame=sampleArtworkStage(elapsed,{x:100,y:-100});
+    assert.ok(Object.values(frame).every(Number.isFinite));
+    assert.ok(frame.y<=0&&frame.y>=-5.8);
+    assert.ok(Math.abs(frame.rotateX)<=.55&&Math.abs(frame.rotateY)<=.7);
+    assert.ok(frame.trace>=lastTrace);lastTrace=frame.trace;
+    if(elapsed>=3000){assert.equal(frame.halo,0);assert.equal(frame.glintOpacity,0);assert.equal(frame.trace,1);}
+    assert.equal('scale' in frame,false);
+  }
+  assert.ok(sampleArtworkStage(1500).halo>.1);
+  assert.ok(sampleArtworkStage(1500).glintOpacity>.7);
+});
+
+test('frame levitation stays continuous at both its introduction and later cycle boundaries',()=>{
+  for(const center of [0,1900,2780,3000,7800,15600]){
+    const before=sampleArtworkStage(Math.max(0,center-.01)),after=sampleArtworkStage(center+.01);
+    for(const name of ['y','trace','halo','glintOpacity'])assert.ok(Math.abs(before[name]-after[name])<.001,`${center}/${name}: visual discontinuity`);
+  }
+});
+
+function stageDocument(){
+  class Element{
+    constructor(tag){this.tag=tag;this.children=[];this.attrs=new Map();this.styles=new Map();this.classes=new Set();this.parent=null;
+      this.style={setProperty:(name,value)=>this.styles.set(name,value),removeProperty:name=>this.styles.delete(name)};
+      this.classList={add:(...names)=>names.forEach(name=>this.classes.add(name)),remove:(...names)=>names.forEach(name=>this.classes.delete(name)),toggle:(name,value)=>value?this.classes.add(name):this.classes.delete(name)};
+    }
+    setAttribute(name,value){this.attrs.set(name,String(value));}
+    removeAttribute(name){this.attrs.delete(name);}
+    append(...nodes){for(const node of nodes){node.parent=this;this.children.push(node);}}
+    remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
+  }
+  const frame=new Element('div'),board=new Element('div');frame.append(board);board.closest=()=>frame;
+  return {document:{createElementNS:(_ns,tag)=>new Element(tag)},board,frame};
+}
+
+test('stage waits for playback, shares the pause clock, and completely restores the original frame on reset',context=>{
+  const previous=globalThis.document,{document,board,frame}=stageDocument();
+  globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
+  frame.style.setProperty('margin-top','11px');frame.classList.add('board-frame');
+  const stage=createArtworkStage(board,'qa-stage'),rim=frame.children.at(-1);
+  assert.equal(rim.attrs.has('hidden'),true);stage.draw(1800,{x:1,y:1});assert.equal(frame.styles.size,1);
+  const {clock,frames,advance}=setup({loop:true,onFrame:(_position,elapsed)=>stage.draw(elapsed,{x:.8,y:-.4}),onState:()=>stage.playing(clock.playing)});
+  stage.activate();clock.play();advance(2200);
+  assert.equal(rim.attrs.has('hidden'),false);assert.equal(frame.classes.has('artwork-stage-playing'),true);
+  assert.notEqual(frame.styles.get('--artwork-stage-y'),'0.000px');
+  clock.pause();const paused=[...frame.styles];advance(60000);
+  assert.deepEqual([...frame.styles],paused);assert.equal(frames.size,0);assert.equal(frame.classes.has('artwork-stage-playing'),false);
+  assert.equal(frame.classes.has('artwork-stage-active'),true);
+  clock.play();advance(800);assert.equal(clock.elapsed,3000);assert.equal(frame.styles.get('--artwork-stage-halo'),'0.000');
+  clock.reset();stage.reset();
+  assert.equal(rim.attrs.has('hidden'),true);assert.deepEqual([...frame.styles],[['margin-top','11px']]);assert.deepEqual([...frame.classes],['board-frame']);
+  clock.dispose();stage.dispose();assert.deepEqual(frame.children,[board]);
+});
+
+test('disposing a playing stage removes its border and every owned presentation style',context=>{
+  const previous=globalThis.document,{document,board,frame}=stageDocument();
+  globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
+  const stage=createArtworkStage(board,'disposed-stage');stage.activate();stage.playing(true);stage.draw(1200,{x:1,y:-1});stage.dispose();
+  assert.deepEqual(frame.children,[board]);assert.equal(frame.styles.size,0);assert.equal(frame.classes.size,0);
+  stage.draw(4000,{x:1,y:-1});assert.equal(frame.styles.size,0);
 });
 
 test('asset preloading shares simultaneous requests and retries a failed request',async()=>{

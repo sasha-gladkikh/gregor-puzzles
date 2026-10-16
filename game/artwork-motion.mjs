@@ -6,6 +6,16 @@ const signed=value=>Math.max(-1,Math.min(1,value));
 const cycle=value=>((value%1)+1)%1;
 let instance=0;
 
+// Presentation can finish after a player has already chosen another interaction.
+// Each completion gets one permission to autoplay; later intent revokes it.
+export function createCompletionPlaybackGate(){
+  let generation=0;
+  return {
+    arm(){const own=++generation;return ()=>{if(own!==generation)return false;generation++;return true;};},
+    cancel(){generation++;}
+  };
+}
+
 // The clock advances only while playing. An offscreen pause does not accumulate
 // elapsed wall time, and replay can never start a second animation loop.
 export function createArtworkClock({duration=12000,loop=false,onFrame=()=>{},onState=()=>{},now=()=>performance.now(),request=callback=>requestAnimationFrame(callback),cancel=id=>cancelAnimationFrame(id)}={}){
@@ -58,8 +68,64 @@ export function sampleArtworkMotion(sprite,elapsed,duration=18000,pointer={x:0,y
   return frame;
 }
 
+// Presentation motion belongs to the frame, not to the biology. A single arrival
+// settles into a slow, small lift; its clock is the same clock as the artwork.
+export function sampleArtworkStage(elapsed,pointer={x:0,y:0}){
+  const time=Math.max(0,elapsed),intro=clamp(time/1900);
+  const ease=intro*intro*(3-2*intro),trace=clamp((time-160)/1700);
+  const glint=clamp((time-380)/2400);
+  const arrival=time<3000?Math.sin(Math.PI*clamp(time/3000)):0;
+  return {
+    y:-ease*(4.4+1.4*Math.sin(time/7800*Math.PI*2)),
+    rotateX:-signed(pointer.y)*.55*ease,
+    rotateY:signed(pointer.x)*.7*ease,
+    trace:trace*trace*(3-2*trace),
+    borderOpacity:ease*(.28+arrival*.38),
+    depth:ease,
+    halo:Math.max(0,arrival)*.12,
+    glint,
+    glintOpacity:time<2780?Math.sin(Math.PI*glint)*.84:0
+  };
+}
+
 function svgNode(tag,attrs={}){const element=document.createElementNS(NS,tag);for(const [key,value] of Object.entries(attrs))element.setAttribute(key,String(value));return element;}
 function node(tag,className,text){const element=document.createElement(tag);if(className)element.className=className;if(text)element.textContent=text;return element;}
+export function createArtworkStage(board,prefix){
+  const frame=board.closest('.board-frame')??board;
+  const rim=svgNode('svg',{class:'artwork-stage-rim',viewBox:'0 0 800 600',preserveAspectRatio:'none','aria-hidden':'true',focusable:'false'});
+  const defs=svgNode('defs'),gradient=svgNode('linearGradient',{id:`${prefix}-rim`,x1:'0%',y1:'100%',x2:'100%',y2:'0%'});
+  gradient.append(svgNode('stop',{offset:'0%', 'stop-color':'#4c7cff'}),svgNode('stop',{offset:'55%', 'stop-color':'#3a91eb'}),svgNode('stop',{offset:'100%', 'stop-color':'#6cd5e4'}));defs.append(gradient);
+  const attrs={x:1.5,y:1.5,width:797,height:597,rx:8,fill:'none',pathLength:1000,'vector-effect':'non-scaling-stroke'};
+  const line=svgNode('rect',{...attrs,stroke:`url(#${prefix}-rim)`,'stroke-width':1.6,'stroke-dasharray':'1000 1000','stroke-dashoffset':1000});
+  const glint=svgNode('rect',{...attrs,stroke:'#b5edff','stroke-width':2.7,'stroke-linecap':'round','stroke-dasharray':'42 1000',opacity:0});
+  rim.append(defs,line,glint);rim.setAttribute('hidden','');frame.append(rim);
+  let active=false,lastHalo=null;
+  const clear=()=>{
+    active=false;rim.setAttribute('hidden','');lastHalo=null;
+    frame.classList.remove('artwork-stage-active','artwork-stage-playing');
+    for(const key of ['--artwork-stage-y','--artwork-stage-rx','--artwork-stage-ry','--artwork-stage-halo','--artwork-stage-depth'])frame.style.removeProperty(key);
+  };
+  return {
+    activate(){active=true;rim.removeAttribute('hidden');frame.classList.add('artwork-stage-active');},
+    playing(value){frame.classList.toggle('artwork-stage-playing',active&&value);},
+    draw(elapsed,pointer){
+      if(!active)return;
+      const sample=sampleArtworkStage(elapsed,pointer);
+      frame.style.setProperty('--artwork-stage-y',`${sample.y.toFixed(3)}px`);
+      frame.style.setProperty('--artwork-stage-rx',`${sample.rotateX.toFixed(3)}deg`);
+      frame.style.setProperty('--artwork-stage-ry',`${sample.rotateY.toFixed(3)}deg`);
+      frame.style.setProperty('--artwork-stage-depth',sample.depth.toFixed(3));
+      const halo=sample.halo.toFixed(3);
+      if(halo!==lastHalo){frame.style.setProperty('--artwork-stage-halo',halo);lastHalo=halo;}
+      line.setAttribute('stroke-dashoffset',String(1000*(1-sample.trace)));
+      line.setAttribute('opacity',String(sample.borderOpacity));
+      glint.setAttribute('stroke-dashoffset',String(-1000*sample.glint));
+      glint.setAttribute('opacity',String(sample.glintOpacity));
+    },
+    reset:clear,
+    dispose(){clear();rim.remove();}
+  };
+}
 function loadedImage(source,images){
   return new Promise((resolve,reject)=>{
     const image=new Image();image.decoding='async';let settled=false;
@@ -99,6 +165,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   const scene=artworkMotionData[round.number];
   if(!scene||!board)return null;
   const prefix=`artwork-motion-${round.number}-${++instance}`;
+  const stage=createArtworkStage(board,prefix);
   const media=matchMedia('(prefers-reduced-motion: reduce)');
   const element=node('div','artwork-motion-layer');element.hidden=true;element.dataset.state='loading';
   const svg=svgNode('svg',{viewBox:'0 0 800 600',role:'img','aria-labelledby':`${prefix}-title ${prefix}-description`});
@@ -152,17 +219,19 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   const pointer={x:0,y:0},targetPointer={x:0,y:0};let lastDraw=0;
   function paint(){
     controls.hidden=media.matches;button.disabled=!assetsReady&&!failed;
-    label.textContent=failed?'Retry illustration':clock.playing?'Pause illustration':clock.elapsed>0?'Resume illustration':'Play illustration';
+    label.textContent=failed?'Retry illustration':!assetsReady?'Preparing illustration':clock.playing?'Pause illustration':clock.elapsed>0?'Resume illustration':'Play illustration';
     button.setAttribute('aria-pressed',String(clock.playing));
     controls.setAttribute('aria-label',clock.playing?'Illustration animation, playing':'Illustration animation, paused');
     iconPath.setAttribute('d',clock.playing?'M6 4h3v12H6Zm5 0h3v12h-3Z':'M7 4.5 15 10l-8 5.5Z');
     controls.classList.toggle('is-playing',clock.playing);controls.classList.toggle('has-played',played);
     element.dataset.state=failed?'unavailable':!assetsReady?'loading':clock.playing?'playing':clock.elapsed>0?'paused':'ready';
+    stage.playing(clock.playing);
     if(media.matches||!assetsReady)element.hidden=true;
   }
   function draw(position,elapsed=0){
     const blend=1-Math.exp(-Math.min(64,Math.max(0,elapsed-lastDraw))/170);lastDraw=elapsed;
     pointer.x+=(targetPointer.x-pointer.x)*blend;pointer.y+=(targetPointer.y-pointer.y)*blend;
+    stage.draw(elapsed,pointer);
     for(const {data,group} of sprites){
       const frame=sampleArtworkMotion(data,elapsed,scene.duration??18000,pointer),[cx,cy]=data.center??[400,300];
       group.setAttribute('transform',`translate(${frame.x} ${frame.y}) translate(${cx} ${cy}) rotate(${frame.rotate}) scale(${frame.scale}) translate(${-cx} ${-cy})`);
@@ -179,7 +248,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   const clock=createArtworkClock({duration:scene.duration??18000,loop:true,onFrame:draw,onState:paint});
   function maybePlay(){
     if(disposed||failed||!assetsReady||!visible||document.hidden||media.matches||!pendingPlay)return;
-    pendingPlay=false;played=true;element.hidden=false;clock.play();
+    pendingPlay=false;played=true;element.hidden=false;stage.activate();clock.play();
   }
   function play(){
     if(disposed||media.matches)return;
@@ -191,7 +260,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   button.addEventListener('click',()=>{if(clock.playing)pause();else play();});
   const visibility=()=>{if(document.hidden)pause();};
   const resetPointer=()=>{pointer.x=0;pointer.y=0;targetPointer.x=0;targetPointer.y=0;lastDraw=0;};
-  const preference=()=>{pendingPlay=false;resetPointer();clock.reset();element.hidden=true;paint();if(!media.matches)void loadAssets();};
+  const preference=()=>{pendingPlay=false;resetPointer();clock.reset();stage.reset();element.hidden=true;paint();if(!media.matches)void loadAssets();};
   const pointerMove=event=>{
     if(event.pointerType==='touch'||media.matches||!clock.playing)return;
     const rect=board.getBoundingClientRect();if(!rect.width||!rect.height)return;
@@ -219,9 +288,9 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   const ready=media.matches?Promise.resolve(false):loadAssets();
   return {
     element,controls,ready,play,pause,
-    reset(){if(disposed)return;pendingPlay=false;resetPointer();clock.reset();element.hidden=true;},
+    reset(){if(disposed)return;pendingPlay=false;resetPointer();clock.reset();stage.reset();element.hidden=true;},
     dispose(){
-      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
+      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();stage.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
     }
   };
 }

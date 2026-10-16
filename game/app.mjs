@@ -5,11 +5,11 @@ import {collectionProgress,roundLink,newPlayerKeys} from './collection.mjs';
 import {artworkMarkers} from './artwork-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,roundComplete} from './session.mjs';
-import {reduceMotion as reducedMotion,soundFeedback,illustrationWalkthrough,highlightStructure,assembleLogo} from './experience.mjs';
+import {reduceMotion as reducedMotion,soundFeedback,illustrationWalkthrough,assembleLogo} from './experience.mjs';
 import {renderSite} from './site.mjs';
 import {relatedRoundLinks} from './collection-data.mjs';
 import {geneBank} from './gene-bank.mjs';
-import {animatedArtwork,preloadArtwork} from './artwork-motion.mjs';
+import {animatedArtwork,preloadArtwork,createCompletionPlaybackGate} from './artwork-motion.mjs';
 import {discoveryMotion} from './discovery-motion.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
@@ -31,6 +31,8 @@ let selected = null, hinted = null, peek = false, drag = null;
 let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
 let lastCount = -1, extrasShown = false;
 let walkthrough=null,artworkAnimation=null,completionTimer=null,lastCollectionCount=null,artworkPrepared=false;
+const completionPlayback=createCompletionPlaybackGate();
+document.addEventListener('visibilitychange',()=>{if(document.hidden)completionPlayback.cancel();});
 let cancelCollectionCelebration=()=>{};
 const walkthroughLayout=matchMedia('(min-width: 1101px)');
 function positionWalkthrough(){
@@ -141,6 +143,7 @@ function noteFor(index) {
   return {kind:'landmark',index,piece:landmarkPieces[index],title:done?l.title:l.playTitle,text:done?l.text:l.playText};
 }
 function showNote(index) {
+  completionPlayback.cancel();
   artworkAnimation?.reset();
   walkthrough?.open(index);
   if(complete(state)){
@@ -175,16 +178,26 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   const finishing=roundComplete(state)&&before<SIZE;
   $('board').classList.toggle('finishing',finishing&&!reducedMotion());
   $('completion').classList.toggle('reveal-pending',finishing&&!reducedMotion());
+  $('identityCard').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   render(before); save();
   if(id!==null)flyIn(id,from);
   void sound.play(finishing?'complete':'place');
   if(roundComplete(state)){
     discoveryGuide.clear();
-    strip('Round complete. Your diagram is saved.');
+    strip('Round complete. Your illustration is saved.');
     if(alias)$('roundResults').append(alias);
     if(finishing){
       clearTimeout(completionTimer);
-      const reveal=()=>{$('board').classList.remove('finishing');$('completion').classList.remove('reveal-pending');$('completion').classList.add('reveal-arriving');$('revealTitle').focus({preventScroll:true});highlightStructure($('board'),round.illustration.landmarks[0]);completionTimer=null;};
+      const takeAutoplay=completionPlayback.arm();
+      const reveal=()=>{
+        $('board').classList.remove('finishing');
+        for(const panel of [$('identityCard'),$('completion')]){panel.classList.remove('reveal-pending');panel.classList.add('reveal-arriving');}
+        // Reveal the information even when another interaction has cancelled motion.
+        if(takeAutoplay()&&!document.hidden&&!document.querySelector('dialog[open]')){
+          $('revealTitle').focus({preventScroll:true});artworkAnimation?.play();
+        }
+        completionTimer=null;
+      };
       if(reducedMotion())reveal();else completionTimer=setTimeout(reveal,id===null?0:280);
     }
   } else {
@@ -279,7 +292,7 @@ function render(before=state.placed.length) {
       copy.append(node('h4',note.title),node('p',note.text));li.replaceChildren(badge,copy);li.dataset.identified=String(done);
     }
   }
-  if(done)board.setAttribute('aria-label','Completed diagram. '+diagramDescription);
+  if(done)board.setAttribute('aria-label','Completed illustration. '+diagramDescription);
   document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed;});
   $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=done;
   $('identityCard').hidden=!done;$('clueDetails').hidden=done;
@@ -312,10 +325,11 @@ function render(before=state.placed.length) {
     peek=false;$('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');renderResults();
     if(!extrasShown){
       extrasShown=true;
-      artworkAnimation=animatedArtwork(round,{board:$('board'),autoplay:n>before});
+      // Begin motion only after the final piece has settled. Restored rounds stay still.
+      artworkAnimation=animatedArtwork(round,{board:$('board')});
       $('artworkPlayback').replaceChildren(artworkAnimation.controls);
-      artworkAnimation.controls.addEventListener('click',()=>walkthrough?.close());
-      walkthrough=illustrationWalkthrough(round,{board:$('board'),onStep:i=>{artworkAnimation?.reset();markers.forEach((m,j)=>{m.classList.toggle('is-active',i===j);m.setAttribute('aria-pressed',String(i===j));});},onClose:()=>markers.forEach(m=>{m.classList.remove('is-active');m.setAttribute('aria-pressed','false');})});
+      artworkAnimation.controls.addEventListener('click',()=>{completionPlayback.cancel();walkthrough?.close();});
+      walkthrough=illustrationWalkthrough(round,{board:$('board'),onStep:i=>{completionPlayback.cancel();artworkAnimation?.reset();markers.forEach((m,j)=>{m.classList.toggle('is-active',i===j);m.setAttribute('aria-pressed',String(i===j));});},onClose:()=>markers.forEach(m=>{m.classList.remove('is-active');m.setAttribute('aria-pressed','false');})});
       positionWalkthrough();
       const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
       const finished=new Set(progress.filter(p=>p.done).map(p=>p.round.number));
@@ -357,7 +371,7 @@ function requestGeneHint(){start('guess');bank.hint(revealGeneHint(state,round))
 function openGeneBank(){updateGeneHint();openDialog('geneBankDialog');bank.focus();}
 $('geneHint').onclick=()=>{openGeneBank();if(!state.geneHintsSeen)requestGeneHint();};
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
-function openDialog(id){walkthrough?.pause();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
+function openDialog(id){completionPlayback.cancel();walkthrough?.pause();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
 $('geneBankButton').onclick=openGeneBank;
 $('closeGeneBank').onclick=()=>$('geneBankDialog').close();
 $('bankSymbolHint').onclick=requestGeneHint;
@@ -372,9 +386,11 @@ $('enlargeButton').onclick=()=>{if(complete(state))openDialog('figureDialog');};
 $('closeFigure').onclick=()=>$('figureDialog').close();
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
+  completionPlayback.cancel();
   clearTimeout(completionTimer);completionTimer=null;walkthrough?.dispose();walkthrough=null;artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
   positionWalkthrough();
-  $('board').classList.remove('finishing');$('completion').classList.remove('reveal-arriving','reveal-pending');
+  $('board').classList.remove('finishing');
+  for(const panel of [$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
   state=newState();selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;order=shuffled(order);
   $('discoveriesButton').classList.remove('has-new');
@@ -433,7 +449,7 @@ $('largeFigure').src=round.artwork;$('largeFigure').alt=diagramDescription;$('la
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
 $('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
 buildBoard();buildTray();render();save();
-if(roundComplete(state))strip('Round complete. Your diagram and results are saved.');
+if(roundComplete(state))strip('Round complete. Your illustration and results are saved.');
 else if(state.started)strip('Your progress is restored.'+(timed?' Elapsed time continues.':''));
 
 function renderCollection() {

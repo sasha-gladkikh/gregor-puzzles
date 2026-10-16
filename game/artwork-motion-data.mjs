@@ -126,26 +126,60 @@ export const artworkMotionData={
  }
 };
 
-// Independent, out-of-phase cycles prevent all components from moving as one layer.
+// Give each scene its own cadence. Cargo keeps the original transport geometry;
+// only detached, floating objects receive a little more excursion and secondary drift.
+const rhythms={
+ '01':{float:5100,transport:6400,spread:433,gain:1.25,drift:2.2},
+ '02':{float:5700,transport:6600,spread:479,gain:1.22,drift:2.4},
+ '03':{float:6400,transport:7100,spread:523,gain:1.2,drift:1.8},
+ '04':{float:6900,transport:7400,spread:617,gain:1.2,drift:1.6},
+ '05':{float:6100,transport:7000,spread:557,gain:1.2,drift:1.7},
+ '06':{float:6000,transport:5700,spread:463,gain:1.3,drift:2.2},
+ '07':{float:6700,transport:6500,spread:541,gain:1.15,drift:1.1},
+ '08':{float:7200,transport:7600,spread:659,gain:1.2,drift:1.7},
+ '09':{float:6800,transport:7600,spread:587,gain:1.15,drift:1.1},
+ '10':{float:9400,transport:9400,spread:0,gain:1,drift:0}
+};
 for(const [round,scene] of Object.entries(artworkMotionData)){
+ const rhythm=rhythms[round];
  scene.duration=18000;
  scene.sprites.forEach((sprite,index)=>{
   sprite.motion=sprite.keyframes.some(frame=>frame.opacity===0)?'transport':'float';
-  sprite.period=(sprite.motion==='transport'?7200:6200)+(index%5)*731+Number(round)*97;
-  sprite.phase=(index*.173+Number(round)*.037)%1;
+  sprite.period=rhythm[sprite.motion]+(index*3%5)*rhythm.spread;
+  sprite.phase=(index*.217+Number(round)*.043)%1;
+  if(sprite.motion!=='float')return;
+  const edgeProduct=sprite.id==='joined-exon-product';
+  const context=sprite.id==='neuron-context';
+  const rotationGain=round==='07'||round==='09'?1:rhythm.gain;
+  for(const frame of sprite.keyframes){
+   frame.x*=rhythm.gain;
+   frame.y*=rhythm.gain;
+   frame.rotate*=rotationGain;
+  }
+  // These two cutouts touch the illustration edge. Keep the RNA continuous and
+  // the neuron within its crop instead of adding lateral cursor movement.
+  if(edgeProduct||context)sprite.parallax=0;
+  if(!rhythm.drift)return;
+  sprite.secondary={
+   x:edgeProduct?0:rhythm.drift*(index%2?1:.75),
+   y:rhythm.drift,
+   rotate:edgeProduct?0:(round==='07'||round==='09'?.25:.45),
+   period:Math.round(sprite.period*1.83),
+   phase:(index*.139+Number(round)*.071)%1
+  };
  });
 }
 artworkMotionData['07'].accents=[
- {id:'receptor-signal',path:'M223 171 Q251 175 271 200',color:'#ffc76b',width:3,opacity:.2,period:2700,phase:.1,span:.23},
- {id:'regulator-signal',path:'M380 191 Q434 143 473 159',color:'#ffc76b',width:3,opacity:.2,period:3100,phase:.35,span:.2},
- {id:'ras-signal',path:'M564 170 Q588 187 588 220',color:'#ffc76b',width:3,opacity:.18,period:2900,phase:.55,span:.22},
- {id:'nuclear-signal',path:'M508 475 Q452 455 374 471',color:'#ffc76b',width:3,opacity:.18,period:3400,phase:.7,span:.16}
+ {id:'receptor-signal',path:'M223 171 Q251 175 271 200',color:'#ffc76b',width:3,opacity:.28,period:3000,phase:.1,span:.23},
+ {id:'regulator-signal',path:'M380 191 Q434 143 473 159',color:'#ffc76b',width:3,opacity:.28,period:3500,phase:.35,span:.2},
+ {id:'ras-signal',path:'M564 170 Q588 187 588 220',color:'#ffc76b',width:3,opacity:.25,period:3200,phase:.55,span:.22},
+ {id:'nuclear-signal',path:'M508 475 Q452 455 374 471',color:'#ffc76b',width:3,opacity:.25,period:3800,phase:.7,span:.16}
 ];
 artworkMotionData['09'].accents=[
- {id:'golgi-signal',path:'M587 229 Q598 252 597 280',color:'#ffc76b',width:3,opacity:.2,period:2600,phase:.1,span:.22},
- {id:'relay-signal',path:'M596 343 L590 376',color:'#ffc76b',width:3,opacity:.18,period:2900,phase:.4,span:.25},
- {id:'response-signal',path:'M573 434 Q552 493 417 490',color:'#ffc76b',width:3,opacity:.2,period:3800,phase:.6,span:.13}
+ {id:'golgi-signal',path:'M587 229 Q598 252 597 280',color:'#ffc76b',width:3,opacity:.28,period:3000,phase:.1,span:.22},
+ {id:'relay-signal',path:'M596 343 L590 376',color:'#ffc76b',width:3,opacity:.25,period:3300,phase:.4,span:.25},
+ {id:'response-signal',path:'M573 434 Q552 493 417 490',color:'#ffc76b',width:3,opacity:.28,period:4100,phase:.6,span:.13}
 ];
 artworkMotionData['10'].accents=[
- {id:'axon-context',target:'neuron-context',path:'M226 447 Q292 444 361 460 T449 486 T540 487 Q598 480 660 462 Q702 436 733 412 T762 397',color:'#a7f4ff',width:3.5,opacity:.3,period:4100,phase:.15,span:.075}
+ {id:'axon-context',target:'neuron-context',path:'M226 447 Q292 444 361 460 T449 486 T540 487 Q598 480 660 462 Q702 436 733 412 T762 397',color:'#a7f4ff',width:3.5,opacity:.36,period:4600,phase:.15,span:.085}
 ];

@@ -2,6 +2,11 @@
 .artwork-motion-layer{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden;border-radius:inherit;isolation:isolate;will-change:opacity}
 .artwork-motion-layer[hidden]{display:none}
 .artwork-motion-layer>svg{display:block;width:100%;height:100%;overflow:hidden}
+/* The frame, image and its markers move together. Layout stays exactly fixed. */
+#game .board-frame.artwork-stage-active{position:relative;overflow:visible;transform:perspective(1400px) translate3d(0,var(--artwork-stage-y,0px),0) rotateX(var(--artwork-stage-rx,0deg)) rotateY(var(--artwork-stage-ry,0deg));transform-origin:50% 50%;border-color:#8daee2;box-shadow:0 2px 5px rgb(24 59 112 / calc(.07 * var(--artwork-stage-depth,0))),0 19px 35px -22px rgb(23 62 138 / calc(.44 * var(--artwork-stage-depth,0))),0 0 24px 2px rgb(69 174 230 / var(--artwork-stage-halo,0))}
+#game .board-frame.artwork-stage-playing{will-change:transform}
+.artwork-stage-rim{position:absolute;inset:-1px;z-index:8;display:block;width:calc(100% + 2px);height:calc(100% + 2px);border-radius:inherit;overflow:visible;pointer-events:none}
+.artwork-stage-rim[hidden]{display:none}
 .artwork-motion-controls{display:inline-flex;align-items:center;gap:10px;min-width:0;vertical-align:middle}
 .artwork-motion-controls[hidden]{display:none}
 .artwork-motion-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;white-space:nowrap;color:#164abb;transition:background .16s ease,border-color .16s ease,box-shadow .16s ease}
@@ -20,6 +25,6 @@
 .artwork-motion-controls.is-playing .artwork-motion-live>i{animation-play-state:running;background:#064dff}
 @keyframes artwork-live-breath{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
 @media(max-width:600px){.artwork-motion-controls{gap:7px}.artwork-motion-toggle{font-size:12px;padding-inline:10px}}
-@media(prefers-reduced-motion:reduce){.artwork-motion-layer,.artwork-motion-controls{display:none!important}}
-@media(forced-colors:active){.artwork-motion-live>i{background:Highlight}.artwork-motion-toggle[aria-pressed=true]{background:Canvas;color:Highlight;border-color:Highlight}}
-@media print{.artwork-motion-layer,.artwork-motion-controls{display:none!important}}
+@media(prefers-reduced-motion:reduce){.artwork-motion-layer,.artwork-motion-controls,.artwork-stage-rim{display:none!important}#game .board-frame.artwork-stage-active{transform:none;box-shadow:none;will-change:auto}}
+@media(forced-colors:active){.artwork-stage-rim{display:none}#game .board-frame.artwork-stage-active{border-color:CanvasText;box-shadow:none}.artwork-motion-live>i{background:Highlight}.artwork-motion-toggle[aria-pressed=true]{background:Canvas;color:Highlight;border-color:Highlight}}
+@media print{.artwork-motion-layer,.artwork-motion-controls,.artwork-stage-rim{display:none!important}#game .board-frame.artwork-stage-active{transform:none;box-shadow:none;will-change:auto}}

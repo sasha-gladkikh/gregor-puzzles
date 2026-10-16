@@ -134,6 +134,10 @@ body{background:var(--surface)}
 
 /* The completed identity reads across the figure, never inside the piece tray. */
 #game .figure-identity h2{margin:0;line-height:1.4}
+#game .figure-identity.reveal-pending{opacity:0}
+#game .figure-identity.reveal-arriving{animation:identity-arrival .55s cubic-bezier(.2,.7,.2,1) both}
+@keyframes identity-arrival{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#game .figure-identity.reveal-arriving{animation:none}}
 #game .figure-identity #revealGene{display:block;font-size:32px;line-height:1.2;overflow-wrap:anywhere;margin-bottom:6px}
 #game .figure-identity #revealCondition{display:block;font-size:22px;font-weight:500;line-height:1.4}
 #game .figure-identity .reveal-alias{font-size:14px;margin:0}
