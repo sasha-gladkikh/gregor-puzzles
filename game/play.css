@@ -5,7 +5,7 @@ body{background:var(--surface)}
 #game .collection-track{width:80px}
 #game .library-button{border-color:var(--line);border-radius:6px;font-size:14px;font-weight:600;min-height:40px;background:#fff}
 #game .nav-arrow{min-height:40px;color:var(--ink)}
-#game .game-layout{grid-template-columns:minmax(0,1fr) 264px;gap:24px}
+#game .game-layout{grid-template-columns:minmax(0,1fr) 304px;gap:32px}
 #game .puzzle-section{background:transparent;overflow:visible;border:0;border-radius:0;box-shadow:none}
 #game .section-bar{padding:8px 0 18px;background:none;max-width:800px;width:100%;margin-inline:auto}
 #game .section-bar h1{font-size:26px;line-height:1.25;margin:5px 0 0;letter-spacing:-.5px}
@@ -33,27 +33,36 @@ body{background:var(--surface)}
 #game .board-caption{margin:0;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0}
 #game .diagram-description{font-size:14px;margin:0}
 #game .diagram-description p{font-size:16px}
-#game .discovery{padding:0 0 0 22px;border:0;border-left:1px solid var(--line);border-radius:0;background:none;box-shadow:none;margin-top:10px}
+#game .discovery{padding:0 0 0 24px;border:0;border-left:1px solid var(--line);border-radius:0;background:none;box-shadow:none;margin-top:10px}
 #game .clue-progress{display:flex;align-items:center;margin-bottom:10px}
 #game #clueSummary{font-size:12px;font-weight:400;color:var(--muted);white-space:nowrap}
 #game .progress-label{display:none}
 #game .progress-track{margin:4px 0 14px;height:3px;background:#dce3ed}
-#game .clue{padding:12px 0;gap:8px}
-#game .clue-number{background:transparent;width:23px;height:25px;border-radius:0;font-size:12px}
-#game .clue.unlocked .clue-number{background:none}
+#game .clue{padding:17px 0;gap:12px}
+#game .clue-number{background:transparent;width:22px;height:22px;border-radius:50%;font-size:11px;margin-top:1px}
+#game .clue.unlocked .clue-number{background:#e8efff;color:#064dff}
+#game .clue-content{padding-top:0}
 #game .clue.locked{padding:10px 0}
 #game .clue.locked .unlock{font-size:12px}
-#game .clue h3{font-size:17px;margin:5px 0}
+#game .clue h3{font-size:17px;font-weight:600;line-height:1.4;margin:5px 0 7px;letter-spacing:-.15px}
 #game .clue.final.unlocked{background:none}
 #game .clue.final.unlocked h3{color:var(--ink)}
-#game .clue p{font-size:16px;line-height:1.5}
-#game .clue-label{font-size:13px}
+#game .clue p{font-size:15px;line-height:1.6}
+#game .clue-label{font-size:11px;font-weight:600;letter-spacing:.03em}
+#game .clue.locked .clue-label{font-size:12px;letter-spacing:0}
 #game .guess-form{padding-top:16px;margin-top:8px}
 #game .guess-form label{font-size:16px;margin-bottom:8px}
 #game .guess-input input{font-size:16px;padding:10px}
 #game .guess-form p{font-size:13px}
-#game .notes-found h3{font-size:16px}
-#game .notes-found li,#game .notes-found p{font-size:15px}
+#game .notes-found{padding-top:22px;margin-top:4px}
+#game .notes-found h3{font-size:15px;font-weight:600;margin-bottom:6px}
+#game .notes-found>p{font-size:12px;line-height:1.5;margin-bottom:16px}
+#game .notes-found ol{gap:18px}
+#game .notes-found li{display:flex;align-items:flex-start;gap:12px}
+#game .notes-found .strip-badge{flex:none;margin:2px 0 0;width:22px;height:22px;font-size:11px;font-weight:600}
+#game .image-note-copy{min-width:0}
+#game .image-note-copy h4{font-size:15px;font-weight:600;line-height:1.45;color:var(--ink);margin:0 0 6px}
+#game .image-note-copy p{font-size:14px;line-height:1.65;margin:0}
 #game .figure-identity{padding:22px 0 0;border:0;border-top:1px solid var(--line);margin-top:8px;display:flex;flex-direction:column;gap:10px}
 #game .figure-identity .eyebrow{font-size:12px;text-transform:none;letter-spacing:0}
 #game .completion{padding:22px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin:12px 0 0}

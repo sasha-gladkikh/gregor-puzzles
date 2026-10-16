@@ -92,11 +92,9 @@ button.artwork-marker{pointer-events:auto;width:28px;height:28px;min-height:0;pa
 .piece{transition:transform .12s ease-out,background .16s}.piece[aria-pressed=true]{transform:translateY(-2px)}
 .piece-on-board{transform-box:view-box}.board .piece-outline{transition:stroke-opacity .3s ease-out}
 .slot.miss{fill:#e3e7ec;fill-opacity:.55;stroke:#6b7785;stroke-width:2;stroke-dasharray:6 5}
-.clue.fresh{animation:fresh 1.6s ease-out}
 .artwork-marker.is-new{animation:marker .26s ease-out both;animation-delay:var(--delay,0ms)}
 @keyframes arrive{from{background:#e2eaff}to{background:transparent}}
 @keyframes arrive-card{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-@keyframes fresh{from{background:#e8efff}to{background:transparent}}
 @keyframes marker{from{opacity:0;transform:translate(-50%,-50%) scale(.7)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 
 /* Single-column layouts keep the strip and tray directly under the board. */

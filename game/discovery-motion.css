@@ -1,6 +1,14 @@
-/* Decorative flights never cover a reading task or intercept puzzle input. */
-.discovery-origin-glow{position:fixed;z-index:89;pointer-events:none;width:48px;height:48px;box-sizing:border-box;border:2px solid #064dff;border-radius:50%;box-shadow:0 0 0 7px #064dff12,0 0 22px #064dff24}
-.discovery-travel-chip{position:fixed;z-index:90;pointer-events:none;display:block;box-sizing:border-box;max-width:min(240px,65vw);padding:8px 13px;border:1px solid #a2bcff;border-radius:20px;color:#1244ad;background:#fff;box-shadow:0 4px 18px #064dff20;font-family:inherit;font-size:12px;font-weight:650;line-height:1.3;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;will-change:transform,opacity}
-@media(prefers-reduced-motion:reduce){.discovery-origin-glow,.discovery-travel-chip{display:none!important}}
-@media(forced-colors:active){.discovery-origin-glow{border-color:Highlight;box-shadow:none}.discovery-travel-chip{background:Canvas;color:CanvasText;border-color:Highlight;box-shadow:none}}
-@media print{.discovery-origin-glow,.discovery-travel-chip{display:none!important}}
+/* A quiet, transient connection; the permanent clue rows remain readable. */
+.discovery-connection{position:fixed;z-index:89;display:block;overflow:hidden;pointer-events:none;contain:strict;color:#2464ef}
+.discovery-source,.discovery-signal{transform-box:view-box;transform-origin:0 0}
+.discovery-source-ring{fill:none;stroke:#4c83f3;stroke-width:1;stroke-opacity:.65}
+.discovery-source-core{fill:#3475f4;fill-opacity:.8}
+.discovery-guide{fill:none;stroke:#2b6bed;stroke-width:1;stroke-opacity:.16;stroke-linecap:round}
+.discovery-signal-trail{fill:none;stroke:#3878f4;stroke-width:1.65;stroke-opacity:.62;stroke-linecap:round}
+.discovery-signal-aura{fill:#4785fb;fill-opacity:.1}
+.discovery-signal-core{fill:#3475f4}
+.discovery-signal-light{fill:#fff;fill-opacity:.95}
+.discovery-landing-accent{fill:none;stroke:#3475f4;stroke-width:2;stroke-opacity:.5;stroke-linecap:round}
+@media(prefers-reduced-motion:reduce){.discovery-connection{display:none!important}}
+@media(forced-colors:active){.discovery-connection{display:none}}
+@media print{.discovery-connection{display:none!important}}

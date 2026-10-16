@@ -268,7 +268,17 @@ function render(before=state.placed.length) {
   });
   const found=landmarkPieces.map((piece,i)=>state.placed.includes(piece)?i:-1).filter(i=>i>=0);
   $('notesFound').hidden=done||!found.length;
-  $('notesList').replaceChildren(...found.map(i=>{const note=noteFor(i),li=node('li');li.dataset.noteIndex=i;const badge=node('span',String(i+1),'strip-badge');badge.setAttribute('aria-hidden','true');li.append(badge,node('strong',note.title),' ',note.text);return li;}));
+  // Stable rows keep an in-flight discovery attached to its destination when
+  // another piece is placed. Only new or newly identified content is replaced.
+  for(const li of [...$('notesList').children])if(!found.includes(Number(li.dataset.noteIndex)))li.remove();
+  for(const i of found){
+    const note=noteFor(i);let li=$('notesList').querySelector(`[data-note-index="${i}"]`);
+    if(!li){li=node('li');li.dataset.noteIndex=i;const next=[...$('notesList').children].find(row=>Number(row.dataset.noteIndex)>i);$('notesList').insertBefore(li,next??null);}
+    if(li.dataset.identified!==String(done)){
+      const badge=node('span',String(i+1),'strip-badge'),copy=node('div',null,'image-note-copy');badge.setAttribute('aria-hidden','true');
+      copy.append(node('h4',note.title),node('p',note.text));li.replaceChildren(badge,copy);li.dataset.identified=String(done);
+    }
+  }
   if(done)board.setAttribute('aria-label','Completed diagram. '+diagramDescription);
   document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed;});
   $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=done;
@@ -278,12 +288,14 @@ function render(before=state.placed.length) {
   $('progressText').textContent=`${n} of ${SIZE} pieces`; $('progressPercent').textContent=Math.round(n/SIZE*100)+'%';
   $('progressFill').style.width=n/SIZE*100+'%'; document.querySelector('.progress-track').setAttribute('aria-valuenow',n);
   if(n!==lastCount){
-    const fresh=lastCount!==-1;
-    $('clues').replaceChildren();
     round.clues.forEach((clue,i)=>{
-      const open=n>=clue.at,li=document.createElement('li');li.dataset.clueAt=clue.at;li.className=`clue ${open?'unlocked':'locked'} ${i>=4?'final':''} ${fresh&&open&&clue.at>before?'fresh':''}`;
-      li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;
-      $('clues').append(li);
+      const open=n>=clue.at;let li=$('clues').querySelector(`[data-clue-at="${clue.at}"]`);
+      if(!li){li=node('li');li.dataset.clueAt=clue.at;$('clues').append(li);}
+      if(li.dataset.unlocked!==String(open)){
+        li.className=`clue ${open?'unlocked':'locked'} ${i>=4?'final':''}`;
+        li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;
+        li.dataset.unlocked=String(open);
+      }
     });lastCount=n;
   }
   $('completion').hidden=!done; $('completionActions').hidden=!done; $('guessForm').hidden=done;
