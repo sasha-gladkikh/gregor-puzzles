@@ -6,14 +6,14 @@ import {join} from 'node:path';
 const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
-  'index.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs',
+  'index.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
   'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork-source.mjs', 'artwork.css',
   'experience.mjs', 'experience.css',
-  'gene-bank.mjs', 'gene-bank.css', 'discovery-motion.mjs', 'discovery-motion.css',
-  'artwork-motion.mjs', 'artwork-motion.css', 'artwork-motion-data.mjs',
+  'gene-bank.mjs', 'gene-bank.css', 'gene-hints.mjs', 'play-learning.mjs', 'discovery-motion.mjs', 'discovery-motion.css',
+  'artwork-motion.mjs', 'artwork-motion.css', 'artwork-motion-data.mjs', 'artwork-guide.mjs',
   'artwork-detail.mjs', 'artwork-detail-data.mjs', 'artwork-detail-membranes.mjs',
   'artwork-particle-contours.mjs', 'artwork-object-contours.mjs',
   'piece-motion.mjs', 'piece-motion.css', 'figure-view.mjs',

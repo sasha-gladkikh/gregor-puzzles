@@ -1,4 +1,7 @@
+import {geneHintConnections} from './gene-hints.mjs';
+export {geneClueConnection} from './gene-hints.mjs';
 export const COLS=4, ROWS=3, SIZE=12, W=800, H=600, CW=W/COLS, CH=H/ROWS;
+export const GENE_HINT_STEPS=3,GENE_HINT_VERSION=2;
 // An edge belongs to the shared boundary, not to either neighboring piece.
 const horizontal=Array.from({length:ROWS-1},(_,r)=>Array.from({length:COLS},(_,c)=>(r+c)%2?1:-1));
 const vertical=Array.from({length:ROWS},(_,r)=>Array.from({length:COLS-1},(_,c)=>(r+c)%2?-1:1));
@@ -22,7 +25,7 @@ export function pathFor(id){const r=Math.floor(id/COLS),c=id%COLS,x=c*CW,y=r*CH,
  }
  return s.join(' ')+' Z';
 }
-export function newState(){return {sessionVersion:3,placed:[],hints:0,geneHintsSeen:0,peeks:0,solvedByGuess:false,namedAt:null,seconds:0,timingUnavailable:false,started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
+export function newState(){return {sessionVersion:3,placed:[],hints:0,geneHintsSeen:0,geneHintVersion:GENE_HINT_VERSION,peeks:0,solvedByGuess:false,namedAt:null,seconds:0,timingUnavailable:false,started:false,startedAt:null,finishedAt:null,usedRoutes:[]};}
 export function place(state,piece,slot){if(!Number.isInteger(piece)||piece<0||piece>=SIZE||piece!==slot||state.placed.includes(piece))return false;state.placed.push(piece);return true;}
 // Case, spaces, and punctuation are ignored: RNU4-2, rnu4 2, and RNU42 match.
 export const normalizeGene=value=>value.toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -37,7 +40,19 @@ export function recognizeGene(value,round){
  if(product)return {kind:round.ambiguousProducts?.includes(product)?'ambiguous':'product',name:product};
  return null;
 }
-const geneHintCount=state=>state.geneHintSeen===true?2:Number.isInteger(state.geneHintsSeen)&&state.geneHintsSeen>=0&&state.geneHintsSeen<=2?state.geneHintsSeen:0;
+// Old two-step saves already exposed the symbol at step two. Preserve that
+// access while inserting the new teaching step, without charging another hint.
+export function geneHintCount(state){
+ if(state.geneHintSeen===true)return GENE_HINT_STEPS;
+ const seen=state.geneHintsSeen,max=state.geneHintVersion===GENE_HINT_VERSION?GENE_HINT_STEPS:2;
+ if(!Number.isInteger(seen)||seen<0||seen>max)return 0;
+ return state.geneHintVersion!==GENE_HINT_VERSION&&seen===2?GENE_HINT_STEPS:seen;
+}
+export function migrateGeneHints(raw){return {geneHintVersion:GENE_HINT_VERSION,geneHintsSeen:geneHintCount(raw)};}
+export function geneHintStatus(state){
+ const seen=geneHintCount(state);
+ return {seen,total:GENE_HINT_STEPS,hasNext:seen<GENE_HINT_STEPS&&!complete(state),nextLabel:['Get a gene hint','Connect the biology','Reveal symbol hint','All hints shown'][seen]};
+}
 // Reading saved hints never reveals another step or changes the hint count.
 export function geneHintText(state,round){
  const seen=geneHintCount(state);if(!seen)return null;
@@ -45,14 +60,18 @@ export function geneHintText(state,round){
  const functionClue=round.clues.find(clue=>clue.label==='Function');
  const biology=`${location.title}. ${functionClue.body}`;
  if(seen===1)return biology;
+ const connection=geneHintConnections[round.gene]?.hint??`Connect the location, ${location.title.toLowerCase()}, with the function: ${functionClue.title.toLowerCase()}.`;
+ const teaching=`${biology}\n\n${connection}`;
+ if(seen===2)return teaching;
  const symbol=normalizeGene(round.gene);
- return `${biology}\n\nThe symbol starts with ${symbol.slice(0,3)} and has ${symbol.length} letters and digits.`;
+ return `${teaching}\n\nThe symbol starts with ${symbol.slice(0,3)} and has ${symbol.length} letters and digits.`;
 }
 // Explicit hints are available from the start. Each new step counts once;
 // reopening previously requested help is free, including after a reload.
 export function revealGeneHint(state,round){
  const seen=geneHintCount(state);
- if(!complete(state)&&seen<2){state.geneHintsSeen=seen+1;state.hints++;}
+ Object.assign(state,migrateGeneHints(state));delete state.geneHintSeen;
+ if(!complete(state)&&seen<GENE_HINT_STEPS){state.geneHintsSeen=seen+1;state.hints++;}
  return geneHintText(state,round);
 }
 export function guess(state,value,gene,aliases=[]){

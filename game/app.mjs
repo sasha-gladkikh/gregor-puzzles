@@ -1,11 +1,11 @@
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
-import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled,normalizeGene,recognizeGene,revealGeneHint,geneHintText,landmarkPiece} from './engine.mjs';
+import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled,normalizeGene,recognizeGene,revealGeneHint,geneHintText,geneHintStatus,geneClueConnection,landmarkPiece} from './engine.mjs';
 import {rounds,allRounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink,newPlayerKeys} from './collection.mjs';
 import {artworkMarkers} from './artwork-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
-import {restoreSession,choosePiece,elapsedSeconds,startRound,finishRound,roundComplete} from './session.mjs';
-import {reduceMotion as reducedMotion,soundFeedback,illustrationWalkthrough,assembleLogo} from './experience.mjs';
+import {restoreSession,choosePiece,elapsedSeconds,startRound,recordInteraction,modeLocked,changeTimingMode,finishRound,roundComplete} from './session.mjs';
+import {reduceMotion as reducedMotion,soundFeedback,assembleLogo} from './experience.mjs';
 import {renderSite} from './site.mjs';
 import {relatedRoundLinks} from './collection-data.mjs';
 import {geneBank} from './gene-bank.mjs';
@@ -14,6 +14,8 @@ import {discoveryMotion} from './discovery-motion.mjs';
 import {createPieceMotion} from './piece-motion.mjs';
 import {createFigureView} from './figure-view.mjs';
 import {artworkSource} from './artwork-source.mjs';
+import {latestPlayClue} from './play-learning.mjs';
+import {nextOpenSlot} from './board-navigation.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
@@ -30,22 +32,32 @@ const landmarkPieces=round.illustration.landmarks.map(landmarkPiece);
 const imageMarkers=artworkMarkers(round,index=>showNote(index)),markers=[...imageMarkers.children];markers.forEach(m=>m.hidden=true);$('board').append(imageMarkers);
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
-let {state,timed} = restoreSession(stored);
+let {state,timed,order} = restoreSession(stored);
 let selected = null, hinted = null, peek = false, drag = null;
-let order = shuffled(Array.from({length:SIZE},(_,i)=>i));
+let activeSlot=0;
 let lastCount = -1, extrasShown = false;
-let walkthrough=null,artworkAnimation=null,lastCollectionCount=null,artworkPrepared=false;
+let artworkAnimation=null,lastCollectionCount=null,artworkPrepared=false;
 let feedbackEpoch=0,roundGeneration=0;
 const completionPlayback=createCompletionPlaybackGate();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();}});
 let cancelCollectionCelebration=()=>{};
 const walkthroughLayout=matchMedia('(min-width: 1101px)');
-function positionWalkthrough(){
-  const panel=document.querySelector('.discovery'),sidebar=walkthroughLayout.matches&&!$('game').classList.contains('focus-view');panel.classList.toggle('has-walkthrough',Boolean(walkthrough)&&sidebar);
-  if(!walkthrough)return;
-  if(sidebar)panel.prepend(walkthrough.element);else $('completionActions').after(walkthrough.element);
+function positionCompletion(){
+  const panel=document.querySelector('.discovery'),sidebar=complete(state)&&walkthroughLayout.matches&&!$('game').classList.contains('focus-view');
+  const summary=$('completionSummary');
+  panel.classList.toggle('has-completion',sidebar);
+  panel.setAttribute('aria-label',complete(state)?'Round summary':'Clues');
+  if(sidebar){if(summary.parentElement!==panel)panel.prepend(summary);}
+  else if(summary.parentElement!==$('imagePuzzle'))$('figureTools').after(summary);
+  if(complete(state)){
+    if($('clueDetails').parentElement!==$('clueRecap'))$('clueRecap').append($('clueDetails'));
+  }else if($('clueDetails').parentElement!==panel)$('learningHeading').after($('clueDetails'));
+  if(artworkAnimation&&!$('figureDialog').open){
+    if(sidebar)$('completionActions').before(artworkAnimation.caption);
+    else $('artworkPlayback').append(artworkAnimation.caption);
+  }
 }
-walkthroughLayout.addEventListener('change',positionWalkthrough);
+walkthroughLayout.addEventListener('change',positionCompletion);
 const board = $('puzzle');
 const pieceMotion=createPieceMotion({board,makePiece:artworkPiece,pathFor,COLS,W,H,CW,CH,pad:PIECE_PAD,reduceMotion:reducedMotion,onCancel:()=>sound.stop()});
 const bank=geneBank(rounds,{onChoose:value=>checkGene(value,true)});
@@ -61,14 +73,20 @@ function discoveryTarget(item){
     const heading=$('learningHeading'),top=heading.getBoundingClientRect();
     if(top.top>=Math.max(0,bounds.top)&&top.bottom<=Math.min(innerHeight,bounds.bottom))return heading;
   }
+  // On narrow layouts the newest teaching point is readable beneath the board.
+  // The connection ends on that text, not on a button the player must open.
+  const latest=$('latestClue'),rect=latest.getBoundingClientRect();
+  if(!latest.hidden&&rect.height&&rect.top>=0&&rect.bottom<=innerHeight)return latest;
   return $('discoveriesButton');
 }
-const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed}));$('saveNotice').hidden=true;} catch {$('saveNotice').hidden=false;} renderCollection(); };
-// Keep feedback brief so new discoveries cannot move the piece tray.
-// Full notes and every unlocked clue remain available from the adjacent control.
+const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed,order}));$('saveNotice').hidden=true;} catch {$('saveNotice').hidden=false;} renderCollection(); };
 function strip(message,items=[]) {
   const fresh=items.length>0;
-  $('status').replaceChildren(node('p',fresh?`${state.placed.length} of ${SIZE} placed. New discoveries added.`:message,'strip-message'));
+  $('placementFeedback').textContent=fresh?`${state.placed.length} of ${SIZE} placed. New clue.`:message;
+  const latest=latestPlayClue(round,state.placed);
+  $('latestClue').hidden=!latest;
+  $('startReassurance').hidden=Boolean(latest);
+  if(latest){$('latestClueTitle').textContent=latest.title;$('latestClueText').textContent=latest.text;}
   if(fresh)$('discoveriesButton').classList.add('has-new');
 }
 function openDiscoveries(noteIndex=null) {
@@ -78,15 +96,15 @@ function openDiscoveries(noteIndex=null) {
   const addNote=index=>{const note=noteFor(index),section=node('section',null,'discovery-note');section.append(node('h3',`${index+1}. ${note.title}`),node('p',note.text));body.append(section);};
   if(noteIndex!==null&&found.includes(noteIndex))addNote(noteIndex);
   if(unlocked.length){
-    body.append(node('h3','Scientific clues','discovery-group-title'));
+    if(noteIndex!==null)body.append(node('h3','Clues','discovery-group-title'));
     for(const clue of unlocked){const section=node('section',null,'discovery-note');section.append(node('span',clue.label,'eyebrow'),node('h4',clue.title),node('p',clue.body));body.append(section);}
   }
   const otherNotes=found.filter(index=>index!==noteIndex);
   if(otherNotes.length){body.append(node('h3','Image notes','discovery-group-title'));otherNotes.forEach(addNote);}
-  if(!unlocked.length&&!found.length)body.append(node('p','Place pieces to discover scientific clues and image notes. The first clue appears at two pieces.'));
+  if(!unlocked.length&&!found.length)body.append(node('p','Place pieces to reveal clues. The first milestone clue appears at two pieces.'));
   $('discoveriesButton').classList.remove('has-new');openDialog('discoveriesDialog');
 }
-function start(useRoute = 'image') { void sound.prepare();if(!artworkPrepared){artworkPrepared=true;void preloadArtwork(round);} startRound(state,timed,useRoute); save(); updateMode(); }
+function start(useRoute = 'image',accepted=false) { void sound.prepare();if(!artworkPrepared){artworkPrepared=true;void preloadArtwork(round);} if(accepted)startRound(state,timed,useRoute);else recordInteraction(state,useRoute);save();updateMode(); }
 function svgEl(tag,attrs={}) { const n=document.createElementNS(NS,tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); return n; }
 function artworkPiece(id,prefix) {
   const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
@@ -97,15 +115,14 @@ function artworkPiece(id,prefix) {
 const slotAt = i => board.querySelector(`[data-slot="${i}"] .slot`);
 const trayButton = id => $('tray').querySelector(`[data-piece="${id}"]`);
 function nextSlot(from,key) {
-  const [dr,dc]={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[key];
-  for(let r=Math.floor(from/COLS)+dr,c=from%COLS+dc;r>=0&&r<ROWS&&c>=0&&c<COLS;r+=dr,c+=dc){const i=r*COLS+c;if(!state.placed.includes(i))return i;}
-  return from;
+  return nextOpenSlot(from,key,state.placed);
 }
 function buildBoard() {
   board.replaceChildren();
   for(let i=0;i<SIZE;i++) {
     const g=svgEl('g',{'data-slot':i});
-    const slot=svgEl('path',{d:pathFor(i),class:'slot',tabindex:'0',role:'button','aria-label':`Board position, ${position(i)}`});
+    const slot=svgEl('path',{d:pathFor(i),class:'slot',tabindex:'-1',role:'button','aria-label':`Board position, ${position(i)}`});
+    slot.addEventListener('focus',()=>{activeSlot=i;updateSelection();});
     slot.addEventListener('click',()=>attempt(i));
     slot.addEventListener('keydown',e=>{
       if(e.key==='Enter'||e.key===' '){e.preventDefault();attempt(i);}
@@ -142,6 +159,8 @@ function updateSelection() {
     b.classList.toggle('hinted',Number(b.dataset.piece)===hinted);
   });
   document.querySelectorAll('.slot').forEach(slot=>slot.classList.toggle('hinted',Number(slot.parentElement.dataset.slot)===hinted));
+  if(state.placed.includes(activeSlot))activeSlot=Array.from({length:SIZE},(_,i)=>i).find(i=>!state.placed.includes(i))??0;
+  document.querySelectorAll('.slot').forEach(slot=>slot.setAttribute('tabindex',selected!==null&&Number(slot.parentElement.dataset.slot)===activeSlot?'0':'-1'));
 }
 // Notes stay anonymous until the round is complete, so they cannot reveal the gene or condition early.
 function noteFor(index) {
@@ -150,12 +169,7 @@ function noteFor(index) {
 }
 function showNote(index) {
   completionPlayback.cancel();
-  artworkAnimation?.reset();
-  walkthrough?.open(index);
-  if(complete(state)){
-    markers.forEach((m,i)=>{m.classList.toggle('is-active',i===index);m.setAttribute('aria-pressed',String(i===index));});
-    return;
-  }
+  artworkAnimation?.pause();
   openDiscoveries(index);
   markers.forEach((m,i)=>m.classList.toggle('is-active',i===index));
 }
@@ -205,7 +219,7 @@ function attempt(slot) {
     const path=slotAt(slot);path?.classList.remove('miss');path?.getBoundingClientRect();path?.classList.add('miss');setTimeout(()=>path?.classList.remove('miss'),450);
     strip('Try another position. Match the shape and image.');return;
   }
-  selected=null; hinted=null; afterProgress(before,previous,{id,from});
+  start('image',true);selected=null; hinted=null; afterProgress(before,previous,{id,from});
 }
 function startDrag(e,id,b) {
   if(e.pointerType==='touch'||e.button!==0||state.placed.includes(id))return;
@@ -242,7 +256,8 @@ window.addEventListener('pointerup',e=>endDrag(e));
 window.addEventListener('pointercancel',e=>endDrag(e,true));
 function updateMode() {
   $('calm').setAttribute('aria-pressed',String(!timed)); $('timed').setAttribute('aria-pressed',String(timed));
-  $('calm').disabled=state.started; $('timed').disabled=state.started; $('restart').hidden=!state.started;
+  $('calm').disabled=modeLocked(state); $('timed').disabled=modeLocked(state); $('restart').hidden=!state.started;
+  $('timingNote').textContent=modeLocked(state)?'Restart to change mode.':'Choose a mode before placing your first piece. Hints and reference views do not start the timer.';
   $('clock').hidden=!timed||state.timingUnavailable||complete(state); $('clock').textContent=formatTime(elapsedSeconds(state));
 }
 function renderResults() {
@@ -267,11 +282,10 @@ function render(before=state.placed.length) {
     const show=state.placed.includes(landmarkPieces[i]);
     if(show&&marker.hidden&&n>before){marker.classList.add('is-new');marker.style.setProperty('--delay',`${delay++*150}ms`);}
     marker.hidden=!show;marker.classList.remove('is-active');marker.setAttribute('aria-label',`Image note ${i+1}: ${noteFor(i).title}`);
-    if(done){marker.setAttribute('aria-pressed','false');marker.removeAttribute('aria-haspopup');marker.removeAttribute('aria-controls');}
-    else{marker.removeAttribute('aria-pressed');marker.setAttribute('aria-haspopup','dialog');marker.setAttribute('aria-controls','discoveriesDialog');}
+    marker.removeAttribute('aria-pressed');marker.setAttribute('aria-haspopup','dialog');marker.setAttribute('aria-controls','discoveriesDialog');
   });
   const found=landmarkPieces.map((piece,i)=>state.placed.includes(piece)?i:-1).filter(i=>i>=0);
-  $('notesFound').hidden=done||!found.length;
+  $('notesFound').hidden=!found.length;
   // Stable rows keep an in-flight discovery attached to its destination when
   // another piece is placed. Only new or newly identified content is replaced.
   for(const li of [...$('notesList').children])if(!found.includes(Number(li.dataset.noteIndex)))li.remove();
@@ -286,7 +300,8 @@ function render(before=state.placed.length) {
   if(done)board.setAttribute('aria-label','Completed illustration. '+diagramDescription);
   document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed;});
   $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=done;
-  $('identityCard').hidden=!done;$('clueDetails').hidden=done;
+  $('identityCard').hidden=!done;$('completionSummary').hidden=!done;$('clueRecap').hidden=!done;$('clueDetails').hidden=false;
+  $('clueConnection').hidden=!state.solvedByGuess;
   $('learningHeading').hidden=done;$('typingDetails').hidden=done;
   $('clueSummary').textContent=`${n} of ${SIZE} pieces`;
   $('progressText').textContent=`${n} of ${SIZE} pieces`; $('progressPercent').textContent=Math.round(n/SIZE*100)+'%';
@@ -316,11 +331,9 @@ function render(before=state.placed.length) {
     if(!extrasShown){
       extrasShown=true;
       // Begin motion only after the final piece has settled. Restored rounds stay still.
-      artworkAnimation=animatedArtwork(round,{board:$('board')});
-      $('artworkPlayback').replaceChildren(artworkAnimation.controls);
-      artworkAnimation.controls.addEventListener('click',()=>{completionPlayback.cancel();walkthrough?.close();});
-      walkthrough=illustrationWalkthrough(round,{board:$('board'),onStep:i=>{completionPlayback.cancel();artworkAnimation?.reset();markers.forEach((m,j)=>{m.classList.toggle('is-active',i===j);m.setAttribute('aria-pressed',String(i===j));});},onClose:()=>markers.forEach(m=>{m.classList.remove('is-active');m.setAttribute('aria-pressed','false');})});
-      positionWalkthrough();
+      artworkAnimation=animatedArtwork(round,{board:$('board'),guided:before<SIZE});
+      $('artworkPlayback').replaceChildren(artworkAnimation.controls,artworkAnimation.caption);
+      artworkAnimation.controls.addEventListener('click',()=>completionPlayback.cancel());
       const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
       const finished=new Set(progress.filter(p=>p.done).map(p=>p.round.number));
       const extras=[mechanismFigure(round),spliceCompare(round,number=>finished.has(number),number=>rounds.some(r=>r.number===number))].filter(Boolean);
@@ -330,12 +343,12 @@ function render(before=state.placed.length) {
       if(related.length){$('relatedRounds').append(node('h3','Connect this round'));for(const item of related){const a=node('a',`${item.relationship} · ${item.title} →`);a.href=item.href;$('relatedRounds').append(a);}}
     }
   }
-  updateMode();updateSelection();
+  positionCompletion();updateMode();updateSelection();
 }
 function formatTime(s) {return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
 setInterval(()=>{if(timed)$('clock').textContent=formatTime(elapsedSeconds(state));},1000);
-$('calm').onclick=()=>{if(!state.started){timed=false;render();save();}};
-$('timed').onclick=()=>{if(!state.started){timed=true;render();save();}};
+$('calm').onclick=()=>{timed=changeTimingMode(state,timed,false);render();save();};
+$('timed').onclick=()=>{timed=changeTimingMode(state,timed,true);render();save();};
 $('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);strip(peek?'Reference image visible.':'Reference image hidden.');save();};
 $('hint').onclick=()=>{openGeneBank();if(!state.geneHintsSeen)requestGeneHint();};
 function checkGene(value,fromBank=false){
@@ -345,6 +358,7 @@ function checkGene(value,fromBank=false){
   start('guess');const before=state.placed.length,previous=[...state.placed];
   const answer=recognizeGene(value,round);
   if(answer&&answer.kind!=='ambiguous'&&guess(state,round.gene,round.gene)){
+    start('guess',true);
     const alias=answer.kind==='product'?` ${answer.name} is encoded by ${round.gene}.`:answer.kind==='alias'?` ${answer.name} is a previous symbol for ${round.gene}.`:'';
     if(fromBank)$('geneBankDialog').close();
     selected=null;hinted=null;afterProgress(before,previous,{alias});
@@ -353,15 +367,15 @@ function checkGene(value,fromBank=false){
 }
 $('guessForm').onsubmit=e=>{e.preventDefault();checkGene($('geneGuess').value);};
 function updateGeneHint(){
-  const label=state.geneHintsSeen===0?'Get a gene hint':state.geneHintsSeen===1?'Reveal symbol hint':'Show gene hints';
-  $('bankSymbolHint').textContent=label;$('bankSymbolHint').hidden=state.geneHintsSeen>=2;
+  const hintStatus=geneHintStatus(state);
+  $('bankSymbolHint').textContent=hintStatus.nextLabel;$('bankSymbolHint').hidden=!hintStatus.hasNext;
   bank.hint(geneHintText(state,round));
 }
 function requestGeneHint(){start('guess');bank.hint(revealGeneHint(state,round));updateGeneHint();save();bank.focusHint();}
 function openGeneBank(){updateGeneHint();openDialog('geneBankDialog');bank.focus();}
 $('geneHint').onclick=()=>{openGeneBank();if(!state.geneHintsSeen)requestGeneHint();};
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
-function openDialog(id){completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();walkthrough?.pause();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
+function openDialog(id){completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
 $('geneBankButton').onclick=openGeneBank;
 $('closeGeneBank').onclick=()=>$('geneBankDialog').close();
 $('bankSymbolHint').onclick=requestGeneHint;
@@ -371,27 +385,27 @@ $('libraryButton').onclick=()=>{renderCollection(true);openDialog('libraryDialog
 $('closeLibrary').onclick=()=>$('libraryDialog').close();
 $('collectionReview').onclick=()=>{renderCollection(true);openDialog('libraryDialog');};
 $('helpButton').onclick=()=>openDialog('helpDialog');$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
-$('focusButton').onclick=()=>{pieceMotion.clear();discoveryGuide.clear();const on=!$('game').classList.contains('focus-view');$('game').classList.toggle('focus-view',on);$('focusButton').setAttribute('aria-pressed',String(on));$('focusButton').textContent=on?'Exit focus view':'Focus view';positionWalkthrough();};
-const figureView=createFigureView({dialog:$('figureDialog'),frame:$('board').closest('.board-frame'),playback:$('artworkPlayback'),stageHost:$('figureStage'),controlsHost:$('figurePlayback'),motion:()=>artworkAnimation,focusTarget:$('enlargeButton'),onOpen:()=>{completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();discoveryGuide.clear();walkthrough?.close();}});
+$('focusButton').onclick=()=>{pieceMotion.clear();discoveryGuide.clear();const on=!$('game').classList.contains('focus-view');$('game').classList.toggle('focus-view',on);$('focusButton').setAttribute('aria-pressed',String(on));$('focusButton').textContent=on?'Exit focus view':'Focus view';positionCompletion();};
+const figureView=createFigureView({dialog:$('figureDialog'),frame:$('board').closest('.board-frame'),playback:$('artworkPlayback'),stageHost:$('figureStage'),controlsHost:$('figurePlayback'),motion:()=>artworkAnimation,focusTarget:$('enlargeButton'),onOpen:()=>{completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();discoveryGuide.clear();if(artworkAnimation)$('artworkPlayback').append(artworkAnimation.caption);}});
+$('figureDialog').addEventListener('close',()=>{if(!$('figureDialog').open)positionCompletion();});
 $('enlargeButton').onclick=()=>{if(complete(state))figureView.open();};
 $('closeFigure').onclick=()=>figureView.close();
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>$('restartDialog').close();
 $('confirmRestart').onclick=()=>{
   completionPlayback.cancel();
-  feedbackEpoch++;roundGeneration++;pieceMotion.clear();figureView.close();walkthrough?.dispose();walkthrough=null;artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
-  positionWalkthrough();
+  feedbackEpoch++;roundGeneration++;pieceMotion.clear();figureView.close();artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
   $('board').classList.remove('finishing');
   for(const panel of [$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
-  state=newState();selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;order=shuffled(order);
+  state=newState();selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
   $('discoveriesButton').classList.remove('has-new');
   $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
-  $('typingDetails').open=false;$('revealExtras').open=false;
+  $('typingDetails').open=false;$('revealExtras').open=false;$('clueRecap').open=false;$('clinicalDetails').open=false;
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
   $('guessFeedback').textContent='Optional. A gene symbol or unambiguous product name completes the image.';$('geneHint').disabled=false;
   markers.forEach(m=>{m.hidden=true;m.classList.remove('is-new');});
   board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();
-  strip('New round. Select a piece to begin.');$('roundSettings').open=false;trayButton(order[0])?.focus({preventScroll:true});
+  strip('Tap a piece, then tap its matching space.');$('roundSettings').open=false;trayButton(order[0])?.focus({preventScroll:true});
 };
 document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();openDialog('newPlayerDialog');});
 $('cancelNewPlayer').onclick=()=>$('newPlayerDialog').close();
@@ -416,9 +430,11 @@ $('diagramDescription').textContent=diagramDescription;
 $('revealGene').textContent=round.gene;$('revealCondition').textContent=round.condition;$('revealAlias').textContent=round.otherName;
 $('revealMetadata').append(node('span',round.inheritance),citation(`https://omim.org/entry/${round.omim}`,`OMIM ${round.omim}`));
 const p=round.clinical;
-$('revealTakeaway').append(node('span','How it connects','eyebrow'),node('p',p.connection));
-$('revealTakeaway').lastElementChild.append(referenceMarks(round,p.connectionSources,'Mechanism'));
+$('revealTakeaway').append(node('span','One connection to remember','eyebrow'),node('p',p.memory));
+$('revealTakeaway').lastElementChild.append(referenceMarks(round,[p.patternSource,...p.connectionSources],'Key connection'));
+$('clueConnection').textContent=geneClueConnection(round);
 const completionSections=[
+ ['How it connects',p.connection,p.connectionSources],
  ['Clinical pattern',p.pattern,[p.patternSource]],
  ['Onset and course',p.onset,[p.patternSource]],
  ['Clinical significance',p.significance.text,p.significance.sources],
@@ -441,7 +457,8 @@ $('community').textContent=round.community[0]+' ↗';$('community').href=round.c
 $('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
 buildBoard();buildTray();render();save();
 if(roundComplete(state))strip('Round complete. Your illustration and results are saved.');
-else if(state.started)strip('Your progress is restored.'+(timed?' Elapsed time continues.':''));
+else if(state.started)strip('Your progress is restored.'+(timed&&state.startedAt!==null?' Elapsed time continues.':''));
+else strip('Tap a piece, then tap its matching space.');
 
 function renderCollection(includeCards=false) {
   const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});

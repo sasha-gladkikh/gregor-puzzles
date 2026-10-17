@@ -202,11 +202,15 @@ test('requested gene hints are available immediately and biology comes before th
   assert.equal(state.geneHintsSeen,1);assert.equal(state.hints,1);
   for(const name of [r.gene,...r.aliases,...r.products])assert.ok(!normalizeGene(biology).includes(normalizeGene(name)),`${r.gene}: first hint reveals ${name}`);
   assert.equal(geneHintText(state,r),biology);assert.equal(state.hints,1);
-  const both=revealGeneHint(state,r);assert.ok(both.startsWith(biology));
-  assert.ok(both.includes(`starts with ${normalizeGene(r.gene).slice(0,3)}`));
-  assert.ok(both.includes(`${normalizeGene(r.gene).length} letters and digits`));
+  const connection=revealGeneHint(state,r);assert.ok(connection.startsWith(biology));
+  assert.ok(!connection.includes('The symbol starts with'));
+  for(const name of [r.gene,...r.aliases,...r.products])assert.ok(!normalizeGene(connection).includes(normalizeGene(name)),`${r.gene}: connecting hint reveals ${name}`);
   assert.equal(state.geneHintsSeen,2);assert.equal(state.hints,2);
-  assert.equal(revealGeneHint(state,r),both);assert.equal(state.hints,2);
+  const all=revealGeneHint(state,r);assert.ok(all.startsWith(connection));
+  assert.ok(all.includes(`starts with ${normalizeGene(r.gene).slice(0,3)}`));
+  assert.ok(all.includes(`${normalizeGene(r.gene).length} letters and digits`));
+  assert.equal(state.geneHintsSeen,3);assert.equal(state.hints,3);
+  assert.equal(revealGeneHint(state,r),all);assert.equal(state.hints,3);
  }
 });
 test('gene hint steps and counts persist without a reveal when progress is restored',()=>{
@@ -217,17 +221,20 @@ test('gene hint steps and counts persist without a reveal when progress is resto
  const both=revealGeneHint(first,r);
  const second=restoreSession(JSON.parse(JSON.stringify({state:first,timed:false}))).state;
  assert.equal(second.geneHintsSeen,2);assert.equal(geneHintText(second,r),both);assert.equal(second.hints,2);
- assert.equal(revealGeneHint(second,r),both);assert.equal(second.hints,2);
+ const all=revealGeneHint(second,r);assert.equal(second.hints,3);
+ const third=restoreSession(JSON.parse(JSON.stringify({state:second,timed:false}))).state;
+ assert.equal(third.geneHintsSeen,3);assert.equal(geneHintText(third,r),all);assert.equal(third.hints,3);
+ assert.equal(revealGeneHint(third,r),all);assert.equal(third.hints,3);
  assert.equal(geneHintText(restoreSession({state:newState(),timed:false}).state,r),null);
 });
 test('older symbol hints retain access without adding to the saved hint count',()=>{
  const r=allRounds.find(r=>r.gene==='RNU4-2');
  const old={...newState(),geneHintsSeen:undefined,geneHintSeen:true,hints:1,placed:[0,1,2,3,4,5,6,7]};
  const restored=restoreSession({state:old,timed:false}).state;
- assert.equal(restored.geneHintsSeen,2);assert.equal('geneHintSeen' in restored,false);
+ assert.equal(restored.geneHintsSeen,3);assert.equal('geneHintSeen' in restored,false);
  assert.match(geneHintText(restored,r),/starts with RNU and has 5 letters and digits/);
  revealGeneHint(restored,r);assert.equal(restored.hints,1);
- for(const invalid of [-1,3,1.5,'2',null]){
+ for(const invalid of [-1,4,1.5,'2',null]){
   const state=restoreSession({state:{...newState(),geneHintsSeen:invalid},timed:false}).state;
   assert.equal(state.geneHintsSeen,0);assert.equal(geneHintText(state,r),null);
  }

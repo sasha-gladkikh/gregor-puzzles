@@ -5,7 +5,7 @@ body{background:var(--surface)}
 #game .collection-track{width:80px}
 #game .library-button{border-color:var(--line);border-radius:6px;font-size:14px;font-weight:600;min-height:40px;background:#fff}
 #game .nav-arrow{min-height:40px;color:var(--ink)}
-#game .game-layout{grid-template-columns:minmax(0,1fr) 304px;gap:32px}
+#game .game-layout{grid-template-columns:minmax(0,1fr) 340px;gap:32px}
 #game .puzzle-section{background:transparent;overflow:visible;border:0;border-radius:0;box-shadow:none}
 #game .section-bar{padding:8px 0 18px;background:none;max-width:800px;width:100%;margin-inline:auto}
 #game .section-bar h1{font-size:26px;line-height:1.25;margin:5px 0 0;letter-spacing:-.5px}
@@ -15,7 +15,9 @@ body{background:var(--surface)}
 #game .board{border-radius:6px}
 #game .board-watermark{left:20%;right:20%;top:44%;padding:9px 12px;border:0;background:#ffffffed;border-radius:5px}
 #game .board-watermark p{font-size:14px;font-weight:500;margin:0}
-#game .status-strip{grid-column:1;grid-row:2;margin:0;padding:10px 12px;border:0;border-left:2px solid var(--accent);border-radius:0;background:#edf2fa;font-size:14px;min-height:64px;display:flex;align-items:center;line-height:1.5}
+#game .status-strip{grid-column:1;grid-row:2;margin:0;padding:10px 12px;border:0;border-left:2px solid var(--accent);border-radius:0;background:#edf2fa;font-size:14px;min-height:64px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:4px;line-height:1.5}
+#game .start-reassurance{font-size:12px;color:var(--muted)}
+#game .latest-clue{display:none}
 #game .strip-item{line-height:1.55}
 #game .piece-bank{grid-column:2;grid-row:1 / span 3;min-width:0;margin:0;padding:0;border:0}
 #game .tray-heading{display:flex;flex-direction:row;gap:8px;margin:0 0 9px;align-items:center;justify-content:space-between}
@@ -181,8 +183,8 @@ body{background:var(--surface)}
 #game .typing-details{padding:10px 0;border-bottom:1px solid var(--line);margin:4px 0 8px}
 #game .typing-details>summary{padding:10px 0;min-height:44px;font-size:14px;font-weight:600;cursor:pointer}
 #game .typing-details .guess-form{margin:0;padding:0;border:0}
-#game .figure-tools .gene-bank-trigger{background:var(--accent);border-color:var(--accent);color:white;font-weight:650}
-#game .figure-tools .gene-bank-trigger:hover{background:#003fd2}
+#game .figure-tools .gene-bank-trigger{background:#fff;border-color:var(--line);color:var(--ink);font-weight:500}
+#game .figure-tools .gene-bank-trigger:hover{background:#edf2fa;border-color:#a1b7d9}
 #game .figure-tools #hint{border-color:#a1b7d9;font-weight:600}
 @media(min-width:1101px){#game .discovery{position:sticky;top:20px;align-self:start;max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:4px}}
 @media(max-width:1100px){#game .learning-heading{margin-top:8px}#game .clue-details{padding-top:0;border-top:0}}
@@ -218,5 +220,64 @@ body{background:var(--surface)}
  #figureDialog .figure-stage{width:100%}
  #figureDialog figcaption{padding:0 14px}
 }
-@media(prefers-reduced-motion:reduce){#figureDialog .figure-playback:has(.artwork-motion-controls[hidden]){display:none}}
+@media(prefers-reduced-motion:reduce){#figureDialog .figure-playback:has(.artwork-motion-controls[hidden]):not(:has(.artwork-guide-caption:not([hidden]))){display:none}}
 @media(forced-colors:active){#figureDialog{background:Canvas;border-color:CanvasText}#figureDialog::backdrop{backdrop-filter:none}#figureDialog .artwork-motion-toggle{border-color:ButtonText}}
+
+/* Completion pairs the identity with the picture; depth remains available. */
+#game .completion-summary{width:100%;min-width:0;grid-column:1/-1}
+#game.round-complete .assembly-area>.completion-summary{grid-row:3}
+#game .completion-summary .completion-actions{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0 0}
+#game .completion-summary .completion-actions a{font-size:14px;padding:10px 12px;min-height:44px}
+#game .completion-summary>.artwork-guide-caption{margin-top:18px}
+#game .has-completion .figure-identity{border:0;margin:0;padding:0;gap:12px}
+#game .has-completion .figure-identity #revealGene{font-size:30px}
+#game .has-completion .figure-identity #revealCondition{font-size:19px;line-height:1.35}
+#game .has-completion .reveal-takeaway{padding:13px 14px;margin:4px 0 0}
+#game .has-completion .reveal-takeaway p{font-size:16px;line-height:1.6}
+#game .clue-connection{font-size:14px;line-height:1.6;margin:0;color:var(--muted)}
+#game .clue-recap{margin-top:18px;border-top:1px solid var(--line)}
+#game .clue-recap>summary,#game .clinical-details>summary{min-height:44px;padding:12px 0;font-size:15px;font-weight:600}
+#game .clue-recap .clue-progress,#game .clue-recap .progress-track{display:none}
+#game .clue-recap .clue-details{padding-top:4px}
+#game .clinical-details .reveal-lines{padding:10px 0 20px}
+#game .timing-note{font-size:12px;line-height:1.5;color:var(--muted);margin:10px 0 14px;max-width:65ch}
+#game .figure-tools .artwork-guide-caption{order:10;flex-basis:100%;width:100%;min-width:0;margin-top:4px}
+#figureDialog .figure-playback{flex-wrap:wrap;gap:8px}
+#figureDialog .artwork-guide-caption{order:10;flex-basis:100%;text-align:left;max-width:78ch}
+#game.focus-view .latest-clue{display:block}
+#game.focus-view .status-strip:has(.latest-clue:not([hidden])){min-height:116px}
+#game .latest-clue h3{font-size:14px;line-height:1.35;font-weight:650;margin:2px 0 4px;color:var(--ink)}
+#game .latest-clue p{font-size:13px;line-height:1.5;color:var(--ink);margin:0}
+@media(min-width:1101px) and (max-height:850px){
+ /* Keep the board, all pieces, and its controls together on laptop screens. */
+ #game:not(.focus-view) .section-bar,#game:not(.focus-view) .assembly-area{max-width:clamp(600px,calc((100dvh - 400px) * 4 / 3 + 168px),800px)}
+}
+@media(max-width:1100px){
+ #game .latest-clue{display:block}
+ #game .status-strip{min-height:128px;justify-content:flex-start;gap:6px}
+ #game .status-strip .strip-message{font-size:12px;line-height:1.4}
+ #game .completion-summary .reveal-takeaway p{font-size:16px}
+}
+@media(max-width:600px){
+ /* DOM order starts with the tray for keyboard users; visual order stays board first. */
+ #game .assembly-area>.board-frame{order:0}
+ #game .assembly-area>.status-strip{order:1}
+ #game .assembly-area>.figure-tools{order:2}
+ #game .assembly-area>.piece-bank{order:3}
+ #game .assembly-area>.round-settings{order:4}
+ #game .assembly-area>.completion-summary{order:5}
+ #game .assembly-area>.completion{order:6}
+ #game .assembly-area>.board-caption{order:7}
+ #game .assembly-area>.diagram-description{order:8}
+ #game.round-complete .assembly-area>.completion-summary{order:3;margin-top:14px}
+ #game.round-complete .assembly-area>.figure-tools{order:2;margin-top:8px}
+ #game.round-complete .assembly-area>.round-settings{order:9}
+ #game .completion-summary .figure-identity{padding:14px 0 0;margin:0;gap:8px}
+ #game .completion-summary .figure-identity #revealGene{font-size:26px;margin-bottom:3px}
+ #game .completion-summary .figure-identity #revealCondition{font-size:18px}
+ #game .completion-summary .reveal-takeaway{padding:10px 12px;margin:4px 0 0}
+ #game .completion-summary .reveal-takeaway p{font-size:15px;line-height:1.5;margin-top:4px}
+ #game .completion-summary .completion-actions{margin-top:14px}
+ #game .clue-recap{margin-top:12px}
+ #game .completion{margin-top:18px;padding-top:0}
+}

@@ -1,6 +1,7 @@
 import {artworkMotionData} from './artwork-motion-data.mjs';
 import {artworkSource} from './artwork-source.mjs';
 import {createArtworkDetails} from './artwork-detail.mjs';
+import {createArtworkGuide} from './artwork-guide.mjs';
 
 const NS='http://www.w3.org/2000/svg';
 const clamp=value=>Math.max(0,Math.min(1,value));
@@ -285,7 +286,7 @@ export async function preloadArtwork(round){
 
 // This is a cutout animation of the actual completed artwork. Original pixels
 // provide every moving object; a local clean plate only replaces its old position.
-export function animatedArtwork(round,{board,autoplay=false}={}){
+export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
   const scene=artworkMotionData[round.number];
   if(!scene||!board)return null;
   const prefix=`artwork-motion-${round.number}-${++instance}`;
@@ -320,19 +321,23 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   const detailLayer=svgNode('g',{'aria-hidden':'true','data-artwork-details':''});
   const details=createArtworkDetails(round.number,{parent:detailLayer,sprites});
   svg.append(cleanPatch,detailLayer,movingObjects);element.append(svg);board.append(element);
+  const guide=createArtworkGuide(round,{parent:svg,guided});
 
   const controls=node('div','artwork-motion-controls');controls.setAttribute('role','group');controls.setAttribute('aria-label','Illustration animation');
   const button=node('button','tool artwork-motion-toggle','Play illustration');button.type='button';button.disabled=true;button.setAttribute('aria-controls',prefix);button.setAttribute('aria-pressed','false');element.id=prefix;
   const icon=svgNode('svg',{viewBox:'0 0 20 20','aria-hidden':'true',focusable:'false'}),iconPath=svgNode('path',{d:'M7 4.5 15 10l-8 5.5Z'});icon.append(iconPath);
   const label=node('span',null,'Play illustration');button.replaceChildren(icon,label);
   const live=node('span','artwork-motion-live');live.setAttribute('aria-hidden','true');for(let i=0;i<3;i++)live.append(node('i'));
-  controls.append(button,live);
+  const guideButton=node('button','tool artwork-guide-replay','Follow the image');guideButton.type='button';
+  guide.caption.id=`${prefix}-guide`;guideButton.setAttribute('aria-controls',guide.caption.id);
+  controls.append(button,live,guideButton);
   let disposed=false,assetsReady=false,failed=false,visible=false,pendingPlay=Boolean(autoplay)&&!media.matches,played=false;
   let loading=null,resolveDisposed;
   const disposedPromise=new Promise(resolve=>{resolveDisposed=()=>resolve(false);});
   const pointer={x:0,y:0},targetPointer={x:0,y:0};let lastDraw=0,lastOpacity=null,lastEntering=null;
   function paint(){
     controls.hidden=media.matches;button.disabled=!assetsReady&&!failed;
+    guideButton.disabled=!assetsReady&&!failed;guideButton.textContent=guide.enabled?'Replay guide':'Follow the image';
     label.textContent=failed?'Retry illustration':!assetsReady?'Preparing illustration':clock.playing?'Pause illustration':clock.elapsed>0?'Resume illustration':'Play illustration';
     button.setAttribute('aria-pressed',String(clock.playing));
     controls.setAttribute('aria-label',clock.playing?'Illustration animation, playing':'Illustration animation, paused');
@@ -353,6 +358,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
       group.setAttribute('opacity',String(frame.opacity));
     }
     details.draw(elapsed);
+    guide.draw(elapsed,{reduced:media.matches});
     // Opacity is no longer touched after entry, and its compositor hint is released.
     const opacity=String(entrance.opacity),entering=entrance.opacity<1;
     if(opacity!==lastOpacity){element.style.opacity=opacity;lastOpacity=opacity;}
@@ -370,10 +376,16 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
     maybePlay();
   }
   function pause(){if(disposed)return;pendingPlay=false;clock.pause();}
+  function replayGuide(){
+    if(disposed)return;
+    guide.restart(clock.elapsed);guide.draw(clock.elapsed,{reduced:media.matches});paint();
+    if(!media.matches)play();
+  }
   button.addEventListener('click',()=>{if(clock.playing)pause();else play();});
+  guideButton.addEventListener('click',replayGuide);
   const visibility=()=>{if(document.hidden)pause();};
   const resetPointer=()=>{pointer.x=0;pointer.y=0;targetPointer.x=0;targetPointer.y=0;lastDraw=0;};
-  const preference=()=>{pendingPlay=false;resetPointer();clock.reset();stage.reset();element.hidden=true;paint();if(!media.matches)void loadAssets();};
+  const preference=()=>{pendingPlay=false;if(guide.enabled)guide.restart();resetPointer();clock.reset();stage.reset();element.hidden=true;paint();if(!media.matches)void loadAssets();};
   const pointerMove=event=>{
     if(event.pointerType==='touch'||media.matches||!clock.playing)return;
     const rect=board.getBoundingClientRect();if(!rect.width||!rect.height)return;
@@ -395,15 +407,15 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
       if(disposed)return false;
       for(const image of svg.querySelectorAll('image[data-artwork-src]'))image.setAttribute('href',image.getAttribute('data-artwork-src'));
       assetsReady=true;paint();maybePlay();return true;
-    }).catch(()=>{if(disposed)return false;failed=true;pendingPlay=false;element.hidden=true;paint();return false;}),disposedPromise]).finally(()=>{loading=null;});
+    }).catch(()=>{if(disposed)return false;failed=true;pendingPlay=false;element.hidden=true;guide.draw(clock.elapsed,{reduced:true});paint();return false;}),disposedPromise]).finally(()=>{loading=null;});
     return loading;
   }
   const ready=media.matches?Promise.resolve(false):loadAssets();
   return {
-    element,controls,ready,play,pause,
-    reset(){if(disposed)return;pendingPlay=false;resetPointer();clock.reset();stage.reset();element.hidden=true;},
+    element,controls,caption:guide.caption,ready,play,pause,replayGuide,
+    reset(){if(disposed)return;pendingPlay=false;guide.cancel();resetPointer();clock.reset();stage.reset();element.hidden=true;},
     dispose(){
-      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();details.dispose();stage.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
+      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();details.dispose();guide.dispose();stage.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
     }
   };
 }
