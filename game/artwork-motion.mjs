@@ -1,10 +1,13 @@
 import {artworkMotionData} from './artwork-motion-data.mjs';
 import {artworkSource} from './artwork-source.mjs';
+import {createArtworkDetails} from './artwork-detail.mjs';
 
 const NS='http://www.w3.org/2000/svg';
 const clamp=value=>Math.max(0,Math.min(1,value));
 const signed=value=>Math.max(-1,Math.min(1,value));
 const cycle=value=>((value%1)+1)%1;
+const smooth=value=>{const t=clamp(value);return t*t*(3-2*t);};
+const identity=()=>({x:0,y:0,rotate:0,scale:1,opacity:1});
 let instance=0;
 
 // Presentation can finish after a player has already chosen another interaction.
@@ -56,13 +59,81 @@ export function sampleArtworkEntrance(elapsed){
   return {opacity:clamp(time/120),motion:join*join*join*(join*(join*6-15)+10)};
 }
 
-// Independent clocks keep neighboring objects from moving in lockstep. Secondary
-// drift is optional and never changes the direction of a transport path.
+const transportRoutes=new WeakMap(),floatEnvelopes=new WeakMap();
+function transportRoute(sprite){
+  if(transportRoutes.has(sprite))return transportRoutes.get(sprite);
+  const frames=sprite.keyframes??[];
+  const firstMove=frames.findIndex(frame=>frame.x||frame.y);
+  const invisible=frames.findIndex((frame,index)=>index>firstMove&&frame.opacity===0);
+  let route=null;
+  if(firstMove>0&&invisible>firstMove){
+    const start=frames[firstMove-1],end=frames[invisible];
+    const points=[{...start,distance:0}];let length=0;
+    for(const frame of frames.slice(firstMove,invisible+1)){
+      const previous=points.at(-1),distance=Math.hypot((frame.x??0)-(previous.x??0),(frame.y??0)-(previous.y??0));
+      if(distance){length+=distance;points.push({...frame,distance:length});}
+    }
+    if(length)route={points,length,start:start.at,end:end.at,fade:frames[invisible-1].at};
+  }
+  transportRoutes.set(sprite,route);return route;
+}
+
+function sampleTransport(sprite,elapsed,duration){
+  const route=transportRoute(sprite);if(!route)return null;
+  // Phase staggers departure instead of dropping a newly revealed object into
+  // the middle of its route. Every first journey begins at the source pixels.
+  const delay=120+clamp(sprite.phase??0)*750;
+  if(elapsed<=delay)return identity();
+  const position=cycle((elapsed-delay)/(sprite.period??duration)+route.start);
+  if(position<route.start||position>=route.end)return interpolateArtworkSprite(sprite,position);
+  const fraction=clamp((position-route.start)/(route.end-route.start)),ramp=.08;
+  // Brief acceleration at the source and braking at the destination; no stops
+  // at interior keyframes. Arc length keeps the travel rate consistent.
+  const travel=fraction<ramp?fraction*fraction/(2*ramp*(1-ramp)):
+    fraction>1-ramp?1-(1-fraction)**2/(2*ramp*(1-ramp)):(fraction-ramp/2)/(1-ramp);
+  const distance=travel*route.length;
+  let left=route.points[0],right=route.points.at(-1);
+  for(let i=1;i<route.points.length;i++)if(distance<=route.points[i].distance){left=route.points[i-1];right=route.points[i];break;}
+  const amount=clamp((distance-left.distance)/(right.distance-left.distance));
+  const frame=identity();
+  for(const key of ['x','y','rotate','scale']){
+    const fallback=key==='scale'?1:0,a=left[key]??fallback,b=right[key]??fallback;frame[key]=a+(b-a)*amount;
+  }
+  frame.opacity=1-smooth((position-route.fade)/(route.end-route.fade));
+  return frame;
+}
+
+function floatingFrame(sprite,elapsed,duration){
+  let envelope=floatEnvelopes.get(sprite);
+  if(!envelope){
+    envelope=['x','y','rotate'].map(key=>{
+      const values=(sprite.keyframes??[]).map(frame=>frame[key]??0);
+      return {key,min:Math.min(0,...values),max:Math.max(0,...values)};
+    });
+    floatEnvelopes.set(sprite,envelope);
+  }
+  const angle=2*Math.PI*(elapsed/(sprite.period??duration)+(sprite.phase??0));
+  const frame=interpolateArtworkSprite(sprite,cycle(elapsed/(sprite.period??duration)+(sprite.phase??0)));
+  // Different axis phases and incommensurate rhythms avoid the repeated
+  // five-waypoint stop. Their convex blend stays inside the authored envelope.
+  for(const [index,{key,min,max}] of envelope.entries()){
+    const offset=index*1.47;
+    const wave=.8*Math.sin(angle+offset)+.2*Math.sin(angle*.618+offset+1.1);
+    frame[key]=min+(max-min)*(wave+1)/2;
+  }
+  return frame;
+}
+
+// Independent clocks keep neighboring objects from moving in lockstep. The
+// transport clock always starts at its source; ambient drift has its own rhythm.
 export function sampleArtworkMotion(sprite,elapsed,duration=18000,pointer={x:0,y:0}){
   const entrance=sampleArtworkEntrance(elapsed).motion;
-  if(entrance===0)return {x:0,y:0,rotate:0,scale:1,opacity:1};
+  if(entrance===0)return identity();
+  if(sprite.motion==='transport'){
+    const transport=sampleTransport(sprite,elapsed,duration);if(transport)return transport;
+  }
   const position=cycle(elapsed/(sprite.period??duration)+(sprite.phase??0));
-  const frame=interpolateArtworkSprite(sprite,position),secondary=sprite.secondary;
+  const frame=sprite.motion==='float'?floatingFrame(sprite,elapsed,duration):interpolateArtworkSprite(sprite,position),secondary=sprite.secondary;
   if(secondary){
     const angle=2*Math.PI*(elapsed/(secondary.period??sprite.period??duration)+(secondary.phase??0));
     frame.x+=(secondary.x??0)*Math.sin(angle);
@@ -231,19 +302,9 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
     const cutout=image(original);cutout.setAttribute('clip-path',`url(#${clipId})`);group.append(cutout);movingObjects.append(group);
     return {data:sprite,group};
   });
-  const accentLayer=svgNode('g',{'aria-hidden':'true','data-artwork-accents':''});
-  const accents=(scene.accents??[]).map((accent,index)=>{
-    const group=svgNode('g',{'data-artwork-accent':accent.id??index,opacity:0});
-    const paths=[3,1].map((scale,index)=>svgNode('path',{d:accent.path,fill:'none',stroke:accent.color??'#62d8ef','stroke-width':(accent.width??2.5)*scale,'stroke-linecap':'round',opacity:index?1:.24}));
-    group.append(...paths);
-    const parent=accent.target?sprites.find(sprite=>sprite.data.id===accent.target)?.group:accentLayer;
-    (parent??accentLayer).append(group);return {data:accent,group,paths,length:0};
-  });
-  svg.append(cleanPatch,accentLayer,movingObjects);element.append(svg);board.append(element);
-  for(const accent of accents){
-    accent.length=accent.paths[0].getTotalLength();
-    for(const path of accent.paths)path.setAttribute('stroke-dasharray',`${accent.length*clamp(accent.data.span??.12)} ${accent.length}`);
-  }
+  const detailLayer=svgNode('g',{'aria-hidden':'true','data-artwork-details':''});
+  const details=createArtworkDetails(round.number,{parent:detailLayer,sprites});
+  svg.append(cleanPatch,detailLayer,movingObjects);element.append(svg);board.append(element);
 
   const controls=node('div','artwork-motion-controls');controls.setAttribute('role','group');controls.setAttribute('aria-label','Illustration animation');
   const button=node('button','tool artwork-motion-toggle','Play illustration');button.type='button';button.disabled=true;button.setAttribute('aria-controls',prefix);button.setAttribute('aria-pressed','false');element.id=prefix;
@@ -276,11 +337,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
       group.setAttribute('transform',`translate(${frame.x} ${frame.y}) translate(${cx} ${cy}) rotate(${frame.rotate}) scale(${frame.scale}) translate(${-cx} ${-cy})`);
       group.setAttribute('opacity',String(frame.opacity));
     }
-    for(const {data,group,paths,length} of accents){
-      const progress=cycle(elapsed/(data.period??7000)+(data.phase??0));
-      group.setAttribute('opacity',String(entrance.motion*clamp(data.opacity??.16)*Math.pow(Math.sin(Math.PI*progress),2)));
-      for(const path of paths)path.setAttribute('stroke-dashoffset',String(length*(1-progress)));
-    }
+    details.draw(elapsed);
     // Opacity is no longer touched after entry, and its compositor hint is released.
     const opacity=String(entrance.opacity),entering=entrance.opacity<1;
     if(opacity!==lastOpacity){element.style.opacity=opacity;lastOpacity=opacity;}
@@ -331,7 +388,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
     element,controls,ready,play,pause,
     reset(){if(disposed)return;pendingPlay=false;resetPointer();clock.reset();stage.reset();element.hidden=true;},
     dispose(){
-      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();stage.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
+      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();details.dispose();stage.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
     }
   };
 }

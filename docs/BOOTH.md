@@ -49,6 +49,7 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Enable reduced motion while the illustration is playing. The frame and artwork should return to their static state. Returning to a previously completed round should also remain still until Play is selected.
 - Open **Explore the illustration**, select numbered structures, play/pause, step manually, and close it. Opening a dialog or leaving the tab pauses the sequence.
 - Complete a round in **Focus view**. The final piece should land without the board changing size; the illustration guide should remain accessible below it.
+- Watch the first second in rounds 01 and 02: particles should depart gradually without teleporting or vanishing. Observe one full cycle: source resets happen while cargo is invisible, and surface highlights remain attached to moving structures. Pause and confirm all motion stops together.
 - Enlarge the completed illustration. Playing artwork should continue; paused artwork should remain paused. Close or press Escape and confirm the same board and controls return to their original positions, with focus on Enlarge illustration. On a phone, enlarging must not shrink the image. Restart afterward.
 - Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, and Science on a narrow screen, then open Editorial review from Science.
 - Follow a reference number on a completion card and in Editorial review; the References panel should open at the cited item. Check that each external paper is listed once per round.

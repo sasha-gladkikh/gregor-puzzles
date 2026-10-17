@@ -31,7 +31,10 @@ export function createFigureView({dialog,frame,playback,stageHost,controlsHost,m
     });
   }
   const hidden=()=>{if(frame.ownerDocument.hidden){stopResume();motion()?.pause();}};
-  dialog.addEventListener('close',restore);
+  // Native close events are queued. An older event must not dismantle a view
+  // that was reopened after close() already restored its previous contents.
+  const closed=()=>{if(!dialog.open)restore();};
+  dialog.addEventListener('close',closed);
   frame.ownerDocument.addEventListener('visibilitychange',hidden);
-  return {open,close(){stopResume();if(dialog.open)dialog.close();restore();},dispose(){if(disposed)return;disposed=true;stopResume();if(dialog.open)dialog.close();restore();dialog.removeEventListener('close',restore);frame.ownerDocument.removeEventListener('visibilitychange',hidden);}};
+  return {open,close(){stopResume();if(dialog.open)dialog.close();restore();},dispose(){if(disposed)return;disposed=true;stopResume();if(dialog.open)dialog.close();restore();dialog.removeEventListener('close',closed);frame.ownerDocument.removeEventListener('visibilitychange',hidden);}};
 }

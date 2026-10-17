@@ -4,7 +4,7 @@ import {createFigureView} from '../game/figure-view.mjs';
 
 // This harness models node movement, dialog events, and animation scheduling.
 // The same board/playback identities must survive every transition.
-function setup({state='ready',showError=null}={}){
+function setup({state='ready',showError=null,deferredClose=false}={}){
   class Events{
     constructor(){this.listeners=new Map();}
     addEventListener(type,listener){if(!this.listeners.has(type))this.listeners.set(type,new Set());this.listeners.get(type).add(listener);}
@@ -26,7 +26,9 @@ function setup({state='ready',showError=null}={}){
   const tools=new Element('div'),toolBefore=new Element('button'),playback=new Element('playback'),toolAfter=new Element('button');tools.append(toolBefore,playback,toolAfter);
   const dialog=new Element('dialog'),stageHost=new Element('stage-host'),controlsHost=new Element('controls-host');dialog.append(stageHost,controlsHost);dialog.open=false;
   dialog.showModal=()=>{if(showError)throw showError;dialog.open=true;};
-  dialog.close=()=>{if(!dialog.open)return;dialog.open=false;dialog.dispatch('close');};
+  const closeEvents=[];
+  const flushClose=()=>{for(const deliver of closeEvents.splice(0))deliver();};
+  dialog.close=()=>{if(!dialog.open)return;dialog.open=false;if(deferredClose)closeEvents.push(()=>dialog.dispatch('close'));else dialog.dispatch('close');};
   dialog.escape=()=>{if(!dialog.dispatch('cancel').defaultPrevented)dialog.close();};
   const focusTarget=new Element('button'),pending=new Map(),cancelled=[];let id=0,opens=0;
   const motion={element:{dataset:{state}},plays:0,pauses:0,play(){this.plays++;this.element.dataset.state='playing';},pause(){this.pauses++;if(this.element.dataset.state==='playing')this.element.dataset.state='paused';}};
@@ -38,7 +40,7 @@ function setup({state='ready',showError=null}={}){
     assert.deepEqual(tools.childNodes,[toolBefore,playback,toolAfter]);
     assert.deepEqual(stageHost.childNodes,[]);assert.deepEqual(controlsHost.childNodes,[]);
   };
-  return {view,document,dialog,assembly,tools,frame,playback,stageHost,controlsHost,focusTarget,motion,pending,cancelled,nextFrame,assertRestored,get opens(){return opens;}};
+  return {view,document,dialog,assembly,tools,frame,playback,stageHost,controlsHost,focusTarget,motion,pending,cancelled,nextFrame,flushClose,assertRestored,get opens(){return opens;}};
 }
 
 test('enlargement moves the original board and controls, reserves its layout height, and restores their exact positions',()=>{
@@ -80,6 +82,26 @@ test('closing before the next frame prevents stale playback and tolerates repeat
   const h=setup({state:'playing'});h.view.open();const pending=[...h.pending.values()][0];
   h.view.close();h.view.close();h.nextFrame();pending();
   assert.equal(h.motion.plays,0);assert.equal(h.pending.size,0);assert.equal(h.focusTarget.focusCalls.length,1);h.assertRestored();
+  h.view.dispose();
+});
+
+test('a queued close event cannot restore the board out of a newly reopened dialog',()=>{
+  const h=setup({state:'playing',deferredClose:true});h.view.open();h.view.close();h.assertRestored();
+  h.motion.play();h.view.open();
+  assert.equal(h.dialog.open,true);assert.equal(h.pending.size,1);
+  const pauses=h.motion.pauses,focuses=h.focusTarget.focusCalls.length;
+  h.flushClose();
+  assert.deepEqual(h.stageHost.childNodes,[h.frame]);assert.deepEqual(h.controlsHost.childNodes,[h.playback]);
+  assert.equal(h.motion.pauses,pauses);assert.equal(h.focusTarget.focusCalls.length,focuses);assert.equal(h.pending.size,1);
+  h.nextFrame();assert.equal(h.motion.element.dataset.state,'playing');
+  h.view.close();h.flushClose();h.assertRestored();h.view.dispose();
+});
+
+test('a queued native Escape close restores the board once when the dialog stays closed',()=>{
+  const h=setup({state:'playing',deferredClose:true});h.view.open();h.dialog.escape();
+  assert.equal(h.dialog.open,false);assert.deepEqual(h.stageHost.childNodes,[h.frame]);
+  h.nextFrame();assert.equal(h.motion.plays,0,'Closed dialogs cannot resume while awaiting their close event');
+  h.flushClose();h.assertRestored();assert.equal(h.focusTarget.focusCalls.length,1);
   h.view.dispose();
 });
 

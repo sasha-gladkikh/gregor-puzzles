@@ -117,6 +117,87 @@ test('secondary bobbing is periodic and remains within its supplied amplitudes',
   for(const key of ['x','y','rotate'])assert.ok(Math.abs(before[key]-after[key])<1e-12);
 });
 
+test('transport starts visibly at its original source and never rushes into a phase-offset pose',()=>{
+  const departures=[];
+  for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites.filter(item=>item.motion==='transport')){
+    const context=`${number}/${sprite.id}`,end=sprite.keyframes.find(frame=>frame.opacity===0);
+    const distance=Math.hypot(end.x,end.y);let departedAt=null;
+    for(let elapsed=0;elapsed<=1000;elapsed+=5){
+      const frame=sampleArtworkMotion(sprite,elapsed,scene.duration);
+      assert.equal(frame.opacity,1,`${context}: cargo must remain visible throughout its first second`);
+      assert.ok(Math.hypot(frame.x,frame.y)<distance*.25,`${context}: entrance must not sprint through a normal journey`);
+      if(departedAt===null&&Math.hypot(frame.x,frame.y)>.01)departedAt=elapsed;
+    }
+    assert.ok(departedAt>120&&departedAt<1000,`${context}: first departure should follow the registered crossfade`);
+    departures.push(departedAt);
+  }
+  assert.ok(new Set(departures).size>10,'neighboring objects have staggered departures');
+  const right=artworkMotionData['02'].sprites.find(sprite=>sprite.id==='junction-cargo-right');
+  assert.ok(sampleArtworkMotion(right,600).x<2,'the reported 187px entrance jump cannot return');
+});
+
+test('visible transport velocity stays close to its route speed on first and later journeys',()=>{
+  for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites.filter(item=>item.motion==='transport')){
+    const frames=sprite.keyframes,first=frames.findIndex(frame=>frame.x||frame.y),last=frames.findIndex(frame=>frame.opacity===0);
+    let length=0;
+    for(let i=first;i<=last;i++)length+=Math.hypot(frames[i].x-frames[i-1].x,frames[i].y-frames[i-1].y);
+    const meanSpeed=length/((frames[last].at-frames[first-1].at)*sprite.period)*1000;
+    let previous=sampleArtworkMotion(sprite,0),peak=0,seenInvisible=false,seenReturn=false;
+    for(let elapsed=5;elapsed<=sprite.period*2;elapsed+=5){
+      const frame=sampleArtworkMotion(sprite,elapsed,scene.duration);
+      if(frame.opacity>.001&&previous.opacity>.001){
+        const speed=Math.hypot(frame.x-previous.x,frame.y-previous.y)/.005;peak=Math.max(peak,speed);
+        assert.ok(speed<=meanSpeed*1.09,`${number}/${sprite.id}: visible speed ${speed} exceeds a smooth journey`);
+      }
+      if(frame.opacity===0)seenInvisible=true;
+      if(seenInvisible&&frame.opacity>0&&Math.hypot(frame.x,frame.y)<.001)seenReturn=true;
+      previous=frame;
+    }
+    assert.ok(peak>=meanSpeed,`${number}/${sprite.id}: cargo actually traverses its route`);
+    assert.ok(seenInvisible&&seenReturn,`${number}/${sprite.id}: return occurs invisibly before source fade-in`);
+  }
+});
+
+test('transport crosses interior route markers without easing to a stop and loops without a visible jump',()=>{
+  const sprite={motion:'transport',period:10000,phase:.3,keyframes:[
+    {at:0},{at:.1},{at:.3,x:30},{at:.7,x:100},{at:.8,x:100,opacity:0},{at:.94,opacity:0},{at:1}
+  ]};
+  const speeds=[];
+  for(let elapsed=1500;elapsed<=6000;elapsed+=100){
+    const before=sampleArtworkMotion(sprite,elapsed),after=sampleArtworkMotion(sprite,elapsed+10);
+    speeds.push((after.x-before.x)/.01);
+  }
+  assert.ok(Math.max(...speeds)-Math.min(...speeds)<1e-9,'interior travel has a constant rate, including through the x=30 marker');
+  for(let elapsed=1000;elapsed<=20000;elapsed+=25){
+    const frame=sampleArtworkMotion(sprite,elapsed),next=sampleArtworkMotion(sprite,elapsed+sprite.period);
+    for(const key of Object.keys(frame))assert.ok(Math.abs(frame[key]-next[key])<1e-10,`${elapsed}/${key}`);
+  }
+});
+
+test('organic float drift remains inside every authored axis envelope and preserves fixed edges',()=>{
+  for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites.filter(item=>item.motion==='float')){
+    for(let elapsed=600;elapsed<=120000;elapsed+=75){
+      const frame=sampleArtworkMotion(sprite,elapsed,scene.duration);
+      for(const key of ['x','y','rotate']){
+        const values=sprite.keyframes.map(item=>item[key]??0),secondary=Math.abs(sprite.secondary?.[key]??0);
+        const min=Math.min(0,...values)-secondary,max=Math.max(0,...values)+secondary;
+        assert.ok(frame[key]>=min-1e-10&&frame[key]<=max+1e-10,`${number}/${sprite.id}/${key}: left its safe envelope`);
+        if(min===max)assert.equal(Math.abs(frame[key]-min),0,`${number}/${sprite.id}/${key}: fixed axis must stay fixed`);
+      }
+    }
+  }
+});
+
+test('floating motion has no shared waypoint stops or identical short repeating loop',()=>{
+  const sprite={motion:'float',period:10000,phase:0,keyframes:[{at:0},{at:.25,x:12,y:8},{at:.55,x:-7.8,y:-4},{at:.8,x:4.2,y:-2},{at:1}]};
+  for(const elapsed of [2500,5500,8000,10000,12500,15500,18000,20000]){
+    const before=sampleArtworkMotion(sprite,elapsed-1),after=sampleArtworkMotion(sprite,elapsed+1);
+    assert.ok(Math.hypot(after.x-before.x,after.y-before.y)>.001,`${elapsed}: simultaneous waypoint stop`);
+  }
+  const first=sampleArtworkMotion(sprite,1500),later=sampleArtworkMotion(sprite,11500);
+  assert.ok(Math.hypot(first.x-later.x,first.y-later.y)>.1,'the ambient path should evolve across consecutive main periods');
+});
+
 test('the completion frame rises smoothly without scaling the image or replaying its perimeter glow',()=>{
   const start=sampleArtworkStage(0);
   assert.equal(Math.abs(start.y),0);assert.equal(start.trace,0);assert.equal(start.halo,0);assert.equal(start.glintOpacity,0);

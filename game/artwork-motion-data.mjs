@@ -1,6 +1,7 @@
 // Sprite coordinates refer to the actual original 1200 × 900 illustrations,
 // normalized to the puzzle's 800 × 600 coordinate system. No structures are redrawn.
 // Closed paths include only the selected original pixels; patches localize clean plates.
+import {particleContours} from './artwork-particle-contours.mjs';
 const k=(at,x=0,y=0,rotate=0,opacity=1,scale=1)=>({at,x,y,rotate,opacity,scale});
 const circle=(x,y,r)=>`M ${x-r} ${y} a ${r} ${r} 0 1 0 ${r*2} 0 a ${r} ${r} 0 1 0 ${-r*2} 0 Z`;
 const ellipse=(x,y,rx,ry)=>`M ${x-rx} ${y} a ${rx} ${ry} 0 1 0 ${rx*2} 0 a ${rx} ${ry} 0 1 0 ${-rx*2} 0 Z`;
@@ -145,6 +146,8 @@ for(const [round,scene] of Object.entries(artworkMotionData)){
  const rhythm=rhythms[round];
  scene.duration=18000;
  scene.sprites.forEach((sprite,index)=>{
+  // Native contour fits remove the pore-colored halo from traveling particles.
+  if(particleContours[round]?.[sprite.id])sprite.clip=particleContours[round][sprite.id];
   sprite.motion=sprite.keyframes.some(frame=>frame.opacity===0)?'transport':'float';
   sprite.period=rhythm[sprite.motion]+(index*3%5)*rhythm.spread;
   sprite.phase=(index*.217+Number(round)*.043)%1;
@@ -170,17 +173,3 @@ for(const [round,scene] of Object.entries(artworkMotionData)){
   };
  });
 }
-artworkMotionData['07'].accents=[
- {id:'receptor-signal',path:'M223 171 Q251 175 271 200',color:'#ffc76b',width:3,opacity:.28,period:3000,phase:.1,span:.23},
- {id:'regulator-signal',path:'M386.74 188.27 C413.26 171.92 439.78 152.56 466.30 161.59',color:'#ffc76b',width:3,opacity:.28,period:3500,phase:.35,span:.2},
- {id:'ras-signal',path:'M564 170 Q588 187 588 220',color:'#ffc76b',width:3,opacity:.25,period:3200,phase:.55,span:.22},
- {id:'nuclear-signal',path:'M508.29 472.80 C465.93 493.56 423.57 449.39 381.22 471.22',color:'#ffc76b',width:3,opacity:.25,period:3800,phase:.7,span:.16}
-];
-artworkMotionData['09'].accents=[
- {id:'golgi-signal',path:'M587 229 Q598 252 597 280',color:'#ffc76b',width:3,opacity:.28,period:3000,phase:.1,span:.22},
- {id:'relay-signal',path:'M596 343 L590 376',color:'#ffc76b',width:3,opacity:.25,period:3300,phase:.4,span:.25},
- {id:'response-signal',path:'M572.38 440.64 C524.13 494.11 475.87 501.36 427.62 492.83',color:'#ffc76b',width:3,opacity:.28,period:4100,phase:.6,span:.13}
-];
-artworkMotionData['10'].accents=[
- {id:'axon-context',target:'neuron-context',path:'M226 447 Q292 444 361 460 T449 486 T540 487 Q598 480 660 462 Q702 436 733 412 T762 397',color:'#a7f4ff',width:3.5,opacity:.36,period:4600,phase:.15,span:.085}
-];
