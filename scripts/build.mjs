@@ -15,7 +15,7 @@ const files = [
   'gene-bank.mjs', 'gene-bank.css', 'discovery-motion.mjs', 'discovery-motion.css',
   'artwork-motion.mjs', 'artwork-motion.css', 'artwork-motion-data.mjs',
   'artwork-detail.mjs', 'artwork-detail-data.mjs', 'artwork-detail-membranes.mjs',
-  'artwork-particle-contours.mjs',
+  'artwork-particle-contours.mjs', 'artwork-object-contours.mjs',
   'piece-motion.mjs', 'piece-motion.css', 'figure-view.mjs',
   'site.mjs', 'site.css', 'about.html', 'about.mjs', 'play.css',
   'science.html', 'science.mjs', 'science.css', 'science-ui.mjs',

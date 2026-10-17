@@ -178,6 +178,21 @@ export function sampleArtworkStage(elapsed,pointer={x:0,y:0}){
 
 function svgNode(tag,attrs={}){const element=document.createElementNS(NS,tag);for(const [key,value] of Object.entries(attrs))element.setAttribute(key,String(value));return element;}
 function node(tag,className,text){const element=document.createElement(tag);if(className)element.className=className;if(text)element.textContent=text;return element;}
+
+export function createArtworkRemovalPatch(sprite){
+  const group=svgNode('g');
+  const radius=Number.isFinite(sprite.cleanupRadius)?Math.max(3,Math.min(12,sprite.cleanupRadius)):3;
+  // Preserve the authored clean area, then cover the complete original and new
+  // object footprints. Round strokes give constant edge clearance; selected
+  // soft shadows can request a measured larger radius. Center scaling leaves
+  // gaps at concavities and thin branches.
+  if(sprite.patch)group.append(svgNode('path',{d:sprite.patch,fill:'#fff'}));
+  for(const footprint of new Set([sprite.removalClip,sprite.clip].filter(Boolean))){
+    group.append(svgNode('path',{d:footprint,fill:'#fff',stroke:'#fff','stroke-width':radius*2,'stroke-linejoin':'round','stroke-linecap':'round'}));
+  }
+  return group;
+}
+
 export function createArtworkStage(board,prefix){
   const frame=board.closest('.board-frame')??board;
   const rim=svgNode('svg',{class:'artwork-stage-rim',viewBox:'0 0 800 600',preserveAspectRatio:'none','aria-hidden':'true',focusable:'false'});
@@ -296,7 +311,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   const movingObjects=svgNode('g',{'aria-hidden':'true'});
   const sprites=scene.sprites.map((sprite,index)=>{
     const clipId=`${prefix}-sprite-${index}`;
-    patchShapes.append(svgNode('path',{d:sprite.patch??sprite.clip,fill:'#fff'}));
+    patchShapes.append(createArtworkRemovalPatch(sprite));
     const clip=svgNode('clipPath',{id:clipId,clipPathUnits:'userSpaceOnUse'});clip.append(svgNode('path',{d:sprite.clip}));defs.append(clip);
     const group=svgNode('g',{'data-artwork-sprite':sprite.id??index});
     const cutout=image(original);cutout.setAttribute('clip-path',`url(#${clipId})`);group.append(cutout);movingObjects.append(group);

@@ -63,3 +63,5 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Connect the phone to a Mac and use Safari Web Inspector for console errors.
 
 Scientific sign-off, physical iPhone/Safari checks, VoiceOver testing, and testing on the final booth hardware remain pending. Browser-width checks do not replace these steps.
+
+For animation edge checks, compare each round before playback with paused frames early and late in its cycle, including the enlarged view. Look for trimmed outlines, stationary duplicate edges, background-colored cutout rims, collisions with fixed molecules, and a visible reset. Specifically inspect the round 07 blue/purple proteins, round 06 free-vesicle rims, and round 10 thin neuron branches. Passing timing tests alone does not verify these visual boundaries.

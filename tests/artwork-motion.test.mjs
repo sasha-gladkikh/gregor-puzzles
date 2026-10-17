@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkEntrance,sampleArtworkStage,createArtworkStage,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork} from '../game/artwork-motion.mjs';
+import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkEntrance,sampleArtworkStage,createArtworkStage,createArtworkRemovalPatch,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork} from '../game/artwork-motion.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -174,6 +174,52 @@ test('transport crosses interior route markers without easing to a stop and loop
   }
 });
 
+function transformedOutlineBounds(sprite,elapsed){
+  assert.ok(sprite.clip.match(/[a-z]/gi).every(command=>['M','L','Z'].includes(command)),'the reference outline parser expects polygon vertices');
+  const values=sprite.clip.match(/-?\d*\.?\d+/g).map(Number),points=[];
+  for(let i=0;i<values.length;i+=2)points.push([values[i],values[i+1]]);
+  const [cx,cy]=sprite.center,frame=sampleArtworkMotion(sprite,elapsed);
+  const angle=frame.rotate*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle);
+  const moved=points.map(([x,y])=>[(x-cx)*frame.scale*c-(y-cy)*frame.scale*s+cx+frame.x,(x-cx)*frame.scale*s+(y-cy)*frame.scale*c+cy+frame.y]);
+  const xs=moved.map(point=>point[0]),ys=moved.map(point=>point[1]);
+  return {left:Math.min(...xs),right:Math.max(...xs),top:Math.min(...ys),bottom:Math.max(...ys),opacity:frame.opacity};
+}
+
+test('lysosomal export cargo never merges with the fixed exterior nucleoside',()=>{
+  const sprite=artworkMotionData['03'].sprites.find(item=>item.id==='transporter-lower-cargo');
+  // Independently measured from the original illustration, not the cargo route.
+  const fixed={left:578,right:629,top:491,bottom:529};
+  for(let elapsed=0;elapsed<=60000;elapsed+=25){
+    const frame=transformedOutlineBounds(sprite,elapsed);if(frame.opacity<.02)continue;
+    const overlaps=frame.right>fixed.left&&frame.left<fixed.right&&frame.bottom>fixed.top&&frame.top<fixed.bottom;
+    assert.equal(overlaps,false,`${elapsed}ms: moving cargo overlaps the fixed exterior molecule`);
+  }
+});
+
+test('the two lysosomal cargos remain visually separate through successive journeys',()=>{
+  const upper=artworkMotionData['03'].sprites.find(item=>item.id==='transporter-upper-cargo');
+  const lower=artworkMotionData['03'].sprites.find(item=>item.id==='transporter-lower-cargo');
+  let compared=0;
+  for(let elapsed=0;elapsed<=300000;elapsed+=25){
+    const a=transformedOutlineBounds(upper,elapsed),b=transformedOutlineBounds(lower,elapsed);
+    if(a.opacity<.02||b.opacity<.02)continue;
+    assert.ok(b.top-a.bottom>=4,`${elapsed}ms: moving cargos merge or lose their visible gap`);compared++;
+  }
+  assert.ok(compared>1000,'many simultaneous visible frames must be checked, including later cycles');
+});
+
+test('vesicle cleanup includes its original soft shadow beyond the solid rim',()=>{
+  const sprite=artworkMotionData['06'].sprites.find(item=>item.id==='closed-vesicle-middle');
+  const match=sprite.patch.match(/^M\s+([\d.]+)\s+([\d.]+)\s+a\s+([\d.]+)\s+([\d.]+)/);
+  assert.ok(match,'the measured shadow cleanup uses an ellipse');
+  const [startX,cy,rx,ry]=match.slice(1).map(Number),cx=startX+rx;
+  // Locations where the original shadow still differs materially from the
+  // clean background. The former rim-only patch left a stationary crescent.
+  for(const [x,y] of [[425,228],[450,228],[450,232],[475,216],[485,205]]){
+    assert.ok(((x-cx)/rx)**2+((y-cy)/ry)**2<.95,`${x},${y}: original vesicle shadow lies outside cleanup`);
+  }
+});
+
 test('organic float drift remains inside every authored axis envelope and preserves fixed edges',()=>{
   for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites.filter(item=>item.motion==='float')){
     for(let elapsed=600;elapsed<=120000;elapsed+=75){
@@ -248,6 +294,60 @@ function stageDocument(){
   const frame=new Element('div'),board=new Element('div');frame.append(board);board.closest=()=>frame;
   return {document:{createElementNS:(_ns,tag)=>new Element(tag)},board,frame};
 }
+
+test('cleanup retains the original footprint when a replacement cutout has a tighter boundary',context=>{
+  const previous=globalThis.document,{document}=stageDocument();
+  globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
+  const sprite={
+    removalClip:'M0 0 L20 0 L20 2 L4 2 L4 20 L0 20 Z',
+    clip:'M1 1 L19 1 L19 2 L3 2 L3 19 L1 19 Z',
+    patch:'M-1 -1 L21 -1 L21 3 L5 3 L5 21 L-1 21 Z'
+  };
+  const group=createArtworkRemovalPatch(sprite),paths=group.children;
+  assert.equal(paths.length,3,'old footprint, new cutout, and existing clean area all remain represented');
+  for(const footprint of [sprite.removalClip,sprite.clip]){
+    const path=paths.find(item=>item.attrs.get('d')===footprint);
+    assert.ok(path,'a tighter contour cannot strand pixels from the previous object');
+    assert.equal(path.attrs.get('fill'),'#fff');assert.equal(path.attrs.get('stroke'),'#fff');
+    assert.equal(path.attrs.get('stroke-width'),'6','three logical pixels of cleanup clearance on every edge');
+    assert.equal(path.attrs.get('stroke-linejoin'),'round','thin branch joins cannot create long miter artifacts');
+    assert.equal(path.attrs.has('transform'),false,'center scaling cannot replace true edge dilation');
+  }
+  const authored=paths.find(item=>item.attrs.get('d')===sprite.patch);
+  assert.ok(authored,'the authored cleanup area must survive independently of clip refinement');
+  assert.equal(authored.attrs.has('stroke'),false,'existing broad patches do not receive an additional broad expansion');
+});
+
+test('every animated object receives constant cleanup clearance, including thin and concave silhouettes',context=>{
+  const previous=globalThis.document,{document}=stageDocument();
+  globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
+  for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites){
+    const group=createArtworkRemovalPatch(sprite),footprints=new Set([sprite.removalClip,sprite.clip].filter(Boolean));
+    const dilated=group.children.filter(path=>path.attrs.has('stroke'));
+    assert.equal(dilated.length,footprints.size,`${number}/${sprite.id}: one cleanup boundary per distinct footprint`);
+    for(const path of dilated){
+      assert.ok(footprints.has(path.attrs.get('d')),`${number}/${sprite.id}: exact original boundary retained`);
+      assert.equal(path.attrs.get('stroke-width'),String((sprite.cleanupRadius??3)*2),`${number}/${sprite.id}: constant measured clearance`);
+      assert.equal(path.attrs.get('stroke-linejoin'),'round');
+      assert.equal(path.attrs.get('stroke-linecap'),'round');
+    }
+  }
+});
+
+test('only measured fragment shadows expand cleanup beyond the default narrow footprint',context=>{
+  const previous=globalThis.document,{document}=stageDocument();
+  globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
+  const measured=[['lysosome-fragment-upper',4],['lysosome-fragment-lower',6]];
+  for(const [id,shadowDistance] of measured){
+    const sprite=artworkMotionData['03'].sprites.find(item=>item.id===id);
+    const paths=createArtworkRemovalPatch(sprite).children.filter(path=>path.attrs.has('stroke'));
+    for(const path of paths)assert.ok(Number(path.attrs.get('stroke-width'))/2>=shadowDistance+1,`${id}: cleanup must reach beyond the measured original shadow`);
+  }
+  for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites){
+    if(number==='03'&&measured.some(([id])=>id===sprite.id))continue;
+    assert.equal(sprite.cleanupRadius,undefined,`${number}/${sprite.id}: unrelated structures must keep narrow cleanup`);
+  }
+});
 
 test('stage waits for playback, shares the pause clock, and completely restores the original frame on reset',context=>{
   const previous=globalThis.document,{document,board,frame}=stageDocument();
