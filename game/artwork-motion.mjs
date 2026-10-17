@@ -1,4 +1,5 @@
 import {artworkMotionData} from './artwork-motion-data.mjs';
+import {artworkSource} from './artwork-source.mjs';
 
 const NS='http://www.w3.org/2000/svg';
 const clamp=value=>Math.max(0,Math.min(1,value));
@@ -50,9 +51,16 @@ export function interpolateArtworkSprite(sprite,progress){
   values.opacity=clamp(values.opacity);return values;
 }
 
+export function sampleArtworkEntrance(elapsed){
+  const time=Math.max(0,elapsed),join=clamp((time-120)/480);
+  return {opacity:clamp(time/120),motion:join*join*join*(join*(join*6-15)+10)};
+}
+
 // Independent clocks keep neighboring objects from moving in lockstep. Secondary
 // drift is optional and never changes the direction of a transport path.
 export function sampleArtworkMotion(sprite,elapsed,duration=18000,pointer={x:0,y:0}){
+  const entrance=sampleArtworkEntrance(elapsed).motion;
+  if(entrance===0)return {x:0,y:0,rotate:0,scale:1,opacity:1};
   const position=cycle(elapsed/(sprite.period??duration)+(sprite.phase??0));
   const frame=interpolateArtworkSprite(sprite,position),secondary=sprite.secondary;
   if(secondary){
@@ -65,6 +73,12 @@ export function sampleArtworkMotion(sprite,elapsed,duration=18000,pointer={x:0,y
     const depth=clamp(sprite.parallax??1);
     frame.x+=signed(pointer.x)*2*depth;frame.y+=signed(pointer.y)*2*depth;
   }
+  // First crossfade an exactly registered image, then introduce the motion.
+  // Shifted cutouts never blend over a visible copy of their still originals.
+  if(entrance===1)return frame;
+  for(const key of ['x','y','rotate'])frame[key]*=entrance;
+  frame.scale=1+(frame.scale-1)*entrance;
+  frame.opacity=1+(frame.opacity-1)*entrance;
   return frame;
 }
 
@@ -170,7 +184,7 @@ export function createArtworkAssetCache(load){
 }
 const assetCache=createArtworkAssetCache(source=>loadedImage(source,new Map()));
 function artworkSources(round,scene){
-  const original=new URL(round.artwork,import.meta.url).href;
+  const original=new URL(artworkSource(round),import.meta.url).href;
   const cleanURL=new URL(scene.cleanPath??`./artwork/motion/${round.number}-clean.png`,import.meta.url);
   const revision=new URL(import.meta.url).searchParams.get('v');
   if(revision&&!cleanURL.searchParams.has('v'))cleanURL.searchParams.set('v',revision);
@@ -240,7 +254,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
   let disposed=false,assetsReady=false,failed=false,visible=false,pendingPlay=Boolean(autoplay)&&!media.matches,played=false;
   let loading=null,resolveDisposed;
   const disposedPromise=new Promise(resolve=>{resolveDisposed=()=>resolve(false);});
-  const pointer={x:0,y:0},targetPointer={x:0,y:0};let lastDraw=0;
+  const pointer={x:0,y:0},targetPointer={x:0,y:0};let lastDraw=0,lastOpacity=null,lastEntering=null;
   function paint(){
     controls.hidden=media.matches;button.disabled=!assetsReady&&!failed;
     label.textContent=failed?'Retry illustration':!assetsReady?'Preparing illustration':clock.playing?'Pause illustration':clock.elapsed>0?'Resume illustration':'Play illustration';
@@ -253,6 +267,7 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
     if(media.matches||!assetsReady)element.hidden=true;
   }
   function draw(position,elapsed=0){
+    const entrance=sampleArtworkEntrance(elapsed);
     const blend=1-Math.exp(-Math.min(64,Math.max(0,elapsed-lastDraw))/170);lastDraw=elapsed;
     pointer.x+=(targetPointer.x-pointer.x)*blend;pointer.y+=(targetPointer.y-pointer.y)*blend;
     stage.draw(elapsed,pointer);
@@ -263,11 +278,13 @@ export function animatedArtwork(round,{board,autoplay=false}={}){
     }
     for(const {data,group,paths,length} of accents){
       const progress=cycle(elapsed/(data.period??7000)+(data.phase??0));
-      group.setAttribute('opacity',String(clamp(data.opacity??.16)*Math.pow(Math.sin(Math.PI*progress),2)));
+      group.setAttribute('opacity',String(entrance.motion*clamp(data.opacity??.16)*Math.pow(Math.sin(Math.PI*progress),2)));
       for(const path of paths)path.setAttribute('stroke-dashoffset',String(length*(1-progress)));
     }
-    // Fade once on entry. Every subsequent cycle preserves the full image.
-    element.style.opacity=String(clamp(elapsed/350));
+    // Opacity is no longer touched after entry, and its compositor hint is released.
+    const opacity=String(entrance.opacity),entering=entrance.opacity<1;
+    if(opacity!==lastOpacity){element.style.opacity=opacity;lastOpacity=opacity;}
+    if(entering!==lastEntering){element.classList.toggle('is-entering',entering);lastEntering=entering;}
   }
   const clock=createArtworkClock({duration:scene.duration??18000,loop:true,onFrame:draw,onState:paint});
   function maybePlay(){

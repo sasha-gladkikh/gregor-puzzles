@@ -1,0 +1,85 @@
+{
+  "encoding": "Lossless WebP of approved native PNG masters. No resizing, redrawing, or added pixels.",
+  "images": [
+    {
+      "round": "01",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1193430,
+      "sourceSha256": "a85464c70be115a1e850db2d58e41f2cc3d4b39df6bf1317b08bf17754c32d8b",
+      "pixelSha256": "adc6d1c8ccc4f810082696eb546c84727e063992262148a85c3205f682c59f56"
+    },
+    {
+      "round": "02",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1195394,
+      "sourceSha256": "04841447e1f4e8fe31ff21c2b24c2026bf083ae6c37b791a2a67a3ace999ce3f",
+      "pixelSha256": "9467a57c02124f1471dd964d3d8c22cdf0b1906eae44acd5913fd80ca29ddf30"
+    },
+    {
+      "round": "03",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1240932,
+      "sourceSha256": "2838565171b87a1555aba153c76c4ee528ee966eed8a425d0a5f43d9201681d5",
+      "pixelSha256": "258bcaa4e942ceb0fb6e8d4a6353510ad94813499f8ed43040e77f07b434add1"
+    },
+    {
+      "round": "04",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1012902,
+      "sourceSha256": "68f90336d5efddb2a4fab7ae339fb636374fd48f767e12db62f3e167473585a8",
+      "pixelSha256": "efb3a6c6cd772770a89177e9b6f83e5e8a3620932665024232757f133aa58189"
+    },
+    {
+      "round": "05",
+      "width": 1447,
+      "height": 1087,
+      "bytes": 1166966,
+      "sourceSha256": "06a6fbbfc1a3f490562c5b7fb466666e011428ed9655e6c33a6739fce087fc05",
+      "pixelSha256": "35eef0a6869d7d9ea05770a80ac7780309813bf2b6f87bcd0efade8ce3fb6515"
+    },
+    {
+      "round": "06",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1095310,
+      "sourceSha256": "141b123f55392bc4974c752a258f74774673d5fbbde8d71f6f5fb1edd946b59f",
+      "pixelSha256": "c92eb33cda64da7ad9a42d8a363fe82c6ffd4fdf8ee2deffbd615c6fdf231f1e"
+    },
+    {
+      "round": "07",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1060650,
+      "sourceSha256": "af026bbc5f7469a7aa2eb0b411cd3905b7dc12b295e26970c3455152853c3328",
+      "pixelSha256": "318b5a5e92a51ea7dab3b23f9df0d66b6ad5ea91fab8e10717147c5206060860"
+    },
+    {
+      "round": "08",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1098218,
+      "sourceSha256": "8f809475e3d5c0deb413cc38a7c998afc16dbaa3bfb7a541bb1264cb7e2b9560",
+      "pixelSha256": "5f07845efe79d7ba7b6874dfbe221bac949e2de1b02b73afe709f66b7a9d713c"
+    },
+    {
+      "round": "09",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1189572,
+      "sourceSha256": "a88bc556b2d5693e45af30b3cc646fa7bc7e3058f7734ce1d8c98fb9a0381372",
+      "pixelSha256": "4163e655db89a67355f470961d044ae14dcc3cb20bdb34d39370e221420e2902"
+    },
+    {
+      "round": "10",
+      "width": 1448,
+      "height": 1086,
+      "bytes": 1009606,
+      "sourceSha256": "043bf433136e490034b8069d77485deef2826cb6bf366e236c232661236e620e",
+      "pixelSha256": "13c64fcf95d87ffe38e6e801953d3a5f5ff0a2576e9ae46953a83b80e1e2daf2"
+    }
+  ]
+}

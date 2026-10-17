@@ -1,6 +1,7 @@
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
 import {hpoTerms} from './hpo-terms.mjs';
 import {artworkMarkers} from './artwork-ui.mjs';
+import {artworkSrcset} from './artwork-source.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {interpretationPrinciples} from './interpretation.mjs';
 
@@ -8,7 +9,10 @@ export function scientificFigure(round){
  const section=node('section',null,'science-visual');
  const figure=node('figure',null,'science-figure');
  const imageBox=node('div',null,'artwork-figure');
- const image=node('img');image.src=round.artwork;image.alt=round.description;image.width=800;image.height=600;image.decoding='async';
+ const image=node('img');image.src=round.artwork;image.srcset=artworkSrcset(round);
+ // Match the scientific profile's sidebar, split opening, and phone figure cap.
+ image.sizes='(max-width:600px) calc(100vw - 34px), (max-width:700px) min(618px, calc(100vw - 42px)), (max-width:800px) calc(47.5vw - 33.35px), (max-width:1000px) calc(47.5vw - 40.95px), (max-width:1180px) calc(47.5vw - 125.5px), (max-width:1416px) calc(47.5vw - 145.45px), 527px';
+ image.alt=round.description;image.width=800;image.height=600;image.decoding='async';
  const selected=node('div',null,'science-selected-note');selected.setAttribute('aria-live','polite');selected.setAttribute('aria-atomic','true');
  const list=node('ol',null,'figure-steps');
  const controls=[];

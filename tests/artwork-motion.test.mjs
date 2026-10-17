@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkStage,createArtworkStage,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork} from '../game/artwork-motion.mjs';
+import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkEntrance,sampleArtworkStage,createArtworkStage,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork} from '../game/artwork-motion.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -65,11 +65,38 @@ test('continuous artwork crosses cycle boundaries without restarting its clock o
 test('independent periods and phases keep neighboring objects asynchronous and seamless',()=>{
   const frames=[{at:0,x:0},{at:.5,x:20},{at:1,x:0}];
   const first={keyframes:frames,period:6000,phase:0},second={keyframes:frames,period:8000,phase:.25};
-  assert.equal(sampleArtworkMotion(first,0).x,0);assert.equal(sampleArtworkMotion(second,0).x,10);
+  assert.equal(sampleArtworkMotion(first,0).x,0);assert.equal(sampleArtworkMotion(second,0).x,0);
+  assert.notEqual(sampleArtworkMotion(first,800).x,sampleArtworkMotion(second,800).x);
   const firstPass=sampleArtworkMotion(first,1700),nextPass=sampleArtworkMotion(first,7700);
   for(const key of Object.keys(firstPass))assert.ok(Math.abs(firstPass[key]-nextPass[key])<1e-12);
   assert.notEqual(sampleArtworkMotion(first,1700).x,sampleArtworkMotion(second,1700).x);
   assert.ok(Math.abs(sampleArtworkMotion(first,5999.99).x-sampleArtworkMotion(first,6000.01).x)<1e-8);
+});
+
+test('every cutout remains registered with the source image throughout the opening crossfade',()=>{
+  const original={x:0,y:0,rotate:0,scale:1,opacity:1};
+  for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites){
+    for(const elapsed of [0,60,120])assert.deepEqual(sampleArtworkMotion(sprite,elapsed,scene.duration,{x:1,y:-1}),original,`${number}/${sprite.id}/${elapsed}`);
+  }
+  let previous=0;
+  for(let elapsed=0;elapsed<=600;elapsed++){
+    const entrance=sampleArtworkEntrance(elapsed);
+    assert.ok(entrance.motion>=previous&&entrance.motion<=1);previous=entrance.motion;
+    if(entrance.motion>0)assert.equal(entrance.opacity,1,'No shifted object blends over the still original');
+    if(entrance.opacity<1)assert.equal(entrance.motion,0);
+  }
+  assert.deepEqual(sampleArtworkEntrance(600),{opacity:1,motion:1});
+  assert.deepEqual(sampleArtworkEntrance(120000),{opacity:1,motion:1});
+});
+
+test('the entrance envelope reaches independent motion without position, scale, or opacity discontinuities',()=>{
+  const sprite={period:10000,phase:.25,keyframes:[{at:0},{at:.5,x:80,y:-30,rotate:12,scale:1.1,opacity:.35},{at:1}]};
+  for(const center of [120,600]){
+    const before=sampleArtworkMotion(sprite,center-.001),after=sampleArtworkMotion(sprite,center+.001);
+    for(const key of Object.keys(before))assert.ok(Math.abs(before[key]-after[key])<.001,`${center}/${key}`);
+  }
+  const expected=interpolateArtworkSprite(sprite,.31);
+  for(const elapsed of [600,10600])for(const [key,value] of Object.entries(sampleArtworkMotion(sprite,elapsed)))assert.ok(Math.abs(value-expected[key])<1e-10,`${elapsed}/${key}`);
 });
 
 test('pointer parallax affects only floating objects and cannot exceed two logical pixels',()=>{
@@ -260,6 +287,20 @@ test('all moving objects begin and finish in the exact original composition',()=
     assert.deepEqual(interpolateArtworkSprite(sprite,1),original,`${number}/${sprite.id}: restored position`);
     for(const position of [.1,.25,.5,.75,.9])assert.ok(Object.values(interpolateArtworkSprite(sprite,position)).every(Number.isFinite),`${number}/${sprite.id}: non-finite interpolated frame`);
   }
+});
+
+test('edge-cut exon artwork covers the canvas boundary throughout its vertical motion',()=>{
+  const sprite=artworkMotionData['08'].sprites.find(item=>item.id==='joined-exon-product');
+  assert.match(sprite.clip,/ C /,'the native RNA boundary uses smooth curves rather than pixel stair steps');
+  const endpoints=path=>[Number(path.match(/^M\s+([-\d.]+)/)[1]),Number(path.match(/L\s+([-\d.]+)\s+[-\d.]+\s+Z$/)[1])];
+  const clip=endpoints(sprite.clip),patch=endpoints(sprite.patch);
+  for(let i=0;i<2;i++){
+    assert.ok(clip[i]>800,'the moving cutout must reach beyond the right canvas edge');
+    assert.ok(patch[i]>=clip[i]+3,'the feathered patch must fully cover the original edge pixels');
+  }
+  assert.equal(sprite.parallax,0,'lateral parallax would expose the cropped edge');
+  for(const frame of sprite.keyframes){assert.equal(Math.abs(frame.x),0);assert.equal(Math.abs(frame.rotate),0);}
+  assert.equal(sprite.secondary.x,0);assert.equal(sprite.secondary.rotate,0);
 });
 
 test('all ten clean background plates retain 4:3 framing within native raster rounding',async()=>{

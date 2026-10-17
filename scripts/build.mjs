@@ -10,7 +10,7 @@ const files = [
   'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
-  'artwork-data.mjs', 'artwork-ui.mjs', 'artwork.css',
+  'artwork-data.mjs', 'artwork-ui.mjs', 'artwork-source.mjs', 'artwork.css',
   'experience.mjs', 'experience.css',
   'gene-bank.mjs', 'gene-bank.css', 'discovery-motion.mjs', 'discovery-motion.css',
   'artwork-motion.mjs', 'artwork-motion.css', 'artwork-motion-data.mjs',

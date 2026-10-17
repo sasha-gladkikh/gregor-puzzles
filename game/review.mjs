@@ -1,5 +1,6 @@
 import {allRounds as rounds,rounds as playable,findRound,searchText} from './rounds.mjs';
 import {artworkMarkers} from './artwork-ui.mjs';
+import {artworkSrcset} from './artwork-source.mjs';
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {illustrationWalkthrough} from './experience.mjs';
@@ -20,7 +21,10 @@ for(const round of rounds){
  if(playable.includes(round)){const play=node('a','Play this round','tool');play.href=`./?level=${round.number}`;links.append(play);}head.append(links);card.append(head);
  const body=node('div',null,'review-columns'),visual=node('div',null,'review-visual');
  const figure=node('div',null,'artwork-figure');
- const img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';figure.append(img,artworkMarkers(round));
+ const img=node('img');img.src=round.artwork;img.srcset=artworkSrcset(round);
+ // Match the review card padding and its 42.5% visual column above 900px.
+ img.sizes='(max-width:600px) calc(100vw - 68px), (max-width:800px) min(678px, calc(100vw - 92px)), (max-width:900px) min(678px, calc(100vw - 108px)), (max-width:1416px) calc(42.5vw - 67.45px), 534px';
+ img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';img.decoding='async';figure.append(img,artworkMarkers(round));
  const walkthrough=illustrationWalkthrough(round,{board:figure,id:`review-walkthrough-${round.number}`,onStep:i=>{cards.forEach(c=>{if(c.card!==card)c.walkthrough.pause();});figure.querySelectorAll('.artwork-marker').forEach((m,j)=>m.classList.toggle('is-active',i===j));},onClose:()=>figure.querySelectorAll('.artwork-marker').forEach(m=>m.classList.remove('is-active'))});
  visual.append(figure,walkthrough.element);
  visual.append(node('p',round.illustration.note,'review-figure-note'));

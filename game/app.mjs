@@ -13,9 +13,11 @@ import {animatedArtwork,preloadArtwork,createCompletionPlaybackGate} from './art
 import {discoveryMotion} from './discovery-motion.mjs';
 import {createPieceMotion} from './piece-motion.mjs';
 import {createFigureView} from './figure-view.mjs';
+import {artworkSource} from './artwork-source.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
+const artwork=artworkSource(round);
 
 const $ = id => document.getElementById(id);
 renderSite({active:'play',roundNumber:round.number,playControls:true});
@@ -89,7 +91,7 @@ function svgEl(tag,attrs={}) { const n=document.createElementNS(NS,tag); Object.
 function artworkPiece(id,prefix) {
   const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
   clip.append(svgEl('path',{d:pathFor(id)})); const defs=svgEl('defs'); defs.append(clip); g.append(defs);
-  g.append(svgEl('image',{href:round.artwork,width:W,height:H,'clip-path':`url(#${prefix+id})`}));
+  g.append(svgEl('image',{href:artwork,width:W,height:H,preserveAspectRatio:'none','clip-path':`url(#${prefix+id})`}));
   g.append(svgEl('path',{d:pathFor(id),class:'piece-outline','vector-effect':'non-scaling-stroke'})); return g;
 }
 const slotAt = i => board.querySelector(`[data-slot="${i}"] .slot`);
@@ -409,7 +411,7 @@ $('roundLabel').textContent=`Round ${round.number} / ${String(allRounds.length).
 $('roundTitle').textContent=round.title;
 $('libraryLabel').textContent=`Browse rounds`;
 $('figureLabel').textContent=`FIG. ${round.number} / ${round.topic.toUpperCase()}`;
-$('reference').src=round.artwork; $('reference').alt=diagramDescription;
+$('reference').src=artwork; $('reference').alt=diagramDescription;
 $('diagramDescription').textContent=diagramDescription;
 $('revealGene').textContent=round.gene;$('revealCondition').textContent=round.condition;$('revealAlias').textContent=round.otherName;
 $('revealMetadata').append(node('span',round.inheritance),citation(`https://omim.org/entry/${round.omim}`,`OMIM ${round.omim}`));

@@ -2,6 +2,7 @@ import {collectionProgress} from './collection.mjs';
 import {findRound} from './rounds.mjs';
 import {completedGuideRounds,guideClinicalSections,guideReferences,relatedCompletedRounds,splicingPairComplete} from './collection-data.mjs';
 import {renderSite} from './site.mjs';
+import {artworkSrcset} from './artwork-source.mjs';
 
 const currentRound=findRound(new URLSearchParams(location.search).get('level'));
 renderSite({active:'collection',roundNumber:currentRound.number,playControls:false});
@@ -14,7 +15,10 @@ function entry(round,progress){
  const h=node('h2',round.gene);header.append(identity,h,node('p',round.condition,'guide-condition'));
  const meta=node('div',null,'guide-meta');meta.append(node('span',round.inheritance),external(`OMIM ${round.omim}`,`https://omim.org/entry/${round.omim}`));
  const variant=node('p',null,'guide-variant');variant.append(node('strong','Variant context: '),document.createTextNode(round.variant));header.append(meta,variant);article.append(header);
- const visual=node('figure',null,'guide-visual'),img=node('img');img.src=round.artwork;img.alt=round.description;img.width=800;img.height=600;img.decoding='async';
+ const visual=node('figure',null,'guide-visual'),img=node('img');img.src=round.artwork;img.srcset=artworkSrcset(round);
+ // Entries cap at 1076px; the illustration occupies 47.5% of their inner grid.
+ img.sizes='(max-width:400px) calc(100vw - 66px), (max-width:600px) min(500px, calc(100vw - 82px)), (max-width:750px) min(500px, calc(100vw - 90px)), (max-width:800px) calc(47.5vw - 67.45px), (max-width:1132px) calc(47.5vw - 75.05px), 463px';
+ img.alt=round.description;img.width=800;img.height=600;img.decoding='async';
  const caption=node('figcaption');caption.append(node('p',round.illustration.takeaway),node('p',round.illustration.note));visual.append(img,caption);
  const text=node('div',null,'guide-text'),implications=node('div',null,'guide-implications');
  guideClinicalSections(round).forEach(({label,text:body},index)=>{const section=node('section');section.append(node('h3',label),node('p',body));(index<3?text:implications).append(section);});
