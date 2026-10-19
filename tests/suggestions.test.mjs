@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateSuggestion,createSuggestionSession,sendSuggestion} from '../game/suggestions.mjs';
+import {validateSuggestion,createSuggestionSession,sendSuggestion,initSuggestionForm} from '../game/suggestions.mjs';
 
 const values={gene:'FAM177A1',condition:'Example published condition',phenotypes:'Developmental delay\nHypotonia',reference:'',name:'',email:'',website:''};
 const ids=['d2fbb2bb-e992-41f2-9535-fbf6f6692860','af591071-7183-4c92-b514-91d42f7c4706','3ad43a7f-d8ea-489c-9bee-de17e1532ac2'];
@@ -12,8 +12,17 @@ test('suggestions accept anonymous input, normalize whitespace and preserve phen
  assert.deepEqual(validateSuggestion({...values,name:' Sasha ',email:' test@example.org '}),{...values,name:'Sasha',email:'test@example.org'});
 });
 
+test('suggestions accept a gene, a condition, or both while still requiring clinical features',()=>{
+ assert.deepEqual(validateSuggestion({...values,condition:'  '}),{...values,condition:''});
+ assert.deepEqual(validateSuggestion({...values,gene:'  '}),{...values,gene:''});
+ assert.equal(validateSuggestion({gene:values.gene,phenotypes:values.phenotypes}).condition,'');
+ assert.equal(validateSuggestion({condition:values.condition,phenotypes:values.phenotypes}).gene,'');
+ for(const topic of [{gene:'',condition:''},{gene:'  ',condition:'  '}])assert.throws(()=>validateSuggestion({...values,...topic}),error=>error.field==='gene'&&error.message==='Add a gene or condition.');
+ for(const topic of [{gene:values.gene,condition:''},{gene:'',condition:values.condition}])assert.throws(()=>validateSuggestion({...values,...topic,phenotypes:'  '}),error=>error.field==='phenotypes');
+});
+
 test('suggestions reject missing required values, oversize fields and unsupported controls',()=>{
- for(const key of ['gene','condition','phenotypes'])assert.throws(()=>validateSuggestion({...values,[key]:'  '}),error=>error.field===key);
+ assert.throws(()=>validateSuggestion({...values,phenotypes:'  '}),error=>error.field==='phenotypes');
  for(const [key,max] of [['gene',60],['condition',160],['phenotypes',2000],['reference',500],['name',100],['email',254]])assert.throws(()=>validateSuggestion({...values,[key]:'x'.repeat(max+1)}),error=>error.field===key);
  for(const key of ['gene','condition','phenotypes','name'])assert.throws(()=>validateSuggestion({...values,[key]:'before\u0000after'}),error=>error.field===key);
  assert.throws(()=>validateSuggestion({...values,gene:'FAM\n177A1'}),error=>error.field==='gene');
@@ -48,6 +57,42 @@ test('submission sends CORS JSON only to the receiver and requires its confirmed
  assert.ok(!call.url.includes('reviewer'));
 });
 
+test('gene-only and condition-only submissions send the missing topic as blank',async()=>{
+ for(const missing of ['gene','condition']){
+  let sent;
+  assert.deepEqual(await sendSuggestion({...payload,[missing]:''},{endpoint,fetchImpl:async(_url,options)=>{sent=JSON.parse(options.body);return {ok:true,json:async()=>({ok:true,receipt:ids[0]})};}}),{receipt:ids[0]});
+  assert.equal(sent[missing],'');
+  assert.equal(sent.phenotypes,values.phenotypes);
+ }
+});
+
+test('editing either topic clears the shared validation error and invalid optional fields are revealed',()=>{
+ const handlers=new Map();
+ const outer={open:false,parentElement:null};
+ const optional={open:false,parentElement:{closest:()=>outer}};
+ const control=name=>({name,validationMessage:'',setCustomValidity(message){this.validationMessage=message;},closest:()=>null});
+ const gene=control('gene'),condition=control('condition'),email=control('email');
+ email.closest=()=>optional;
+ const elements={gene,condition,email};
+ const fieldset={disabled:true};
+ const form={elements:{namedItem:name=>elements[name]},addEventListener:(type,handler,capture)=>handlers.set(type,{handler,capture})};
+ const nodes={suggestionForm:form,suggestionFields:fieldset,suggestionAnother:{addEventListener(){}}};
+ initSuggestionForm({getElementById:id=>nodes[id]});
+ assert.equal(fieldset.disabled,false);
+ for(const changed of [gene,condition]){
+  gene.setCustomValidity('Add a gene or condition.');
+  handlers.get('input').handler({target:changed});
+  assert.equal(gene.validationMessage,'');
+ }
+ gene.setCustomValidity('Keep gene to 60 characters or fewer.');
+ handlers.get('input').handler({target:condition});
+ assert.equal(gene.validationMessage,'Keep gene to 60 characters or fewer.');
+ assert.equal(handlers.get('invalid').capture,true);
+ handlers.get('invalid').handler({target:email});
+ assert.equal(optional.open,true);
+ assert.equal(outer.open,true);
+});
+
 test('network errors, opaque/failed responses, and malformed receipts never become success',async()=>{
  const badResponses=[
   {ok:false,json:async()=>({ok:true,receipt:ids[0]})},
@@ -63,6 +108,6 @@ test('invalid payload or non-receiver destination is rejected before contacting 
  let contacted=false;const fetchImpl=async()=>{contacted=true;throw Error('unexpected request');};
  for(const destination of ['', 'https://example.org/collect','https://script.google.com/macros/s/id/exec?redirect=elsewhere','http://script.google.com/macros/s/id/exec'])await assert.rejects(sendSuggestion(payload,{endpoint:destination,fetchImpl}),/temporarily unavailable/);
  await assert.rejects(sendSuggestion({...payload,requestId:'not-a-uuid'},{endpoint,fetchImpl}),/reload/);
- await assert.rejects(sendSuggestion({...payload,gene:''},{endpoint,fetchImpl}),/Please enter/);
+ await assert.rejects(sendSuggestion({...payload,gene:'',condition:''},{endpoint,fetchImpl}),/Add a gene or condition\./);
  assert.equal(contacted,false);
 });

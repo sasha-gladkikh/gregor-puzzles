@@ -11,8 +11,10 @@ const RETRY_SECONDS = 21600;
 const MAX_REQUEST_BYTES = 16000;
 const MAX_SUBMISSIONS_PER_MINUTE = 120;
 const SUGGESTION_FIELDS = [
-  {key: 'gene', title: 'Gene', max: 60, required: true},
-  {key: 'condition', title: 'Condition', max: 160, required: true},
+  // The website needs either topic. The existing native form still requires
+  // both fields; missing values are recorded explicitly as "Not specified".
+  {key: 'gene', title: 'Gene', max: 60, formRequired: true},
+  {key: 'condition', title: 'Condition', max: 160, formRequired: true},
   {key: 'phenotypes', title: 'Phenotypes', max: 2000, required: true, paragraph: true},
   {key: 'reference', title: 'Reference (optional)', max: 500},
   {key: 'name', title: 'Name (optional)', max: 100},
@@ -83,6 +85,7 @@ function validatedPayload_(event) {
     value = value.trim();
     if ((field.required && !value) || value.length > field.max) throw publicError_('Please check the ' + field.key + ' field (maximum ' + field.max + ' characters).');
     result[field.key] = value;
+    if (field.key === 'condition' && !result.gene && !result.condition) throw publicError_('Add a gene or condition.');
   });
   if (result.reference && !validReference_(result.reference)) throw publicError_('Please enter a valid http or https reference link without a username or password.');
   if (result.email && !validEmail_(result.email)) throw publicError_('Please enter a valid email address or leave email blank.');
@@ -98,7 +101,7 @@ function checkedForm_(form) {
     const expected = field.paragraph ? FormApp.ItemType.PARAGRAPH_TEXT : FormApp.ItemType.TEXT;
     if (matches.length !== 1 || matches[0].getType() !== expected) throw new Error('Form schema mismatch');
     const typed = field.paragraph ? matches[0].asParagraphTextItem() : matches[0].asTextItem();
-    if (typed.isRequired() !== Boolean(field.required)) throw new Error('Form requirements mismatch');
+    if (typed.isRequired() !== Boolean(field.formRequired || field.required)) throw new Error('Form requirements mismatch');
     return typed;
   });
 }
@@ -133,7 +136,8 @@ function doPost(event) {
     const items = checkedForm_(form);
     let response = form.createResponse();
     SUGGESTION_FIELDS.forEach(function (field, index) {
-      if (input[field.key]) response = response.withItemResponse(items[index].createResponse(input[field.key]));
+      const answer = input[field.key] || (field.formRequired ? 'Not specified' : '');
+      if (answer) response = response.withItemResponse(items[index].createResponse(answer));
     });
     const receipt = Utilities.getUuid();
     // Do not store answers or email in the cache. A pending record limits retries

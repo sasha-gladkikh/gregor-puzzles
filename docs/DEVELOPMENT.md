@@ -25,6 +25,10 @@ The ten-round catalog is in `game/rounds.mjs`; clinical profiles, completion-car
 
 Keep repeated content to a minimum: one completed gene–condition summary, one illustration guide, and one external link per reference within each round. Group related findings under shared headings and citations. Repeat navigation only where it helps people move through the site.
 
+The homepage uses `game/home-demo.mjs` for a final-piece interaction and a brief, illustrative channel-motion sequence. It never changes game progress. `game/puzzle-geometry.mjs` supplies the same piece paths to the preview and game. The diagram in `game/home-map.mjs` groups the currently playable rounds by process; it is a conceptual navigation aid, not a complete anatomical model.
+
+The build generates `home-data.mjs` from the playable catalogue, prerenders homepage navigation, and filters static featured cards and process links through `scripts/homepage.mjs`. This keeps the no-JavaScript fallback within the same approval boundary. Detailed clinical modules are loaded with the community module only when the leaderboard approaches the viewport. Header and hero Play links share the same saved-progress destination. The printed root-URL QR code is unchanged.
+
 The shared shell is in `game/site.mjs` and `game/site.css`: linked Stanford affiliation, Home / Play / Collection / Science navigation, and the project footer. `game/about.html` describes the project. The original logo remains in `game/icons/`; its display frame crops transparent vertical padding without stretching the artwork. Source Sans 3 is self-hosted in `game/fonts/`, with Adobe source details and the SIL Open Font License.
 
 `game/play.css` controls the responsive board, adjacent desktop tray, phone layout, completion card, and Focus view. The completion summary pairs gene, condition, and one memory connection beside the desktop illustration or below the phone image; clinical context and previous clues remain expandable. `game/experience.mjs` contains synthesized audio with a saved mute preference and the collection logo animation.

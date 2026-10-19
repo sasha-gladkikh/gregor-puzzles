@@ -1,66 +1,147 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex, nofollow, noimageindex, nosnippet"><meta name="theme-color" content="#0c063f"><meta name="description" content="Piece together the biology. Ten illustrated puzzles connecting genes, molecular mechanisms, and rare diseases."><meta name="apple-mobile-web-app-title" content="GREGoR Puzzles"><title>GREGoR Puzzles · Piece together the biology</title>
-<link rel="icon" type="image/png" href="./icons/brand-mark.png"><link rel="apple-touch-icon" href="./icons/apple-touch-icon.png"><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./brand.css"><link rel="stylesheet" href="./site.css"><link rel="stylesheet" href="./home.css"><script type="module" src="./home.mjs"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noimageindex, nosnippet">
+  <meta name="theme-color" content="#0c063f">
+  <meta name="description" content="Piece together the biology. Ten illustrated puzzles connecting genes, molecular mechanisms, and rare diseases.">
+  <meta name="apple-mobile-web-app-title" content="GREGoR Puzzles">
+  <title>GREGoR Puzzles · Piece together the biology</title>
+  <link rel="icon" type="image/png" href="./icons/brand-mark.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./brand.css">
+  <link rel="stylesheet" href="./site.css">
+  <link rel="stylesheet" href="./home.css">
+  <link rel="stylesheet" href="./home-demo.css">
+  <link rel="stylesheet" href="./home-map.css">
+  <script type="module" src="./home.mjs"></script>
 </head>
 <body class="home-page">
-<a class="skip" href="#home">Skip to content</a><div id="siteHeader"></div>
-<main id="home" class="home-main">
-<section class="home-hero" aria-labelledby="homeTitle">
-  <div class="hero-copy">
-    <p class="home-eyebrow"><span class="tiny-piece" aria-hidden="true">✦</span> A little curiosity. A bigger picture.</p>
-    <h1 id="homeTitle">Piece together<br>the <span>biology.</span></h1>
-    <p class="hero-description">Build an image. Follow the clues. Discover how genes connect to rare diseases.</p>
-    <div class="hero-actions"><a id="homePlay" class="home-primary" href="./play.html?level=01">Play <span aria-hidden="true">↗</span></a><a class="home-text-link" href="./collection.html">Explore all rounds <span aria-hidden="true">→</span></a></div>
-    <p id="homeProgress" class="hero-progress">No account needed. Just bring your curiosity.</p>
-    <div class="hero-facts"><span><strong id="roundCount">10</strong> rounds</span><span><strong>12</strong> pieces each</span><span><strong>Your</strong> pace</span></div><nav class="home-jumps" aria-label="Community"><a href="#leaderboard">Leaderboard <span aria-hidden="true">↓</span></a><a href="#suggest">Suggest a puzzle <span aria-hidden="true">↓</span></a></nav>
-  </div>
-  <figure class="hero-figure" aria-label="Preview of a biology illustration assembling into a jigsaw puzzle">
-    <div class="hero-orbit orbit-one" aria-hidden="true"></div><div class="hero-orbit orbit-two" aria-hidden="true"></div>
-    <span class="hero-spark spark-one" aria-hidden="true">+</span><span class="hero-spark spark-two" aria-hidden="true">+</span>
-    <div class="hero-art-card"><div class="art-card-top"><span><i aria-hidden="true"></i> The picture is only the beginning</span><span aria-hidden="true">01 / 10</span></div><div class="hero-puzzle-wrap"><img id="heroFallback" src="./artwork/native/01.webp" alt="An illustrated cell membrane with ion channels and nearby muscle structures" width="1448" height="1086" fetchpriority="high"><svg id="heroPuzzle" viewBox="-28 -28 856 656" aria-hidden="true" hidden></svg></div><div class="art-card-bottom"><span class="preview-check" aria-hidden="true">✓</span><span>Every piece reveals a connection.</span><button id="replayPreview" type="button" aria-label="Replay puzzle preview" hidden>Replay ↻</button></div></div>
-    <figcaption class="hero-note"><span class="note-icon" aria-hidden="true">✧</span><span><strong>From molecule to meaning</strong><span>Explore the science as you play.</span></span></figcaption>
-  </figure>
-</section>
-<section class="home-how" aria-label="How it works">
-  <div><span class="step-number">01</span><p><strong>Find the fit.</strong><span>Tap or drag the pieces into place.</span></p></div>
-  <div><span class="step-number">02</span><p><strong>Follow the clues.</strong><span>Uncover the biology, piece by piece.</span></p></div>
-  <div><span class="step-number">03</span><p><strong>Make the connection.</strong><span>Reveal the gene and condition.</span></p></div>
-</section>
-<section class="home-community" aria-labelledby="communityTitle">
-  <div class="home-section-heading"><div><p class="home-eyebrow">Better, together</p><h2 id="communityTitle">A little friendly curiosity.</h2></div><p>Challenge yourself. Help shape what comes next.</p></div>
-  <div class="community-grid">
-    <section id="leaderboard" class="community-card leaderboard-card" aria-labelledby="leaderboardTitle">
-      <div class="card-heading"><span class="card-icon trophy-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 4h8v6a4 4 0 0 1-8 0V4ZM8 6H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4m-4 2v6m-4 0h8"/></svg></span><div><h3 id="leaderboardTitle">Leaderboard</h3><p>Same round. A friendly race.</p></div></div>
-      <div class="leaderboard-filter"><label for="leaderboardRound">Round</label><select id="leaderboardRound"><option value="01">01 · Membrane transport</option></select></div>
-      <div id="leaderboardResults" class="leaderboard-results" aria-live="polite"><p class="board-loading">Loading the leaderboard…</p></div>
-      <p id="leaderboardUpdated" class="board-updated" hidden></p>
-      <div class="leaderboard-bottom"><a id="timedPlay" class="home-secondary" href="./play.html?level=01&amp;mode=timed">Play a timed round <span aria-hidden="true">→</span></a><button id="showScore" class="home-text-button" type="button">Submit a time ↗</button></div>
-      <details class="board-rules"><summary>How times work</summary><p>Complete all 12 pieces in Timed mode. The clock starts at your first correct placement and continues in the background. Hints and reference views are allowed. Gene-answer completions do not qualify.</p><p>Times are self-reported, ranked within each round, and published after review. This measures puzzle speed, not genetics knowledge. GitHub sign-in is needed to submit.</p></details>
+  <a class="skip" href="#home">Skip to content</a>
+  <div id="siteHeader"></div>
+  <main id="home" class="home-main">
+    <section class="home-hero" aria-labelledby="homeTitle">
+      <div class="hero-copy">
+        <h1 id="homeTitle">Piece together<br>the <span>biology.</span></h1>
+        <p class="hero-description">Assemble scientific illustrations, uncover molecular clues, and explore the connections between genes and rare disease.</p>
+        <div class="hero-actions">
+          <a id="homePlay" class="home-primary" href="./play.html?level=01">Play your first puzzle <span aria-hidden="true">→</span></a>
+          <a class="home-text-link" href="./collection.html">Explore the collection <span aria-hidden="true">→</span></a>
+        </div>
+        <p id="homeProgress" class="hero-progress">No account needed. Progress stays in this browser.</p>
+      </div>
+      <figure class="hero-figure" aria-labelledby="heroFigureDescription">
+        <div id="homeDemo">
+          <img class="demo-fallback" src="./artwork/01.webp" alt="Conceptual illustration of chloride channels in a skeletal muscle-cell membrane" width="1200" height="900" fetchpriority="high">
+        </div>
+        <figcaption id="heroFigureDescription" class="hero-figure-caption">Skeletal muscle-cell membrane · Chloride channels</figcaption>
+      </figure>
     </section>
-    <section id="suggest" class="community-card suggestion-card" aria-labelledby="suggestTitle">
-      <div class="card-heading"><span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6m-5 3h4M8 14a6 6 0 1 1 8 0l-1 2H9Z"/></svg></span><div><h3 id="suggestTitle">What should we puzzle over next?</h3><p>Suggest a gene, a condition, and its clinical features.</p></div></div>
-      <form id="suggestionForm" method="post" aria-describedby="suggestionPrivacy">
-        <fieldset id="suggestionFields" class="suggestion-fields" disabled>
-          <legend class="sr-only">Your puzzle suggestion</legend>
-          <div class="suggestion-pair"><label for="suggestGene">Gene<input id="suggestGene" name="gene" placeholder="Gene symbol" maxlength="60" required autocomplete="off" spellcheck="false"></label><label for="suggestCondition">Condition<input id="suggestCondition" name="condition" placeholder="Associated condition" maxlength="160" required autocomplete="off"></label></div>
-          <label for="suggestPhenotypes">Phenotypes<textarea id="suggestPhenotypes" name="phenotypes" placeholder="Key clinical features or HPO terms" rows="3" maxlength="2000" required></textarea></label>
-          <label for="suggestReference">Reference <span class="field-optional">optional</span><input id="suggestReference" name="reference" type="url" placeholder="OMIM entry or publication URL" maxlength="500" autocomplete="off"></label>
-          <div class="suggestion-pair suggestion-contact"><label for="suggestName">Name <span class="field-optional">optional</span><input id="suggestName" name="name" maxlength="100" autocomplete="name"></label><label for="suggestEmail">Email <span class="field-optional">optional</span><input id="suggestEmail" name="email" type="email" maxlength="254" autocomplete="email" aria-describedby="suggestionPrivacy"></label></div>
-          <div class="suggestion-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
-          <div class="suggestion-footer"><button id="suggestionSubmit" class="suggestion-submit" type="submit">Send suggestion <span aria-hidden="true">→</span></button><span>No sign-in required.</span></div>
-        </fieldset>
-        <p id="suggestionPrivacy" class="form-note">Responses go privately to the GREGoR Puzzles team. Leave an email if you’d like us to follow up. Share published science, without patient details.</p>
-        <p id="suggestionStatus" class="suggestion-status" role="status" tabindex="-1"></p>
-        <p id="suggestionFallback" class="suggestion-fallback" hidden><a id="suggestionLink" href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">Use the alternative form <span aria-hidden="true">↗</span></a><span>An earlier attempt may already have been received.</span></p>
-      </form>
-      <div id="suggestionSuccess" class="suggestion-success" tabindex="-1" role="status" hidden><span class="suggestion-check" aria-hidden="true">✓</span><h4>Thank you for the idea.</h4><p>Your suggestion has been saved for the GREGoR Puzzles team.</p><button id="suggestionAnother" class="home-secondary" type="button">Suggest another puzzle</button></div>
+
+    <section class="home-how" aria-labelledby="howTitle">
+      <h2 id="howTitle" class="sr-only">How to play</h2>
+      <div><span class="step-number" aria-hidden="true">01</span><p><strong>Assemble the illustration.</strong><span>Tap or drag 12 pieces into place.</span></p></div>
+      <div><span class="step-number" aria-hidden="true">02</span><p><strong>Follow the clues.</strong><span>Reveal the biology as you build.</span></p></div>
+      <div><span class="step-number" aria-hidden="true">03</span><p><strong>Make the connection.</strong><span>Discover the gene and condition.</span></p></div>
     </section>
-  </div>
-</section>
-<section class="home-explore" aria-labelledby="exploreTitle"><div><p class="home-eyebrow">Small pieces. Fascinating science.</p><h2 id="exploreTitle">There’s a whole collection to discover.</h2><a class="home-text-link" href="./collection.html">Find your next puzzle <span aria-hidden="true">→</span></a></div><div class="explore-thumbnails" aria-hidden="true"><img src="./artwork/02.webp" alt="" width="800" height="600" loading="lazy"><img src="./artwork/05.webp" alt="" width="800" height="600" loading="lazy"><img src="./artwork/10.webp" alt="" width="800" height="600" loading="lazy"></div></section>
-<noscript><p class="home-noscript">Enable JavaScript to play and view the leaderboard. You can still <a href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">suggest a puzzle</a> without signing in.</p></noscript>
-</main><div id="siteFooter"></div>
-<dialog id="scoreDialog" aria-labelledby="scoreTitle"><button id="closeScore" class="dialog-close" type="button" aria-label="Close time submission">×</button><p class="home-eyebrow">Your next personal best</p><h2 id="scoreTitle">Share a puzzle time.</h2><p>Choose a completed timed round from this browser.</p><div id="scoreChoices"></div><p class="form-note">GitHub opens with your time and play details. Check them, then submit. Your GitHub username and time will be public; leaderboard entries appear after review.</p></dialog>
-</body></html>
+
+    <section class="home-collection" aria-labelledby="collectionTitle">
+      <div class="home-section-heading">
+        <div><p class="home-eyebrow">The collection</p><h2 id="collectionTitle">Choose your next puzzle.</h2></div>
+        <a class="home-text-link" href="./collection.html">Browse all <span id="roundCount">10</span> rounds <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="featured-grid">
+        <a class="featured-card" href="./play.html?level=02" aria-labelledby="featured02Title" aria-describedby="featured02Question">
+          <div class="featured-image"><img src="./artwork/02.webp" alt="Illustrated channels connecting two neighboring cells" width="1200" height="900" loading="lazy" decoding="async"></div>
+          <div class="featured-copy"><p class="featured-round">Round 02</p><h3 id="featured02Title">Cell communication</h3><p id="featured02Question">How do neighboring cells stay connected?</p><span class="featured-link">Explore this puzzle <span aria-hidden="true">→</span></span></div>
+        </a>
+        <a class="featured-card" href="./play.html?level=05" aria-labelledby="featured05Title" aria-describedby="featured05Question">
+          <div class="featured-image"><img src="./artwork/05.webp" alt="Conceptual illustration of a spliceosome processing an RNA message" width="1200" height="900" loading="lazy" decoding="async"></div>
+          <div class="featured-copy"><p class="featured-round">Round 05</p><h3 id="featured05Title">RNA splicing</h3><p id="featured05Question">How does a cell edit an RNA message?</p><span class="featured-link">Explore this puzzle <span aria-hidden="true">→</span></span></div>
+        </a>
+        <a class="featured-card" href="./play.html?level=10" aria-labelledby="featured10Title" aria-describedby="featured10Question">
+          <div class="featured-image"><img src="./artwork/10.webp" alt="Conceptual illustration of a repeated sequence expanding within DNA" width="1200" height="900" loading="lazy" decoding="async"></div>
+          <div class="featured-copy"><p class="featured-round">Round 10</p><h3 id="featured10Title">Repeat expansion</h3><p id="featured10Question">What can an expanded DNA repeat change?</p><span class="featured-link">Explore this puzzle <span aria-hidden="true">→</span></span></div>
+        </a>
+      </div>
+      <details id="homeMapDisclosure" class="home-map-disclosure">
+        <summary><span>Explore the cell</span><span class="disclosure-description">Find a puzzle by biological process</span></summary>
+        <div id="homeProcessMap">
+          <p class="process-intro">Choose a process to explore its illustrated puzzle.</p>
+          <ol class="process-fallback">
+            <li><a href="./play.html?level=01"><span>01</span>Membrane transport</a></li>
+            <li><a href="./play.html?level=02"><span>02</span>Cell communication</a></li>
+            <li><a href="./play.html?level=03"><span>03</span>Lysosomal transport</a></li>
+            <li><a href="./play.html?level=04"><span>04</span>Ribosome maturation</a></li>
+            <li><a href="./play.html?level=05"><span>05</span>Major RNA splicing</a></li>
+            <li><a href="./play.html?level=06"><span>06</span>Synaptic communication</a></li>
+            <li><a href="./play.html?level=07"><span>07</span>RAS / MAPK signaling</a></li>
+            <li><a href="./play.html?level=08"><span>08</span>Minor RNA splicing</a></li>
+            <li><a href="./play.html?level=09"><span>09</span>Innate immune signaling</a></li>
+            <li><a href="./play.html?level=10"><span>10</span>Repeat expansions</a></li>
+          </ol>
+        </div>
+      </details>
+    </section>
+
+    <section class="home-science" aria-labelledby="scienceTitle">
+      <div class="science-copy">
+        <p class="home-eyebrow">The science behind the pieces</p>
+        <h2 id="scienceTitle">Connect mechanisms with clinical features.</h2>
+        <p>Each round connects molecular biology with rare disease through conceptual illustrations and published literature. Designed for genetics learners, including genetic counseling trainees.</p>
+        <p class="science-attribution">Developed by Sasha Gladkikh in collaboration with Dr. Matthew Wheeler.</p>
+        <div class="science-links"><a class="home-text-link" href="./science.html">Explore the science <span aria-hidden="true">→</span></a><a class="home-text-link" href="./about.html">About the project <span aria-hidden="true">→</span></a></div>
+      </div>
+      <div class="science-collaborate">
+        <h3>Teach with GREGoR Puzzles.</h3>
+        <p>Explore classroom pilots, new scientific content, and educational evaluation.</p>
+        <a class="home-secondary" href="./about.html#collaborate">Collaborate with us <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section class="home-community" aria-labelledby="communityTitle">
+      <div class="home-section-heading"><div><p class="home-eyebrow">Join in</p><h2 id="communityTitle">Play and contribute.</h2></div></div>
+      <div class="community-grid">
+        <section id="leaderboard" class="community-card leaderboard-card" aria-labelledby="leaderboardTitle">
+          <div class="card-heading"><div><h3 id="leaderboardTitle">Community leaderboard</h3><p>Try a timed round and find your next personal best.</p></div></div>
+          <div class="leaderboard-filter"><label for="leaderboardRound">Round</label><select id="leaderboardRound"><option value="01">01 · Membrane transport</option></select></div>
+          <div id="leaderboardResults" class="leaderboard-results" aria-live="polite"><p class="board-loading">Loading the leaderboard…</p></div>
+          <p id="leaderboardUpdated" class="board-updated" hidden></p>
+          <div class="leaderboard-bottom"><a id="timedPlay" class="home-secondary" href="./play.html?level=01&amp;mode=timed">Play a timed round <span aria-hidden="true">→</span></a><button id="showScore" class="home-text-button" type="button" hidden>Submit a time <span aria-hidden="true">↗</span></button></div>
+          <p id="scoreRequirement" class="score-requirement" hidden>Submit via GitHub · reviewed before publishing</p>
+          <details class="board-rules"><summary>How times work</summary><p>Place all 12 pieces in Timed mode. The clock starts at your first correct placement and continues in the background. Hints and reference views are allowed. Completing a round with a gene answer does not qualify.</p><p>Times are self-reported, ranked within each round, and published after review. This measures puzzle speed, not genetics knowledge. GitHub sign-in is needed to submit.</p></details>
+        </section>
+        <section id="suggest" class="community-card suggestion-card" aria-labelledby="suggestTitle">
+          <details id="suggestionDisclosure" class="suggestion-disclosure">
+            <summary><span><span id="suggestTitle" class="suggestion-title">Suggest a puzzle</span><span class="suggestion-description">Share a gene, a condition, or a scientific connection you’d like to explore.</span></span><span class="disclosure-icon" aria-hidden="true">+</span></summary>
+            <div class="suggestion-content">
+              <form id="suggestionForm" method="post" aria-describedby="suggestionPrivacy">
+                <fieldset id="suggestionFields" class="suggestion-fields" disabled>
+                  <legend class="sr-only">Your puzzle suggestion</legend>
+                  <p id="suggestionIdentityHelp" class="field-help identity-help">Add a gene or condition, or both.</p>
+                  <div class="suggestion-pair"><label for="suggestGene">Gene<input id="suggestGene" name="gene" placeholder="Gene symbol" maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="suggestionIdentityHelp"></label><label for="suggestCondition">Condition<input id="suggestCondition" name="condition" placeholder="Condition name" maxlength="160" autocomplete="off" aria-describedby="suggestionIdentityHelp"></label></div>
+                  <label for="suggestPhenotypes">Clinical features<textarea id="suggestPhenotypes" name="phenotypes" placeholder="What signs or symptoms help explain the connection?" rows="3" maxlength="2000" required aria-describedby="suggestionClinicalHelp"></textarea></label><p id="suggestionClinicalHelp" class="field-help clinical-help">Use plain language, or include Human Phenotype Ontology (HPO) terms.</p>
+                  <label for="suggestReference">Reference <span class="field-optional">optional</span><input id="suggestReference" name="reference" type="url" placeholder="Publication or OMIM link" maxlength="500" autocomplete="off"></label>
+                  <details class="suggestion-contact-disclosure"><summary>Add contact details <span class="field-optional">optional</span></summary><div class="suggestion-pair suggestion-contact"><label for="suggestName">Name<input id="suggestName" name="name" maxlength="100" autocomplete="name"></label><label for="suggestEmail">Email<input id="suggestEmail" name="email" type="email" maxlength="254" autocomplete="email" aria-describedby="suggestionPrivacy"></label></div></details>
+                  <div class="suggestion-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+                  <div class="suggestion-footer"><button id="suggestionSubmit" class="suggestion-submit" type="submit">Send suggestion <span aria-hidden="true">→</span></button><span>No account required.</span></div>
+                </fieldset>
+                <p id="suggestionPrivacy" class="form-note">Responses go privately to the GREGoR Puzzles team. Leave an email if you’d like us to follow up. Share published science, without patient details.</p>
+                <p id="suggestionStatus" class="suggestion-status" role="status" tabindex="-1"></p>
+                <p id="suggestionFallback" class="suggestion-fallback" hidden><a id="suggestionLink" href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">Use the alternative form <span aria-hidden="true">↗</span></a><span>If a gene or condition is unknown, enter “Not specified” in the alternative form.</span><span>An earlier attempt may already have been received.</span></p>
+              </form>
+              <div id="suggestionSuccess" class="suggestion-success" tabindex="-1" role="status" hidden><span class="suggestion-check" aria-hidden="true">✓</span><h4>Thank you for the idea.</h4><p>Your suggestion has been saved for the GREGoR Puzzles team.</p><button id="suggestionAnother" class="home-secondary" type="button">Suggest another puzzle</button></div>
+            </div>
+          </details>
+          <p class="suggestion-invitation">No account required. Suggestions are private.</p>
+        </section>
+      </div>
+    </section>
+    <noscript><p class="home-noscript">Enable JavaScript to play and view the leaderboard. You can still <a href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">suggest a puzzle</a> without signing in.</p></noscript>
+  </main>
+  <div id="siteFooter"></div>
+  <dialog id="scoreDialog" aria-labelledby="scoreTitle"><button id="closeScore" class="dialog-close" type="button" aria-label="Close time submission">×</button><p class="home-eyebrow">Your next personal best</p><h2 id="scoreTitle">Share a puzzle time.</h2><p>Choose a completed timed round from this browser.</p><div id="scoreChoices"></div><p class="form-note">GitHub opens with your time and play details. Check them, then submit. Your GitHub username and time will be public; leaderboard entries appear after review.</p></dialog>
+</body>
+</html>

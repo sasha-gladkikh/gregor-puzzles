@@ -1,7 +1,8 @@
 // Public receiver URL only. Credentials and Google Form access stay server-side.
 export const SUGGESTION_ENDPOINT='https://script.google.com/macros/s/AKfycbwcREMAEUME5rnnNeF3B093n2rJDps2vN7hXcsf7l8W-TRlyvk7sQ3CM2CEsXeEUSOCAw/exec';
 export const SUGGESTION_FORM_URL='https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform';
-const fields=[['gene','Gene',60,true],['condition','Condition',160,true],['phenotypes','Phenotypes',2000,true],['reference','Reference',500,false],['name','Name',100,false],['email','Email',254,false],['website','Website',500,false]];
+const fields=[['gene','Gene',60,false],['condition','Condition',160,false],['phenotypes','Clinical features',2000,true],['reference','Reference',500,false],['name','Name',100,false],['email','Email',254,false],['website','Website',500,false]];
+const topicRequiredMessage='Add a gene or condition.';
 const controls=/[\u0000-\u001f\u007f-\u009f]/;
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 // Keep these conservative checks aligned with server/google-forms/Code.gs.
@@ -20,6 +21,7 @@ export function validateSuggestion(values){
   if(required&&!value)invalid(key,`Please enter ${label.toLowerCase()}.`);
   if(value.length>limit)invalid(key,`Keep ${label.toLowerCase()} to ${limit} characters or fewer.`);
   result[key]=value;
+  if(key==='condition'&&!result.gene&&!result.condition)invalid('gene',topicRequiredMessage);
  }
  if(result.email&&!validEmail(result.email))invalid('email','Enter a complete email address, or leave it blank.');
  if(result.reference&&!validReference(result.reference))invalid('reference','Use a public http:// or https:// reference link without sign-in details.');
@@ -50,12 +52,22 @@ export function initSuggestionForm(doc=document){
  const form=doc.getElementById('suggestionForm');if(!form)return;
  const fields=doc.getElementById('suggestionFields'),button=doc.getElementById('suggestionSubmit'),status=doc.getElementById('suggestionStatus'),success=doc.getElementById('suggestionSuccess'),fallback=doc.getElementById('suggestionFallback');
  const session=createSuggestionSession();let pending=false;
+ const revealField=field=>{for(let details=field.closest?.('details');details;details=details.parentElement?.closest('details'))details.open=true;};
  fields.disabled=false;
- form.addEventListener('input',event=>event.target.setCustomValidity?.(''));
+ // Native email/URL validation runs before submit; reveal collapsed optional
+ // fields synchronously so the browser can focus and explain any invalid value.
+ form.addEventListener('invalid',event=>revealField(event.target),true);
+ form.addEventListener('input',event=>{
+  event.target.setCustomValidity?.('');
+  if(event.target.name==='gene'||event.target.name==='condition'){
+   const gene=form.elements.namedItem('gene');
+   if(gene.validationMessage===topicRequiredMessage)gene.setCustomValidity('');
+  }
+ });
  form.addEventListener('submit',async event=>{
   event.preventDefault();if(pending)return;
   let payload;
-  try{payload=session.prepare(Object.fromEntries(new FormData(form)));}catch(error){const field=form.elements.namedItem(error.field);if(field&&error.field!=='website'){field.setCustomValidity(error.message);field.reportValidity();field.focus();}else{status.textContent=error.message;status.focus();}return;}
+  try{payload=session.prepare(Object.fromEntries(new FormData(form)));}catch(error){const field=form.elements.namedItem(error.field);if(field&&error.field!=='website'){field.setCustomValidity(error.message);revealField(field);field.reportValidity();field.focus();}else{status.textContent=error.message;status.focus();}return;}
   pending=true;fields.disabled=true;button.textContent='Sending…';fields.setAttribute('aria-busy','true');status.textContent='Sending your suggestion…';fallback.hidden=true;
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),45000);
   try{

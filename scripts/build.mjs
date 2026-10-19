@@ -2,11 +2,12 @@ import {mkdir, readFile, writeFile, cp, rm, readdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
+import {prepareHomeHTML} from './homepage.mjs';
 
 const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
-  'index.html', 'home.mjs', 'home.css', 'home-state.mjs', 'suggestions.mjs', 'community.mjs', 'leaderboard.json', 'play.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
+  'index.html', 'home.mjs', 'home.css', 'home-state.mjs', 'home-demo.mjs', 'home-demo.css', 'home-map.mjs', 'home-map.css', 'puzzle-geometry.mjs', 'suggestions.mjs', 'community.mjs', 'leaderboard.json', 'play.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
   'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
@@ -26,6 +27,12 @@ const files = [
 const {rounds} = await import(new URL('rounds.mjs', new URL('../game/', import.meta.url)));
 if (rounds.length === 0) throw new Error('No rounds are approved for publication. Update game/signoff.mjs or set requireApproval to false.');
 const contents = await Promise.all(files.map(file => readFile(join(source, file), 'utf8')));
+// The homepage only needs navigation and progress metadata, not clinical profiles.
+const catalogue=rounds.map(({id,number,topic})=>({id,number,topic,saveKey:`gregor-puzzles:${id}`}));
+files.push('home-data.mjs');
+contents.push(`// Generated from the currently playable rounds.\nexport const catalogue=${JSON.stringify(catalogue)};\n`);
+const homeIndex=files.indexOf('index.html');
+contents[homeIndex]=prepareHomeHTML(contents[homeIndex],rounds);
 const hash = createHash('sha256').update(contents.join('\n'));
 async function hashArtwork(directory) {
   for (const entry of (await readdir(join(source, directory), {withFileTypes: true})).sort((a, b) => a.name.localeCompare(b.name))) {

@@ -100,6 +100,34 @@ test('optional contact fields can be omitted and multiline phenotypes normalize 
   assert.deepEqual(h.submitted[0], [{title: 'Gene', value: 'FAM177A1'}, {title: 'Condition', value: 'Example condition'}, {title: 'Phenotypes', value: 'Delay\nHypotonia'}]);
 });
 
+test('gene-only and condition-only suggestions retain the existing required form fields', () => {
+  for (const missing of ['gene', 'condition']) {
+    const h = harness();
+    const input = valid({[missing]: '  ', name: '', email: '', reference: ''});
+    const first = h.post(input);
+    assert.equal(first.ok, true);
+    assert.deepEqual(h.submitted[0], [
+      {title: 'Gene', value: missing === 'gene' ? 'Not specified' : 'FAM177A1'},
+      {title: 'Condition', value: missing === 'condition' ? 'Not specified' : 'Example condition'},
+      {title: 'Phenotypes', value: 'Developmental delay\nHypotonia'},
+    ]);
+    // The digest uses normalized input, preserving retry deduplication even
+    // though the stored native-form answer contains an explicit placeholder.
+    delete input[missing];
+    assert.deepEqual(h.post(input), first);
+    assert.equal(h.attempts, 1);
+  }
+});
+
+test('both missing topics are rejected with a clear message before opening Forms', () => {
+  for (const topics of [{gene: '', condition: ''}, {gene: '  ', condition: '  '}, {gene: undefined, condition: undefined}]) {
+    const h = harness();
+    assert.deepEqual(h.post(valid(topics)), {ok: false, error: 'Add a gene or condition.'});
+    assert.equal(h.opens, 0);
+    assert.equal(h.attempts, 0);
+  }
+});
+
 test('identical retries share one receipt and cannot create a second response', () => {
   const h = harness();
   const first = h.post();
@@ -123,7 +151,7 @@ test('a new request UUID permits a separate suggestion and normalized equivalent
 
 test('required fields, bounds, controls, unknown keys and non-string values are rejected before opening Forms', () => {
   const mutations = [
-    {gene: ''}, {gene: ' '.repeat(10)}, {condition: ''}, {phenotypes: ''},
+    {gene: '', condition: ''}, {gene: ' '.repeat(10), condition: ' '}, {phenotypes: ''},
     {gene: 'a'.repeat(61)}, {condition: 'a'.repeat(161)}, {phenotypes: 'a'.repeat(2001)},
     {reference: 'a'.repeat(501)}, {name: 'a'.repeat(101)}, {email: 'a'.repeat(255)},
     {gene: 'CLCN1\n'}, {condition: 'Condition\t'}, {name: 'Name\r'}, {email: 'a\n@example.org'},

@@ -12,3 +12,33 @@ test('home resumes unfinished work before an untouched round without resetting p
  const before=structuredClone(progress);assert.equal(nextHomeRound(progress).round.number,'03');assert.deepEqual(progress,before);
  progress[2].done=true;assert.equal(nextHomeRound(progress).round.number,'02');progress[1].done=true;assert.equal(nextHomeRound(progress).round.number,'01');
 });
+
+test('home destination distinguishes new, interrupted, next and completed visits',async()=>{
+ const {homeDestination}=await import('../game/home-state.mjs');
+ const items=[{round:{number:'01',topic:'Membrane transport'},done:false,pieces:0},{round:{number:'06',topic:'Synaptic communication'},done:false,pieces:0}];
+ assert.equal(homeDestination(items).label,'Play your first puzzle');
+ items[1].pieces=4;
+ assert.deepEqual(homeDestination(items),{href:'./play.html?level=06',label:'Continue round 06',detail:'Synaptic communication · 4 of 12 pieces placed.'});
+ items[1].done=true;items[1].pieces=12;
+ assert.equal(homeDestination(items).label,'Play your next puzzle');
+ items[0].done=true;items[0].pieces=12;
+ assert.equal(homeDestination(items).href,'./collection.html');
+});
+
+test('built home exposes only playable rounds before JavaScript runs',async()=>{
+ const {prepareHomeHTML}=await import('../scripts/homepage.mjs');
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('../game/index.html',import.meta.url),'utf8');
+ const one=prepareHomeHTML(html,[{number:'06'}]);
+ assert.match(one,/id="siteHeader" data-prerendered="true"/);
+ assert.match(one,/id="homePlay"[^>]*level=06/);
+ assert.match(one,/id="roundCount">1<\/span>/);
+ assert.doesNotMatch(one,/class="hero-figure"/);
+ assert.doesNotMatch(one,/class="featured-card"/);
+ const playLinks=[...one.matchAll(/\.\/play\.html\?level=(\d{2})/g)].map(m=>m[1]);
+ assert.ok(playLinks.length>0);assert.ok(playLinks.every(number=>number==='06'));
+ const two=prepareHomeHTML(html,[{number:'01'},{number:'05'}]);
+ assert.match(two,/class="hero-figure"/);
+ assert.equal([...two.matchAll(/class="featured-card"/g)].length,1);
+ assert.throws(()=>prepareHomeHTML(html,[]),/playable/);
+});
