@@ -18,6 +18,8 @@ const complete = (extra = {}) => attempt({revision: 2, status: 'completed', piec
 const attempts = (records, extra = {}) => ({schema: 'gregor-player-v1', action: 'attempts', playerId, token, attempts: records, ...extra});
 const leave = (extra = {}) => ({schema: 'gregor-player-v1', action: 'leave', playerId, token, revision: 2, ...extra});
 const event = payload => ({postData: {contents: JSON.stringify(payload), type: 'text/plain;charset=UTF-8'}});
+const estimatedTimes = () => [44, 49, 61, 57, 68, 50, 55, 66, 60, 53]
+  .map((seconds, index) => ({roundNumber: String(index + 1).padStart(2, '0'), seconds}));
 
 function harness(options = {}) {
   const properties = new Map(options.noSetup ? [] : [['GREGOR_LEADERBOARD_FORM_ID', 'leaderboard-private-form'], ['GREGOR_LEADERBOARD_SIGNING_KEY', 'server-only-key']]);
@@ -325,6 +327,103 @@ test('invalid exclusion configuration and unsafe owner-helper input fail closed 
   assert.throws(() => h.context.excludePlayerAttemptsBefore_(randomUUID(), startedAt), /not found/);
   assert.equal(h.properties.has('GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS'), false);
   assert.equal(h.responses.length, 1);
+});
+
+test('an owner-recorded overall result preserves the private log and does not manufacture measured best times', () => {
+  const h = harness(); h.post(profile()); h.post(attempts([complete()]));
+  h.context.excludePlayerAttemptsBefore_(playerId, startedAt);
+  const original = h.responses.map(response => response.getItemResponses()[0].getResponse());
+  const excluded = h.properties.get('GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS');
+  assert.equal(h.get().players[0].roundsCompleted, 0);
+  assert.deepEqual(JSON.parse(JSON.stringify(h.context.setReportedResult_(playerId, 563, estimatedTimes()))), {ok: true, changed: true});
+  const result = h.get().players[0];
+  assert.equal(result.roundsPlayed, 10); assert.equal(result.roundsCompleted, 10);
+  assert.equal(result.attempts, 0); assert.equal(result.timedRounds, 0); assert.equal(result.totalBestSeconds, 0);
+  assert.equal(result.latestAt, null); assert.deepEqual(result.best, []);
+  assert.deepEqual(Object.keys(result.reportedResult).sort(), ['estimatedTimes', 'roundsCompleted', 'submittedAt', 'totalSeconds']);
+  assert.equal(result.reportedResult.totalSeconds, 563);
+  assert.equal(result.reportedResult.roundsCompleted, 10);
+  assert.deepEqual(result.reportedResult.estimatedTimes, estimatedTimes());
+  assert.equal(new Date(result.reportedResult.submittedAt).toISOString(), result.reportedResult.submittedAt);
+  assert.equal(h.properties.get('GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS'), excluded);
+  assert.deepEqual(h.responses.map(response => response.getItemResponses()[0].getResponse()), original);
+  const privateEntry = JSON.parse(h.properties.get('GREGOR_LEADERBOARD_REPORTED_RESULTS'))[playerId];
+  assert.equal(privateEntry.source, 'player-reported');
+  assert.equal(privateEntry.breakdownSource, 'estimated');
+  assert.doesNotMatch(JSON.stringify(result), /source|breakdownSource|tokenHash|signature/);
+});
+
+test('reported-result updates are idempotent and actual future attempts remain independent', () => {
+  const h = harness(); h.post(profile());
+  h.context.setReportedResult_(playerId, 563, estimatedTimes());
+  const original = h.properties.get('GREGOR_LEADERBOARD_REPORTED_RESULTS');
+  assert.equal(h.context.setReportedResult_(playerId, 563, estimatedTimes().reverse()).changed, false);
+  assert.equal(h.properties.get('GREGOR_LEADERBOARD_REPORTED_RESULTS'), original, 'Identical reports retain their original submission timestamp');
+  assert.equal(h.post(attempts([complete()])).ok, true);
+  const player = h.get().players[0];
+  assert.equal(player.reportedResult.totalSeconds, 563);
+  assert.equal(player.roundsCompleted, 10); assert.equal(player.attempts, 1); assert.equal(player.timedRounds, 1);
+  assert.equal(player.totalBestSeconds, 45); assert.equal(player.best[0].seconds, 45);
+  assert.equal(player.latestAt, new Date(startedAt + 45000).toISOString());
+  assert.equal(h.context.setReportedResult_(playerId, null).changed, true);
+  const cleared = h.get().players[0];
+  assert.equal(cleared.reportedResult, undefined);
+  assert.equal(cleared.roundsCompleted, 1); assert.equal(cleared.best[0].seconds, 45);
+  assert.equal(h.context.setReportedResult_(playerId, null).changed, false);
+});
+
+test('reported results respect player opt-out and owner moderation', () => {
+  const h = harness(); h.post(profile()); h.context.setReportedResult_(playerId, 563, estimatedTimes());
+  h.post(leave());
+  assert.deepEqual(h.get().players, []);
+  assert.ok(h.properties.has('GREGOR_LEADERBOARD_REPORTED_RESULTS'), 'The private owner report remains after opt-out');
+  h.post(profile({revision: 3}));
+  assert.equal(h.get().players[0].reportedResult.totalSeconds, 563);
+  h.cache.clear(); h.properties.set('GREGOR_LEADERBOARD_HIDDEN_PLAYERS', JSON.stringify([playerId]));
+  assert.deepEqual(h.get().players, []);
+});
+
+test('reported totals and estimated splits require exact coverage and millisecond-safe agreement', () => {
+  const h = harness(); h.post(profile());
+  for (const [total, estimates] of [
+    [563, estimatedTimes().slice(1)], [563, estimatedTimes().map((entry, index) => index === 0 ? {...entry, roundNumber: '02'} : entry)],
+    [563, estimatedTimes().map((entry, index) => index === 0 ? {...entry, seconds: 0} : entry)],
+    [563, estimatedTimes().map((entry, index) => index === 0 ? {...entry, seconds: 44.0001} : entry)],
+    [563, estimatedTimes().map((entry, index) => index === 0 ? {...entry, extra: true} : entry)],
+    [564, estimatedTimes()], [NaN, estimatedTimes()], [Infinity, estimatedTimes()], [0, estimatedTimes()], [604801, estimatedTimes()],
+  ]) assert.throws(() => h.context.setReportedResult_(playerId, total, estimates));
+  assert.equal(h.properties.has('GREGOR_LEADERBOARD_REPORTED_RESULTS'), false);
+  const fractional = estimatedTimes().map((entry, index) => ({...entry, seconds: entry.seconds + (index === 0 ? 0.001 : 0)}));
+  assert.equal(h.context.setReportedResult_(playerId, 563.001, fractional).ok, true);
+  assert.equal(h.get().players[0].reportedResult.totalSeconds, 563.001);
+  assert.throws(() => h.context.setReportedResult_(randomUUID(), 563, estimatedTimes()), /not found/);
+});
+
+test('malformed owner report configuration fails closed instead of publishing partial or fabricated results', () => {
+  const h = harness(); h.post(profile()); h.context.setReportedResult_(playerId, 563, estimatedTimes());
+  const valid = JSON.parse(h.properties.get('GREGOR_LEADERBOARD_REPORTED_RESULTS'));
+  const entry = valid[playerId];
+  const invalid = ['{', 'null', '[]', JSON.stringify({invalid: entry}),
+    ...[{source: 'verified'}, {breakdownSource: 'recorded'}, {roundsCompleted: 9}, {submittedAt: 'yesterday'},
+      {submittedAt: new Date(Date.now() + 600000).toISOString()}, {totalSeconds: 560}, {estimatedTimes: []}, {extra: 'private'}]
+      .map(change => JSON.stringify({[playerId]: {...entry, ...change}}))];
+  for (const config of invalid) {
+    h.cache.clear(); h.properties.set('GREGOR_LEADERBOARD_REPORTED_RESULTS', config);
+    const response = h.get();
+    assert.equal(response.ok, false);
+    assert.equal(response.players, undefined);
+    assert.throws(() => h.context.setReportedResult_(playerId, 563, estimatedTimes()));
+    assert.equal(h.properties.get('GREGOR_LEADERBOARD_REPORTED_RESULTS'), config);
+  }
+});
+
+test('public routes cannot configure an owner-reported result', () => {
+  const h = harness({routes: true}); h.post(profile());
+  assert.equal(h.post(profile({reportedResult: {totalSeconds: 563, estimatedTimes: estimatedTimes()}})).ok, false);
+  assert.equal(h.post({schema: 'gregor-player-v1', action: 'setReportedResult', playerId, token, totalSeconds: 563, estimatedTimes: estimatedTimes()}).ok, false);
+  assert.deepEqual(h.get({action: 'setReportedResult', playerId, totalSeconds: '563'}), {ok: true, service: 'gregor-suggestions', schema: 1});
+  assert.equal(h.properties.has('GREGOR_LEADERBOARD_REPORTED_RESULTS'), false);
+  assert.equal(h.get().players[0].reportedResult, undefined);
 });
 
 test('native form injections, malformed JSON and forged signatures cannot add players or attempts', () => {

@@ -1,9 +1,6 @@
 import {getPlayer,getAttempts,joinPlayer,leaveLeaderboard,syncPlayer,getPlayerStatus} from './player.mjs';
 import {SUGGESTION_ENDPOINT} from './suggestions.mjs';
 
-// An illustrative entry only. It never enters the player data or ranking logic.
-export const LEADERBOARD_SAMPLE=Object.freeze({displayName:'Sasha Gladkikh',roundsCompleted:10,totalSeconds:563});
-
 const namePattern=/^[\p{L}\p{N} .'’_-]{2,32}$/u;
 const nonnegative=value=>Number.isFinite(value)&&value>=0;
 const integer=value=>Number.isInteger(value)&&value>=0;
@@ -24,6 +21,30 @@ export function playerTime(seconds){
  if(!nonnegative(seconds))return '—';
  const total=Math.round(seconds*1000),minutes=Math.floor(total/60000),remaining=total%60000;
  return `${minutes}:${String(Math.floor(remaining/1000)).padStart(2,'0')}.${String(remaining%1000).padStart(3,'0')}`;
+}
+
+function reportedResult(value,allowed){
+ if(!value||!allowed.size||value.roundsCompleted!==allowed.size||!Number.isFinite(value.totalSeconds)||value.totalSeconds<allowed.size||value.totalSeconds>604800||!Array.isArray(value.estimatedTimes)||value.estimatedTimes.length!==allowed.size)return null;
+ const submittedAt=timestamp(value.submittedAt);if(!submittedAt)return null;
+ const estimates=new Map();
+ for(const entry of value.estimatedTimes){
+  if(!allowed.has(entry?.roundNumber)||estimates.has(entry.roundNumber)||!Number.isFinite(entry.seconds)||entry.seconds<1||entry.seconds>604800)return null;
+  estimates.set(entry.roundNumber,{roundNumber:entry.roundNumber,seconds:entry.seconds});
+ }
+ if([...estimates.values()].reduce((sum,entry)=>sum+millis(entry.seconds),0)!==millis(value.totalSeconds))return null;
+ return {totalSeconds:value.totalSeconds,roundsCompleted:allowed.size,estimatedTimes:[...estimates.values()],submittedAt};
+}
+
+const shortPlayerTime=seconds=>playerTime(seconds).replace(/\.000$/,'');
+const rankedTotal=(player,roundCount)=>player.roundsCompleted===roundCount&&(player.timedRounds===roundCount||player.reportedResult?.roundsCompleted===roundCount)&&nonnegative(player.totalBestSeconds)?millis(player.totalBestSeconds):Infinity;
+
+export function estimatedRoundTimes(players,selection){
+ if(selection==='overall')return [];
+ return players.flatMap(player=>{
+  if(player.best.some(entry=>entry.roundNumber===selection))return [];
+  const estimate=player.reportedResult?.estimatedTimes.find(entry=>entry.roundNumber===selection);
+  return estimate?[{id:player.id,displayName:player.displayName,seconds:estimate.seconds}]:[];
+ }).sort((a,b)=>a.displayName.localeCompare(b.displayName)||a.id.localeCompare(b.id));
 }
 
 export function summarizeAttempts(attempts,catalogue){
@@ -54,22 +75,24 @@ export function publicPlayers(payload,catalogue){
    const clean={roundNumber:number,seconds:entry.seconds,hints:integer(entry.hints)?entry.hints:0,peeks:integer(entry.peeks)?entry.peeks:0,geneHintsSeen:integer(entry.geneHintsSeen)?entry.geneHintsSeen:0,completedAt:timestamp(entry.completedAt)};
    if(!best.has(number)||entry.seconds<best.get(number).seconds)best.set(number,clean);
   }
-  return [{id:player.id,displayName:player.displayName,attempts:player.attempts,roundsPlayed:Math.min(allowed.size,player.roundsPlayed),roundsCompleted:Math.min(allowed.size,player.roundsCompleted),timedRounds:best.size,totalBestSeconds:best.size===allowed.size?[...best.values()].reduce((sum,entry)=>sum+entry.seconds,0):null,latestAt:timestamp(player.latestAt),best:[...best.values()]}];
+  const report=reportedResult(player.reportedResult,allowed);
+  const recordedTotal=best.size===allowed.size?[...best.values()].reduce((sum,entry)=>sum+entry.seconds,0):null;
+  const useReported=Boolean(report&&(recordedTotal===null||report.totalSeconds<recordedTotal));
+  return [{id:player.id,displayName:player.displayName,attempts:player.attempts,roundsPlayed:Math.min(allowed.size,Math.max(player.roundsPlayed,report?.roundsCompleted??0)),roundsCompleted:Math.min(allowed.size,Math.max(player.roundsCompleted,report?.roundsCompleted??0)),timedRounds:best.size,totalBestSeconds:useReported?report.totalSeconds:recordedTotal,totalSource:useReported?'reported':recordedTotal===null?null:'recorded',reportedResult:report,latestAt:timestamp(player.latestAt),best:[...best.values()]}];
  });
 }
 
 export function rankPlayers(players,selection='overall',roundCount=10){
  const key=player=>{
   if(selection!=='overall')return String(millis(player.best.find(entry=>entry.roundNumber===selection).seconds));
-  return `${player.roundsCompleted}:${player.roundsCompleted===roundCount&&player.timedRounds===roundCount&&nonnegative(player.totalBestSeconds)?millis(player.totalBestSeconds):'untimed'}`;
+  return `${player.roundsCompleted}:${rankedTotal(player,roundCount)}`;
  };
- const sorted=players.filter(player=>player.attempts>0&&(selection==='overall'||player.best.some(entry=>entry.roundNumber===selection))).slice().sort((a,b)=>{
+ const sorted=players.filter(player=>selection==='overall'?(player.attempts>0||Boolean(player.reportedResult)):(player.attempts>0&&player.best.some(entry=>entry.roundNumber===selection))).slice().sort((a,b)=>{
   let comparison;
   if(selection==='overall'){
    comparison=b.roundsCompleted-a.roundsCompleted;
    if(!comparison&&a.roundsCompleted===roundCount){
-    const ta=a.timedRounds===roundCount&&nonnegative(a.totalBestSeconds)?millis(a.totalBestSeconds):Infinity;
-    const tb=b.timedRounds===roundCount&&nonnegative(b.totalBestSeconds)?millis(b.totalBestSeconds):Infinity;
+    const ta=rankedTotal(a,roundCount),tb=rankedTotal(b,roundCount);
     comparison=ta===tb?0:ta-tb;
    }
   }else comparison=millis(a.best.find(entry=>entry.roundNumber===selection).seconds)-millis(b.best.find(entry=>entry.roundNumber===selection).seconds);
@@ -81,16 +104,16 @@ export function rankPlayers(players,selection='overall',roundCount=10){
 
 const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
 const button=(text,className='home-text-button')=>{const element=node('button',text,className);element.type='button';return element;};
-function sampleEntry(){
- const sample=node('aside',undefined,'leaderboard-sample');sample.setAttribute('aria-label','Sample leaderboard entry');
- const identity=node('div',undefined,'leaderboard-sample-identity');
- const heading=node('div',undefined,'leaderboard-sample-heading');
- heading.append(node('strong',LEADERBOARD_SAMPLE.displayName),node('span','Sample','leaderboard-sample-badge'));
- identity.append(heading,node('p',`${LEADERBOARD_SAMPLE.roundsCompleted} of 10 rounds`,'leaderboard-sample-rounds'));
- const time=node('div',undefined,'leaderboard-sample-time');
- time.append(node('strong',`${Math.floor(LEADERBOARD_SAMPLE.totalSeconds/60)}:${String(LEADERBOARD_SAMPLE.totalSeconds%60).padStart(2,'0')}`),node('span','Total time'));
- sample.append(identity,time);
- return sample;
+function estimatedEntries(entries){
+ const section=node('section',undefined,'leaderboard-estimates');section.setAttribute('aria-label','Estimated round times');
+ const list=node('ul',undefined,'leaderboard-estimate-list');
+ for(const entry of entries){
+  const item=node('li',undefined,'leaderboard-estimate'),identity=node('strong',entry.displayName),time=node('div',undefined,'leaderboard-estimate-time');
+  time.append(node('strong',shortPlayerTime(entry.seconds)),node('span','Estimated','leaderboard-estimate-badge'));
+  item.append(identity,time);list.append(item);
+ }
+ section.append(list);
+ return section;
 }
 const assistance=attempt=>[
  attempt.hints?`${attempt.hints} hint${attempt.hints===1?'':'s'}`:null,
@@ -246,13 +269,11 @@ export function initPlayerUI(catalogue){
    const again=button('Try again');again.addEventListener('click',loadBoard);empty.append(again);result.append(empty);return;
   }
   const ranked=rankPlayers(players,selection.value,catalogue.length);
+  const estimates=estimatedRoundTimes(players,selection.value);
   if(!ranked.length){
-   if(selection.value==='overall'){
-    result.append(node('p','Play a timed round to join the rankings.','leaderboard-ranking-invite'),sampleEntry());return;
-   }
    const empty=node('div',undefined,'leaderboard-empty');
-   empty.append(node('h4','Set the first time.'),node('p','Finish this round in Timed mode while joined to the leaderboard.'));
-   result.append(empty);return;
+   empty.append(node('h4',selection.value==='overall'?'Be part of the first collection.':'Set the first time.'),node('p',selection.value==='overall'?'Join above, then play a round. Your progress will appear here.':'Finish this round in Timed mode while joined to the leaderboard.'));
+   result.append(empty);if(estimates.length)result.append(estimatedEntries(estimates));return;
   }
   const table=node('table',undefined,'leaderboard-table player-table');table.setAttribute('aria-label',selection.value==='overall'?'Overall player standings':`Round ${selection.value} best times`);
   const head=node('thead'),headRow=node('tr');
@@ -263,17 +284,18 @@ export function initPlayerUI(catalogue){
    const row=node('tr');if(current?.joined&&player.id===current.id)row.classList.add('is-you');
    const playerCell=node('th',undefined,'player-name-cell');playerCell.scope='row';playerCell.append(node('span',player.displayName));
    if(current?.joined&&player.id===current.id)playerCell.append(node('span','You','player-you'));
-   const activityAt=selection.value==='overall'?player.latestAt:player.best.find(entry=>entry.roundNumber===selection.value)?.completedAt;
+   const activityAt=selection.value==='overall'?(player.latestAt??player.reportedResult?.submittedAt):player.best.find(entry=>entry.roundNumber===selection.value)?.completedAt;
    const activityText=playerDateTime(activityAt);
    if(activityText){
     const dateLine=node('small',undefined,'player-activity-date'),time=node('time',activityText);time.dateTime=activityAt;
-    dateLine.append(document.createTextNode(selection.value==='overall'?'Latest attempt · ':'Completed · '),time);playerCell.append(dateLine);
+    dateLine.append(document.createTextNode(selection.value==='overall'?(player.latestAt?'Latest attempt · ':'Submitted · '):'Completed · '),time);playerCell.append(dateLine);
    }
    row.append(node('td',String(player.rank),'player-rank'),playerCell);
    if(selection.value==='overall'){
     const rounds=node('td',undefined,'player-round-count');rounds.append(node('strong',`${player.roundsCompleted}/${catalogue.length}`),node('small',`${player.roundsPlayed} played`));
-    const total=node('td',undefined,'score-time');total.append(node('span',playerTime(player.totalBestSeconds)),node('small',`${player.timedRounds}/${catalogue.length} timed`));
-    row.append(rounds,node('td',String(player.attempts),'player-attempt-count'),total);
+    const total=node('td',undefined,'score-time');total.append(node('span',player.totalSource==='reported'?shortPlayerTime(player.totalBestSeconds):playerTime(player.totalBestSeconds)),node('small',player.totalSource==='reported'?`${catalogue.length} rounds`:`${player.timedRounds}/${catalogue.length} timed`));
+    const attempts=node('td',player.reportedResult&&!player.attempts?'—':String(player.attempts),'player-attempt-count');if(player.reportedResult&&!player.attempts)attempts.setAttribute('aria-label','No recorded attempts');
+    row.append(rounds,attempts,total);
    }else{
     const best=player.best.find(entry=>entry.roundNumber===selection.value),time=node('td',undefined,'score-time');time.append(node('span',playerTime(best.seconds)));
     const assists=assistance(best);if(assists)time.append(node('small',assists,'score-assists'));row.append(time);
@@ -283,7 +305,7 @@ export function initPlayerUI(catalogue){
   table.append(head,body);const scroll=node('div',undefined,'player-table-wrap');scroll.append(table);result.append(scroll);
   if(body.querySelector('time'))result.append(node('p','Dates and times are shown in your local time zone.','player-timezone-note'));
   if(ranked.length>boardLimit){const morePlayers=button(`Show ${Math.min(10,ranked.length-boardLimit)} more players`);morePlayers.addEventListener('click',()=>{boardLimit+=10;renderBoard();});result.append(morePlayers);}
-  if(selection.value==='overall')result.append(sampleEntry());
+  if(estimates.length)result.append(estimatedEntries(estimates));
  }
  async function loadBoard(){
   if(loading){refreshQueued=true;return;}

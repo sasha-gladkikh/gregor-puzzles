@@ -9,6 +9,7 @@ const PLAYER_FORM_PROPERTY = 'GREGOR_LEADERBOARD_FORM_ID';
 const PLAYER_SIGNING_PROPERTY = 'GREGOR_LEADERBOARD_SIGNING_KEY';
 const PLAYER_HIDDEN_PROPERTY = 'GREGOR_LEADERBOARD_HIDDEN_PLAYERS';
 const PLAYER_EXCLUDED_ATTEMPTS_PROPERTY = 'GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS';
+const PLAYER_REPORTED_RESULTS_PROPERTY = 'GREGOR_LEADERBOARD_REPORTED_RESULTS';
 const PLAYER_CACHE_KEY = 'gregor:player-board:v1';
 const PLAYER_ROUNDS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'];
 const PLAYER_MAX_EVENTS = 20000;
@@ -377,9 +378,91 @@ function excludePlayerAttemptsBefore_(playerId, cutoffMs) {
   } finally { lock.releaseLock(); }
 }
 
+function playerReportedValues_(totalSeconds, estimatedTimes) {
+  function milliseconds(value) {
+    if (!Number.isFinite(value) || value < 1 || value > PLAYER_MAX_SECONDS) throw new Error('Reported times must be finite seconds from 1 through 604800.');
+    const scaled = value * 1000, rounded = Math.round(scaled);
+    if (!Number.isSafeInteger(rounded) || Math.abs(scaled - rounded) > 0.000001) throw new Error('Reported times support at most millisecond precision.');
+    return rounded;
+  }
+  const totalMs = milliseconds(totalSeconds);
+  if (!Array.isArray(estimatedTimes) || estimatedTimes.length !== PLAYER_ROUNDS.length) throw new Error('Supply exactly one estimated time for each of the ten rounds.');
+  const seen = new Set();
+  let sumMs = 0;
+  const estimates = estimatedTimes.map(function (entry) {
+    if (!playerKeys_(entry, ['roundNumber', 'seconds']) || !PLAYER_ROUNDS.includes(entry.roundNumber) || seen.has(entry.roundNumber)) {
+      throw new Error('Estimated round numbers must be unique and cover 01 through 10.');
+    }
+    seen.add(entry.roundNumber);
+    const elapsedMs = milliseconds(entry.seconds);
+    sumMs += elapsedMs;
+    return {roundNumber: entry.roundNumber, seconds: elapsedMs / 1000};
+  }).sort(function (a, b) { return a.roundNumber.localeCompare(b.roundNumber); });
+  if (sumMs !== totalMs) throw new Error('Estimated round times must sum exactly to the reported overall time.');
+  return {totalSeconds: totalMs / 1000, roundsCompleted: PLAYER_ROUNDS.length, estimatedTimes: estimates};
+}
+
+function playerReportedResults_(properties) {
+  let stored;
+  try { stored = JSON.parse(properties.getProperty(PLAYER_REPORTED_RESULTS_PROPERTY) || '{}'); } catch (_) { throw new Error('Invalid reported-result configuration.'); }
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) throw new Error('Invalid reported-result configuration.');
+  const result = Object.create(null);
+  Object.keys(stored).forEach(function (id) {
+    const entry = stored[id];
+    if (!PLAYER_UUID.test(id) || result[id.toLowerCase()] ||
+        !playerKeys_(entry, ['totalSeconds', 'roundsCompleted', 'estimatedTimes', 'submittedAt', 'source', 'breakdownSource']) ||
+        entry.roundsCompleted !== PLAYER_ROUNDS.length || entry.source !== 'player-reported' || entry.breakdownSource !== 'estimated' ||
+        typeof entry.submittedAt !== 'string') throw new Error('Invalid reported-result configuration.');
+    const submitted = Date.parse(entry.submittedAt);
+    if (!Number.isFinite(submitted) || submitted < 1 || submitted > Date.now() + 300000 ||
+        new Date(submitted).toISOString() !== entry.submittedAt) throw new Error('Invalid reported-result date.');
+    const values = playerReportedValues_(entry.totalSeconds, entry.estimatedTimes);
+    result[id.toLowerCase()] = {totalSeconds: values.totalSeconds, roundsCompleted: values.roundsCompleted,
+      estimatedTimes: values.estimatedTimes, submittedAt: entry.submittedAt, source: 'player-reported', breakdownSource: 'estimated'};
+  });
+  return result;
+}
+
+// Owner-only, explicit record of a player's reported overall result. Estimated
+// splits are never written as measured attempts or admitted to round rankings.
+// Passing null as totalSeconds clears this owner's configured report only.
+function setReportedResult_(playerId, totalSeconds, estimatedTimes) {
+  if (typeof playerId !== 'string' || !PLAYER_UUID.test(playerId)) throw new Error('Supply a valid existing player UUID.');
+  const values = totalSeconds === null ? null : playerReportedValues_(totalSeconds, estimatedTimes);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) throw new Error('Leaderboard maintenance is busy. Please try again.');
+  try {
+    const properties = PropertiesService.getScriptProperties();
+    const reports = playerReportedResults_(properties);
+    const state = playerRead_(playerForm_(properties), properties);
+    const ownerId = playerId.toLowerCase();
+    if (!state.players.has(ownerId)) throw new Error('That player was not found. No reported result was changed.');
+    const previous = reports[ownerId];
+    let changed = false;
+    if (values === null) {
+      changed = Boolean(previous);
+      delete reports[ownerId];
+    } else if (!previous || previous.totalSeconds !== values.totalSeconds ||
+        JSON.stringify(previous.estimatedTimes) !== JSON.stringify(values.estimatedTimes)) {
+      reports[ownerId] = {totalSeconds: values.totalSeconds, roundsCompleted: values.roundsCompleted,
+        estimatedTimes: values.estimatedTimes, submittedAt: new Date().toISOString(),
+        source: 'player-reported', breakdownSource: 'estimated'};
+      changed = true;
+    }
+    if (changed) {
+      const serialized = JSON.stringify(reports);
+      if (Utilities.newBlob(serialized).getBytes().length > 8500) throw new Error('Reported results need a storage migration before more can be added.');
+      properties.setProperty(PLAYER_REPORTED_RESULTS_PROPERTY, serialized);
+    }
+    try { CacheService.getScriptCache().remove(PLAYER_CACHE_KEY); } catch (_) { /* Existing summaries expire within 30 seconds. */ }
+    return {ok: true, changed: changed};
+  } finally { lock.releaseLock(); }
+}
+
 function playerSummary_(state, properties) {
   const hiddenIds = playerModerationIds_(properties, PLAYER_HIDDEN_PROPERTY);
   const excludedIds = playerModerationIds_(properties, PLAYER_EXCLUDED_ATTEMPTS_PROPERTY);
+  const reportedResults = playerReportedResults_(properties);
   const attemptsByPlayer = new Map();
   state.attempts.forEach(function (stored) {
     if (excludedIds.has(stored.record.id)) return;
@@ -403,10 +486,18 @@ function playerSummary_(state, properties) {
       }
     });
     const bestTimes = Array.from(best.values()).sort(function (a, b) { return a.roundNumber.localeCompare(b.roundNumber); });
-    players.push({id: player.id, displayName: player.displayName, attempts: count, roundsPlayed: played.size,
+    const summary = {id: player.id, displayName: player.displayName, attempts: count, roundsPlayed: played.size,
       roundsCompleted: completed.size, timedRounds: bestTimes.length,
       totalBestSeconds: bestTimes.reduce(function (sum, result) { return sum + result.seconds; }, 0),
-      latestAt: latest === null ? null : new Date(latest).toISOString(), best: bestTimes});
+      latestAt: latest === null ? null : new Date(latest).toISOString(), best: bestTimes};
+    const reported = reportedResults[player.id];
+    if (reported) {
+      summary.roundsPlayed = Math.max(summary.roundsPlayed, reported.roundsCompleted);
+      summary.roundsCompleted = Math.max(summary.roundsCompleted, reported.roundsCompleted);
+      summary.reportedResult = {totalSeconds: reported.totalSeconds, roundsCompleted: reported.roundsCompleted,
+        estimatedTimes: reported.estimatedTimes, submittedAt: reported.submittedAt};
+    }
+    players.push(summary);
   });
   players.sort(function (a, b) { return b.roundsCompleted - a.roundsCompleted || b.timedRounds - a.timedRounds || a.totalBestSeconds - b.totalBestSeconds || a.id.localeCompare(b.id); });
   return {ok: true, schema: PLAYER_BOARD_SCHEMA, updatedAt: new Date().toISOString(), players: players};

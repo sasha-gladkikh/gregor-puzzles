@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {summarizeAttempts,publicPlayers,rankPlayers,playerTime,playerDateTime} from '../game/player-ui.mjs';
+import {summarizeAttempts,publicPlayers,rankPlayers,estimatedRoundTimes,playerTime,playerDateTime} from '../game/player-ui.mjs';
 
 const catalogue=Array.from({length:10},(_,index)=>({number:String(index+1).padStart(2,'0')}));
 const attempt=(roundNumber,overrides={})=>({roundNumber,status:'completed',mode:'timed',route:'image',eligible:true,seconds:60,...overrides});
 const player=(id,overrides={})=>({id,displayName:id,attempts:1,roundsPlayed:1,roundsCompleted:1,timedRounds:1,totalBestSeconds:null,best:[{roundNumber:'01',seconds:60,hints:0,peeks:0,geneHintsSeen:0}],...overrides});
+const report=(overrides={})=>({totalSeconds:563,roundsCompleted:10,estimatedTimes:[44,49,61,57,68,50,55,66,60,53].map((seconds,index)=>({roundNumber:catalogue[index].number,seconds})),submittedAt:'2026-10-19T23:59:00.000Z',...overrides});
+const publicList=players=>publicPlayers({ok:true,schema:'gregor-player-board-v1',players},catalogue);
 
 test('repeat attempts add history without inflating distinct rounds and fastest eligible time wins',()=>{
  const records=[attempt('01',{seconds:100}),attempt('01',{seconds:30}),attempt('02',{mode:'practice',eligible:false,seconds:null}),attempt('03',{route:'gene',eligible:false}),attempt('04',{status:'restarted',eligible:false,pieces:3}),attempt('04',{status:'active',eligible:false,pieces:2})];
@@ -73,4 +75,60 @@ test('date formatting converts UTC to the viewer time zone including date bounda
  assert.equal(playerDateTime(instant,{locale:'en-US',timeZone:'America/Los_Angeles'}),'Oct 19, 2026, 6:05 PM');
  assert.equal(playerDateTime(instant,{locale:'en-US',timeZone:'Asia/Tokyo'}),'Oct 20, 2026, 10:05 AM');
  assert.equal(playerDateTime(instant),new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(instant)));
+});
+
+test('a reported complete total ranks alongside faster and slower measured totals without fabricated attempts',()=>{
+ const players=publicList([
+  player('Sasha',{attempts:0,roundsPlayed:0,roundsCompleted:0,best:[],reportedResult:report()}),
+  player('Faster',{attempts:10,roundsPlayed:10,roundsCompleted:10,best:catalogue.map(round=>({roundNumber:round.number,seconds:50}))}),
+  player('Slower',{attempts:10,roundsPlayed:10,roundsCompleted:10,best:catalogue.map(round=>({roundNumber:round.number,seconds:60}))})
+ ]);
+ assert.deepEqual(rankPlayers(players).map(({id,rank})=>[id,rank]),[['Faster',1],['Sasha',2],['Slower',3]]);
+ const sasha=players.find(entry=>entry.id==='Sasha');
+ assert.equal(sasha.totalBestSeconds,563);assert.equal(sasha.totalSource,'reported');assert.equal(sasha.roundsCompleted,10);
+ assert.equal(sasha.attempts,0);assert.equal(sasha.timedRounds,0);assert.deepEqual(sasha.best,[]);assert.equal(sasha.latestAt,null);
+ assert.equal(sasha.reportedResult.submittedAt,'2026-10-19T23:59:00.000Z');
+});
+
+test('estimated splits never enter per-round rankings and a recorded round supersedes its estimate',()=>{
+ const players=publicList([
+  player('Sasha',{attempts:1,roundsPlayed:10,roundsCompleted:10,best:[{roundNumber:'01',seconds:42}],reportedResult:report()}),
+  player('Recorded',{best:[{roundNumber:'02',seconds:90}]})
+ ]);
+ assert.deepEqual(rankPlayers(players,'02').map(({id,rank})=>[id,rank]),[['Recorded',1]]);
+ assert.deepEqual(estimatedRoundTimes(players,'02'),[{id:'Sasha',displayName:'Sasha',seconds:49}]);
+ assert.deepEqual(estimatedRoundTimes(players,'01'),[]);
+ assert.deepEqual(estimatedRoundTimes(players,'overall'),[]);
+ assert.equal(players[0].totalBestSeconds,563);
+ assert.equal(players[0].best.length,1);assert.equal(players[0].timedRounds,1);
+});
+
+test('overall total uses one complete result and never combines estimates with recorded best rounds',()=>{
+ for(const [perRound,expected,source] of [[50,500,'recorded'],[60,563,'reported']]){
+  const [clean]=publicList([player('Complete',{attempts:10,roundsPlayed:10,roundsCompleted:10,best:catalogue.map(round=>({roundNumber:round.number,seconds:perRound})),reportedResult:report()})]);
+  assert.equal(clean.totalBestSeconds,expected);assert.equal(clean.totalSource,source);
+  assert.equal(clean.best.reduce((sum,entry)=>sum+entry.seconds,0),perRound*10);
+  assert.equal(clean.reportedResult.estimatedTimes.reduce((sum,entry)=>sum+entry.seconds,0),563);
+ }
+ const [partial]=publicList([player('Partial',{reportedResult:report(),best:[{roundNumber:'01',seconds:1}]})]);
+ assert.equal(partial.totalBestSeconds,563);
+});
+
+test('invalid reports are discarded while measured results remain usable',()=>{
+ const valid=report();
+ const badReports=[
+  report({totalSeconds:9}),report({totalSeconds:604801}),report({totalSeconds:Infinity}),report({totalSeconds:564}),
+  report({roundsCompleted:9}),report({submittedAt:'2026-02-30T00:00:00Z'}),report({submittedAt:null}),
+  report({estimatedTimes:valid.estimatedTimes.slice(1)}),
+  report({estimatedTimes:[...valid.estimatedTimes.slice(1),valid.estimatedTimes[1]]}),
+  report({estimatedTimes:valid.estimatedTimes.map((entry,index)=>index===0?{roundNumber:'11',seconds:44}:entry)}),
+  report({estimatedTimes:valid.estimatedTimes.map((entry,index)=>index===0?{...entry,seconds:0}:entry)}),
+  report({estimatedTimes:valid.estimatedTimes.map((entry,index)=>index===0?{...entry,seconds:NaN}:entry)})
+ ];
+ for(const reportedResult of badReports){
+  const [clean]=publicList([player('Measured',{attempts:10,roundsPlayed:10,roundsCompleted:10,best:catalogue.map(round=>({roundNumber:round.number,seconds:60})),reportedResult})]);
+  assert.equal(clean.reportedResult,null);assert.equal(clean.totalBestSeconds,600);assert.equal(clean.totalSource,'recorded');
+  const [empty]=publicList([player('Empty',{attempts:0,roundsPlayed:0,roundsCompleted:0,best:[],reportedResult})]);
+  assert.deepEqual(rankPlayers([empty]),[]);
+ }
 });
