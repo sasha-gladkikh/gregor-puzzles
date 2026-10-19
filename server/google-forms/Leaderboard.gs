@@ -8,6 +8,7 @@ const PLAYER_BOARD_SCHEMA = 'gregor-player-board-v1';
 const PLAYER_FORM_PROPERTY = 'GREGOR_LEADERBOARD_FORM_ID';
 const PLAYER_SIGNING_PROPERTY = 'GREGOR_LEADERBOARD_SIGNING_KEY';
 const PLAYER_HIDDEN_PROPERTY = 'GREGOR_LEADERBOARD_HIDDEN_PLAYERS';
+const PLAYER_EXCLUDED_ATTEMPTS_PROPERTY = 'GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS';
 const PLAYER_CACHE_KEY = 'gregor:player-board:v1';
 const PLAYER_ROUNDS = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10'];
 const PLAYER_MAX_EVENTS = 20000;
@@ -336,13 +337,52 @@ function leaderboardPost_(event) {
   } finally { if (lock && locked) { try { lock.releaseLock(); } catch (_) { /* Preserve the receipt. */ } } }
 }
 
+function playerModerationIds_(properties, property) {
+  let ids;
+  try { ids = JSON.parse(properties.getProperty(property) || '[]'); } catch (_) { throw new Error('Invalid moderation configuration.'); }
+  if (!Array.isArray(ids) || ids.some(function (id) { return typeof id !== 'string' || !PLAYER_UUID.test(id); })) throw new Error('Invalid moderation configuration.');
+  return new Set(ids.map(function (id) { return id.toLowerCase(); }));
+}
+
+// Owner-only maintenance helper; deliberately not a doGet/doPost action.
+// Snapshot only currently known UUIDs whose actual start is at/before cutoff.
+// New attempts remain eligible, even when they belong to the same player.
+function excludePlayerAttemptsBefore_(playerId, cutoffMs) {
+  if (typeof playerId !== 'string' || !PLAYER_UUID.test(playerId) ||
+      !Number.isSafeInteger(cutoffMs) || cutoffMs < 1 || cutoffMs > Date.now()) {
+    throw new Error('Supply a valid player UUID and a fixed cutoff timestamp in milliseconds, no later than now.');
+  }
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) throw new Error('Leaderboard maintenance is busy. Please try again.');
+  try {
+    const properties = PropertiesService.getScriptProperties();
+    const excluded = playerModerationIds_(properties, PLAYER_EXCLUDED_ATTEMPTS_PROPERTY);
+    const state = playerRead_(playerForm_(properties), properties);
+    const ownerId = playerId.toLowerCase();
+    if (!state.players.has(ownerId)) throw new Error('That player was not found. No exclusions were changed.');
+    const before = excluded.size;
+    let matched = 0;
+    state.attempts.forEach(function (stored) {
+      if (stored.playerId === ownerId && stored.record.startedAt <= cutoffMs) {
+        matched++;
+        excluded.add(stored.record.id);
+      }
+    });
+    const serialized = JSON.stringify(Array.from(excluded).sort());
+    // Script Properties has a per-value size limit. Never truncate silently.
+    if (Utilities.newBlob(serialized).getBytes().length > 8500) throw new Error('The exclusion list needs a storage migration before more attempts can be excluded.');
+    properties.setProperty(PLAYER_EXCLUDED_ATTEMPTS_PROPERTY, serialized);
+    try { CacheService.getScriptCache().remove(PLAYER_CACHE_KEY); } catch (_) { /* Existing summaries expire within 30 seconds. */ }
+    return {matched: matched, added: excluded.size - before, totalExcluded: excluded.size};
+  } finally { lock.releaseLock(); }
+}
+
 function playerSummary_(state, properties) {
-  let hidden;
-  try { hidden = JSON.parse(properties.getProperty(PLAYER_HIDDEN_PROPERTY) || '[]'); } catch (_) { throw new Error('Invalid moderation configuration.'); }
-  if (!Array.isArray(hidden) || hidden.some(function (id) { return typeof id !== 'string' || !PLAYER_UUID.test(id); })) throw new Error('Invalid moderation configuration.');
-  const hiddenIds = new Set(hidden.map(function (id) { return id.toLowerCase(); }));
+  const hiddenIds = playerModerationIds_(properties, PLAYER_HIDDEN_PROPERTY);
+  const excludedIds = playerModerationIds_(properties, PLAYER_EXCLUDED_ATTEMPTS_PROPERTY);
   const attemptsByPlayer = new Map();
   state.attempts.forEach(function (stored) {
+    if (excludedIds.has(stored.record.id)) return;
     if (!attemptsByPlayer.has(stored.playerId)) attemptsByPlayer.set(stored.playerId, []);
     attemptsByPlayer.get(stored.playerId).push(stored.record);
   });
@@ -350,20 +390,23 @@ function playerSummary_(state, properties) {
   state.players.forEach(function (player) {
     if (!player.joined || hiddenIds.has(player.id)) return;
     const played = new Set(), completed = new Set(), best = new Map();
-    let count = 0;
+    let count = 0, latest = null;
     (attemptsByPlayer.get(player.id) || []).forEach(function (record) {
       count++;
+      latest = Math.max(latest || 0, record.finishedAt === null ? record.startedAt : record.finishedAt);
       played.add(record.roundNumber);
       if (record.status === 'completed') completed.add(record.roundNumber);
       if (record.eligible && (!best.has(record.roundNumber) || record.seconds < best.get(record.roundNumber).seconds)) {
         best.set(record.roundNumber, {roundNumber: record.roundNumber, seconds: record.seconds,
-          hints: record.hints, peeks: record.peeks, geneHintsSeen: record.geneHintsSeen});
+          hints: record.hints, peeks: record.peeks, geneHintsSeen: record.geneHintsSeen,
+          completedAt: new Date(record.finishedAt).toISOString()});
       }
     });
     const bestTimes = Array.from(best.values()).sort(function (a, b) { return a.roundNumber.localeCompare(b.roundNumber); });
     players.push({id: player.id, displayName: player.displayName, attempts: count, roundsPlayed: played.size,
       roundsCompleted: completed.size, timedRounds: bestTimes.length,
-      totalBestSeconds: bestTimes.reduce(function (sum, result) { return sum + result.seconds; }, 0), best: bestTimes});
+      totalBestSeconds: bestTimes.reduce(function (sum, result) { return sum + result.seconds; }, 0),
+      latestAt: latest === null ? null : new Date(latest).toISOString(), best: bestTimes});
   });
   players.sort(function (a, b) { return b.roundsCompleted - a.roundsCompleted || b.timedRounds - a.timedRounds || a.totalBestSeconds - b.totalBestSeconds || a.id.localeCompare(b.id); });
   return {ok: true, schema: PLAYER_BOARD_SCHEMA, updatedAt: new Date().toISOString(), players: players};

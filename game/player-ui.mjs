@@ -6,6 +6,16 @@ const nonnegative=value=>Number.isFinite(value)&&value>=0;
 const integer=value=>Number.isInteger(value)&&value>=0;
 const millis=value=>Math.round(value*1000);
 const roundNumber=value=>String(value??'').padStart(2,'0');
+const timestamp=value=>{
+ if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value))return null;
+ const canonical=value.includes('.')?value:value.replace('Z','.000Z'),date=new Date(value);
+ return Number.isFinite(date.getTime())&&date.toISOString()===canonical?canonical:null;
+};
+
+export function playerDateTime(value,{locale,timeZone}={}){
+ const valid=timestamp(value);
+ return valid?new Intl.DateTimeFormat(locale,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',...(timeZone?{timeZone}:{})}).format(new Date(valid)):null;
+}
 
 export function playerTime(seconds){
  if(!nonnegative(seconds))return '—';
@@ -38,10 +48,10 @@ export function publicPlayers(payload,catalogue){
   for(const entry of player.best){
    const number=roundNumber(entry?.roundNumber);
    if(!allowed.has(number)||!nonnegative(entry.seconds))continue;
-   const clean={roundNumber:number,seconds:entry.seconds,hints:integer(entry.hints)?entry.hints:0,peeks:integer(entry.peeks)?entry.peeks:0,geneHintsSeen:integer(entry.geneHintsSeen)?entry.geneHintsSeen:0};
+   const clean={roundNumber:number,seconds:entry.seconds,hints:integer(entry.hints)?entry.hints:0,peeks:integer(entry.peeks)?entry.peeks:0,geneHintsSeen:integer(entry.geneHintsSeen)?entry.geneHintsSeen:0,completedAt:timestamp(entry.completedAt)};
    if(!best.has(number)||entry.seconds<best.get(number).seconds)best.set(number,clean);
   }
-  return [{id:player.id,displayName:player.displayName,attempts:player.attempts,roundsPlayed:Math.min(allowed.size,player.roundsPlayed),roundsCompleted:Math.min(allowed.size,player.roundsCompleted),timedRounds:best.size,totalBestSeconds:best.size===allowed.size?[...best.values()].reduce((sum,entry)=>sum+entry.seconds,0):null,best:[...best.values()]}];
+  return [{id:player.id,displayName:player.displayName,attempts:player.attempts,roundsPlayed:Math.min(allowed.size,player.roundsPlayed),roundsCompleted:Math.min(allowed.size,player.roundsCompleted),timedRounds:best.size,totalBestSeconds:best.size===allowed.size?[...best.values()].reduce((sum,entry)=>sum+entry.seconds,0):null,latestAt:timestamp(player.latestAt),best:[...best.values()]}];
  });
 }
 
@@ -50,7 +60,7 @@ export function rankPlayers(players,selection='overall',roundCount=10){
   if(selection!=='overall')return String(millis(player.best.find(entry=>entry.roundNumber===selection).seconds));
   return `${player.roundsCompleted}:${player.roundsCompleted===roundCount&&player.timedRounds===roundCount&&nonnegative(player.totalBestSeconds)?millis(player.totalBestSeconds):'untimed'}`;
  };
- const sorted=players.filter(player=>selection==='overall'||player.best.some(entry=>entry.roundNumber===selection)).slice().sort((a,b)=>{
+ const sorted=players.filter(player=>player.attempts>0&&(selection==='overall'||player.best.some(entry=>entry.roundNumber===selection))).slice().sort((a,b)=>{
   let comparison;
   if(selection==='overall'){
    comparison=b.roundsCompleted-a.roundsCompleted;
@@ -92,7 +102,7 @@ export function initPlayerUI(catalogue){
  const help=node('p','2–32 characters. No email address needed.','player-name-help');help.id='playerNameHelp';
  const cancel=button('Cancel');cancel.hidden=true;
  form.append(label,fields,help,cancel);
- const privacy=node('p','Your name and summary are public. Attempts are saved privately for the GREGoR Puzzles team.','player-privacy');privacy.id='playerPrivacy';
+ const privacy=node('p','Your name, progress and activity dates are public. Attempts are saved privately for the GREGoR Puzzles team.','player-privacy');privacy.id='playerPrivacy';
  const status=node('p',undefined,'player-status');status.setAttribute('role','status');
  const retry=button('Try syncing again');retry.hidden=true;
  const leave=button('Leave leaderboard');leave.classList.add('player-leave');
@@ -236,6 +246,12 @@ export function initPlayerUI(catalogue){
    const row=node('tr');if(current?.joined&&player.id===current.id)row.classList.add('is-you');
    const playerCell=node('th',undefined,'player-name-cell');playerCell.scope='row';playerCell.append(node('span',player.displayName));
    if(current?.joined&&player.id===current.id)playerCell.append(node('span','You','player-you'));
+   const activityAt=selection.value==='overall'?player.latestAt:player.best.find(entry=>entry.roundNumber===selection.value)?.completedAt;
+   const activityText=playerDateTime(activityAt);
+   if(activityText){
+    const dateLine=node('small',undefined,'player-activity-date'),time=node('time',activityText);time.dateTime=activityAt;
+    dateLine.append(document.createTextNode(selection.value==='overall'?'Latest attempt · ':'Completed · '),time);playerCell.append(dateLine);
+   }
    row.append(node('td',String(player.rank),'player-rank'),playerCell);
    if(selection.value==='overall'){
     const rounds=node('td',undefined,'player-round-count');rounds.append(node('strong',`${player.roundsCompleted}/${catalogue.length}`),node('small',`${player.roundsPlayed} played`));
@@ -248,6 +264,7 @@ export function initPlayerUI(catalogue){
    body.append(row);
   }
   table.append(head,body);const scroll=node('div',undefined,'player-table-wrap');scroll.append(table);result.append(scroll);
+  if(body.querySelector('time'))result.append(node('p','Dates and times are shown in your local time zone.','player-timezone-note'));
   if(ranked.length>boardLimit){const morePlayers=button(`Show ${Math.min(10,ranked.length-boardLimit)} more players`);morePlayers.addEventListener('click',()=>{boardLimit+=10;renderBoard();});result.append(morePlayers);}
  }
  async function loadBoard(){

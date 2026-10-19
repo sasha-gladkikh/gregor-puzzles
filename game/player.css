@@ -55,6 +55,9 @@
 .player-table .is-you { background: #f4f8ff; }
 .player-you { display: inline-block; margin: 3px 0 0 5px; padding: 1px 5px; border-radius: 4px; color: #235ac4; background: #e8f0ff; font-size: 10px; font-weight: 600; }
 .player-table .score-time { font-size: 12px; }
+.player-table .player-activity-date { margin-top: 5px; max-width: 190px; font-size: 10px; line-height: 1.5; }
+.player-activity-date time { white-space: normal; }
+.player-timezone-note { margin: 10px 0 0; color: #65758d; font-size: 11px; line-height: 1.5; }
 .player-leave-dialog { max-width: 440px; width: calc(100% - 32px); padding: 26px; border: 1px solid #d8e1ee; border-radius: 16px; color: #243e61; background: #fff; box-shadow: 0 20px 70px #10254d30; }
 .player-leave-dialog::backdrop { background: #0c173f66; }
 .player-leave-dialog h3 { margin: 0 0 12px; font-size: 22px; }

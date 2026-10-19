@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {summarizeAttempts,publicPlayers,rankPlayers,playerTime} from '../game/player-ui.mjs';
+import {summarizeAttempts,publicPlayers,rankPlayers,playerTime,playerDateTime} from '../game/player-ui.mjs';
 
 const catalogue=Array.from({length:10},(_,index)=>({number:String(index+1).padStart(2,'0')}));
 const attempt=(roundNumber,overrides={})=>({roundNumber,status:'completed',mode:'timed',route:'image',eligible:true,seconds:60,...overrides});
@@ -37,4 +37,40 @@ test('public data rejects wrong service responses and unsafe names while computi
  const payload={ok:true,schema:'gregor-player-board-v1',players:[player('good',{best:[{roundNumber:'01',seconds:60},{roundNumber:'01',seconds:30},{roundNumber:'11',seconds:1}]}),player('bad',{displayName:'<script>alert(1)</script>'}),player('email',{displayName:'person@example.com'})]};
  const clean=publicPlayers(payload,catalogue);
  assert.equal(clean.length,1);assert.equal(clean[0].timedRounds,1);assert.equal(clean[0].best[0].seconds,30);assert.equal(clean[0].totalBestSeconds,null);
+});
+
+test('players without included attempts have no overall or per-round rank',()=>{
+ const unplayed=player('Unplayed',{attempts:0,roundsPlayed:0,roundsCompleted:0,timedRounds:0,best:[]});
+ const excluded=player('Excluded',{attempts:0});
+ const active=player('Active');
+ assert.deepEqual(rankPlayers([unplayed,excluded,active]).map(({id,rank})=>[id,rank]),[['Active',1]]);
+ assert.deepEqual(rankPlayers([unplayed,excluded,active],'01').map(({id,rank})=>[id,rank]),[['Active',1]]);
+ assert.deepEqual(rankPlayers([unplayed,excluded]),[]);
+});
+
+test('public timestamps retain the correct latest activity and winning attempt dates',()=>{
+ const payload={ok:true,schema:'gregor-player-board-v1',players:[player('Dates',{
+  latestAt:'2026-10-19T23:40:15.123Z',
+  best:[{roundNumber:'01',seconds:60,completedAt:'2026-10-19T21:10:00Z'},{roundNumber:'01',seconds:30,completedAt:'2026-10-19T22:30:00.456Z'}]
+ })]};
+ const [clean]=publicPlayers(payload,catalogue);
+ assert.equal(clean.latestAt,'2026-10-19T23:40:15.123Z');
+ assert.equal(clean.best[0].completedAt,'2026-10-19T22:30:00.456Z');
+ assert.equal(clean.best[0].seconds,30);
+});
+
+test('invalid, ambiguous, or missing timestamps are omitted without hiding scores',()=>{
+ const invalid=[undefined,null,0,'October 19, 2026','2026-10-19T12:00:00','2026-10-19T12:00:00-07:00','2026-02-30T12:00:00Z','2026-10-19T25:00:00Z','<script>'];
+ for(const value of invalid){
+  const [clean]=publicPlayers({ok:true,schema:'gregor-player-board-v1',players:[player('Dates',{latestAt:value,best:[{roundNumber:'01',seconds:60,completedAt:value}]})]},catalogue);
+  assert.equal(clean.latestAt,null);assert.equal(clean.best[0].completedAt,null);assert.equal(clean.best[0].seconds,60);
+  assert.equal(playerDateTime(value),null);
+ }
+});
+
+test('date formatting converts UTC to the viewer time zone including date boundaries',()=>{
+ const instant='2026-10-20T01:05:00.000Z';
+ assert.equal(playerDateTime(instant,{locale:'en-US',timeZone:'America/Los_Angeles'}),'Oct 19, 2026, 6:05 PM');
+ assert.equal(playerDateTime(instant,{locale:'en-US',timeZone:'Asia/Tokyo'}),'Oct 20, 2026, 10:05 AM');
+ assert.equal(playerDateTime(instant),new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(instant)));
 });

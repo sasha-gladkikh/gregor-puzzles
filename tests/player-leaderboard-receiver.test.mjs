@@ -235,15 +235,16 @@ test('best times count unique rounds while every started attempt contributes to 
   assert.equal(player.roundsCompleted, 4);
   assert.equal(player.timedRounds, 2);
   assert.equal(player.totalBestSeconds, 52.125);
-  assert.deepEqual(player.best, [{roundNumber: '01', seconds: 42.125, hints: 1, peeks: 2, geneHintsSeen: 3},
-    {roundNumber: '02', seconds: 10, hints: 0, peeks: 0, geneHintsSeen: 0}]);
+  assert.deepEqual(player.best, [{roundNumber: '01', seconds: 42.125, hints: 1, peeks: 2, geneHintsSeen: 3, completedAt: new Date(startedAt + 42125).toISOString()},
+    {roundNumber: '02', seconds: 10, hints: 0, peeks: 0, geneHintsSeen: 0, completedAt: new Date(startedAt + 10000).toISOString()}]);
+  assert.equal(player.latestAt, new Date(startedAt + 45000).toISOString());
 });
 
-test('public summaries expose no authentication material, raw attempts, private timestamps or form identifiers', () => {
+test('public summaries expose selected ISO dates but no authentication material, raw attempts or private event timestamps', () => {
   const h = harness(); h.post(profile()); h.post(attempts([complete()]));
   const result = h.get();
   assert.deepEqual(Object.keys(result).sort(), ['ok', 'players', 'schema', 'updatedAt']);
-  assert.deepEqual(Object.keys(result.players[0]).sort(), ['attempts', 'best', 'displayName', 'id', 'roundsCompleted', 'roundsPlayed', 'timedRounds', 'totalBestSeconds']);
+  assert.deepEqual(Object.keys(result.players[0]).sort(), ['attempts', 'best', 'displayName', 'id', 'latestAt', 'roundsCompleted', 'roundsPlayed', 'timedRounds', 'totalBestSeconds']);
   const output = JSON.stringify(result);
   for (const value of [token, 'tokenHash', 'server-only-key', 'signature', 'receivedAt', 'startedAt', 'finishedAt', attemptId, 'leaderboard-private-form', suggestionId]) {
     assert.ok(!output.includes(value), value);
@@ -252,6 +253,78 @@ test('public summaries expose no authentication material, raw attempts, private 
   assert.ok(h.opened.every(id => id === 'leaderboard-private-form'));
   const publicCache = h.cacheWrites.filter(write => write.key === 'gregor:player-board:v1');
   assert.ok(publicCache.every(write => write.ttl <= 30 && !write.value.includes('tokenHash')));
+});
+
+test('latest activity uses actual included attempt dates and never invents a date for an empty profile', () => {
+  const h = harness(); h.post(profile());
+  assert.equal(h.get().players[0].latestAt, null);
+  assert.deepEqual(h.get().players[0].best, []);
+  assert.equal(h.post(attempts([complete()])).ok, true);
+  const newer = attempt({id: randomUUID(), roundNumber: '02', mode: 'practice', seconds: null, startedAt: startedAt + 60000});
+  assert.equal(h.post(attempts([newer])).ok, true);
+  assert.equal(h.get().players[0].latestAt, new Date(newer.startedAt).toISOString());
+  assert.equal(h.post(attempts([{...newer, revision: 2, status: 'restarted', finishedAt: newer.startedAt + 10000}])).ok, true);
+  assert.equal(h.get().players[0].latestAt, new Date(newer.startedAt + 10000).toISOString());
+  assert.equal(h.get().players[0].best[0].completedAt, new Date(startedAt + 45000).toISOString());
+});
+
+test('owner exclusions preserve the original private log and omit only the selected attempt UUIDs', () => {
+  const h = harness(); h.post(profile());
+  const testActive = attempt({id: randomUUID()});
+  const later = complete({id: randomUUID(), roundNumber: '02', startedAt: startedAt + 1000, finishedAt: startedAt + 21000, seconds: 20});
+  h.post(attempts([complete(), testActive, later]));
+  const original = h.responses.map(response => response.getItemResponses()[0].getResponse());
+  assert.equal(h.get().players[0].attempts, 3); // Cache the pre-exclusion board.
+  const result = h.context.excludePlayerAttemptsBefore_(playerId, startedAt + 500);
+  assert.deepEqual(JSON.parse(JSON.stringify(result)), {matched: 2, added: 2, totalExcluded: 2});
+  assert.deepEqual(h.responses.map(response => response.getItemResponses()[0].getResponse()), original);
+  const remaining = h.get().players[0];
+  assert.equal(remaining.id, playerId, 'The player remains visible');
+  assert.equal(remaining.attempts, 1);
+  assert.equal(remaining.roundsPlayed, 1);
+  assert.equal(remaining.roundsCompleted, 1);
+  assert.equal(remaining.timedRounds, 1);
+  assert.equal(remaining.totalBestSeconds, 20);
+  assert.equal(remaining.latestAt, new Date(later.finishedAt).toISOString());
+  assert.deepEqual(remaining.best.map(record => record.roundNumber), ['02']);
+  assert.equal(h.post(attempts([complete()])).ok, true, 'A retry of an excluded UUID remains excluded');
+  assert.equal(h.post(attempts([complete({id: testActive.id})])).ok, true, 'Later revisions of an excluded UUID remain excluded');
+  assert.equal(h.get().players[0].attempts, 1);
+  const future = complete({id: randomUUID(), roundNumber: '03', startedAt: startedAt + 60000, finishedAt: startedAt + 90000, seconds: 30});
+  assert.equal(h.post(attempts([future])).ok, true);
+  const updated = h.get().players[0];
+  assert.equal(updated.attempts, 2);
+  assert.equal(updated.totalBestSeconds, 50);
+  assert.equal(updated.latestAt, new Date(future.finishedAt).toISOString());
+  assert.equal(h.responses.slice(0, original.length).map(response => response.getItemResponses()[0].getResponse()).join('\n'), original.join('\n'));
+  assert.deepEqual(JSON.parse(JSON.stringify(h.context.excludePlayerAttemptsBefore_(playerId, startedAt + 500))), {matched: 2, added: 0, totalExcluded: 2});
+});
+
+test('excluding every test attempt leaves an empty truthful profile, with no fabricated result or timestamp', () => {
+  const h = harness(); h.post(profile()); h.post(attempts([complete()]));
+  h.context.excludePlayerAttemptsBefore_(playerId, startedAt);
+  const player = h.get().players[0];
+  assert.equal(player.displayName, 'A. Player');
+  assert.equal(player.attempts, 0); assert.equal(player.roundsPlayed, 0); assert.equal(player.roundsCompleted, 0);
+  assert.equal(player.timedRounds, 0); assert.equal(player.totalBestSeconds, 0);
+  assert.equal(player.latestAt, null); assert.deepEqual(player.best, []);
+});
+
+test('invalid exclusion configuration and unsafe owner-helper input fail closed without changing records', () => {
+  for (const configuration of ['{', '{}', '["not-a-uuid"]', '[1]', 'null']) {
+    const h = harness(); h.post(profile()); h.post(attempts([complete()]));
+    h.properties.set('GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS', configuration);
+    assert.equal(h.get().ok, false);
+    assert.throws(() => h.context.excludePlayerAttemptsBefore_(playerId, startedAt), /moderation configuration/);
+    assert.equal(h.properties.get('GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS'), configuration);
+  }
+  const h = harness(); h.post(profile());
+  for (const [id, cutoff] of [['invalid', startedAt], [playerId, 0], [playerId, 1.5], [playerId, Date.now() + 60000]]) {
+    assert.throws(() => h.context.excludePlayerAttemptsBefore_(id, cutoff), /valid player UUID/);
+  }
+  assert.throws(() => h.context.excludePlayerAttemptsBefore_(randomUUID(), startedAt), /not found/);
+  assert.equal(h.properties.has('GREGOR_LEADERBOARD_EXCLUDED_ATTEMPTS'), false);
+  assert.equal(h.responses.length, 1);
 });
 
 test('native form injections, malformed JSON and forged signatures cannot add players or attempts', () => {
