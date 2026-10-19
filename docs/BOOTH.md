@@ -11,13 +11,13 @@ A checklist for running GREGoR Puzzles on a shared device at ASHG, and for testi
 
 ## On the booth device
 
-- Start at round 01, the recommended first round. **Practice** is the default.
+- Start on Home. Invite the visitor to join the leaderboard with a display name, then open round 01. **Practice** is the default; joining is optional.
 - Gene recognition is optional. **Gene hint** offers location/function, a biological connection, then a symbol hint. **Gene bank** explains that a correct choice completes the round.
-- Between visitors, open **Browse rounds → New player → Start fresh**. This clears every round's pieces, hints, and times in that browser.
+- Between visitors, open **Browse rounds → New player → Start fresh**. This saves pending results for a joined player before clearing that browser's progress and identity. If saving fails, reconnect and retry before handing over the device. Previously saved team records remain available.
 - **Collection** shows saved progress and a teaching map of the illustrated processes. Its field guide contains only completed rounds and can be printed or saved as a PDF through the browser's print dialog.
 - **Science** opens full gene profiles without requiring puzzle completion. Its **Editorial review** link opens the reviewer workspace.
 - On an iPad, use Guided Access (Settings → Accessibility) to keep the game in Safari.
-- Quiet placement and completion sounds start on. Mute them with the header sound control if needed; the choice is saved across rounds and reloads. New player resets sound to on. **Timed** begins at the first correct placement or accepted gene answer; mode choice remains available until then. There is no shared ranking. Times include subsequent reading and can end with early gene recognition, so they are not comparable between visitors.
+- Quiet placement and completion sounds start on. Mute them with the header sound control if needed; the choice is saved across rounds and reloads. New player resets sound to on. **Timed** begins at the first correct placement or accepted gene answer; mode choice remains available until then. The public board shows player summaries; qualifying timed image completions can be compared within a round. Practice and gene-answer completions remain in attempt history without a competitive time. Timing includes subsequent reading and is not a measure of genetic knowledge.
 
 ## Testing with first-time players
 
@@ -35,6 +35,8 @@ Record:
 Afterward, ask each person to explain the round's gene–mechanism–clinical connection in their own words. This is an observation for design, not evidence that the game improves learning.
 
 For trainees, also ask what the inheritance label does and does not tell a family, and why recognizing a gene does not establish a diagnosis. Revisit one connection after another round to look for retention; keep this facilitator exercise outside the game. Confirm that an unfamiliar symbol such as SLC29A3 does not prevent a satisfying image-puzzle completion.
+
+Confirm that a joined player can complete a round, replay it, and see two attempts but one completed round. Reload during an attempt and confirm it remains one attempt. Disconnect, finish, reconnect, and confirm the pending result saves once. Switch players and confirm that the next name has a separate history, while the previous player remains on the public board.
 
 Simulate the booth once: three people in a row on one device, standing, in a noisy room, with a two-minute limit, using **New player** between them.
 

@@ -1,0 +1,83 @@
+/* Player records and community standings share the site's quiet blue palette. */
+.player-board { overflow: hidden; }
+.player-profile {
+  margin: 0 0 24px;
+  padding: 18px;
+  border: 1px solid #dce6f5;
+  border-radius: 12px;
+  background: #f6f9fe;
+}
+.player-profile [hidden] { display: none !important; }
+.player-intro { margin: 0 0 14px; color: #3e5476; font-size: 14px; line-height: 1.5; }
+.player-join > label { display: block; margin-bottom: 7px; color: #233b61; font-size: 13px; font-weight: 650; }
+.player-join-fields { display: flex; gap: 9px; }
+.player-join input {
+  width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px;
+  border: 1px solid #bccde4; border-radius: 8px; background: #fff; color: #182f52;
+  font: inherit; font-size: 16px;
+}
+.player-join-submit { flex-shrink: 0; min-height: 46px; padding: 10px 14px; font-size: 14px; }
+.player-name-help, .player-privacy, .player-history-note { margin: 8px 0 0; color: #5b6d87; font-size: 12px; line-height: 1.55; }
+.player-privacy { margin-top: 12px; }
+.player-status { margin: 12px 0 0; color: #34624f; font-size: 12px; line-height: 1.55; }
+.player-status-error { color: #81532a; }
+.player-identity { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.player-identity > strong { min-width: 0; font-size: 18px; color: #18355f; overflow-wrap: anywhere; }
+.player-identity > button { flex-shrink: 0; font-size: 12px; }
+.player-stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; padding: 14px 0 3px; }
+.player-stats > div { display: flex; flex-direction: column; gap: 3px; }
+.player-stats strong { color: #173760; font-size: 23px; line-height: 1.2; font-weight: 650; font-variant-numeric: tabular-nums; }
+.player-stats span { color: #60728c; font-size: 11px; line-height: 1.4; }
+.player-account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; }
+.player-account-actions .home-text-button { font-size: 12px; }
+.player-leave { color: #64748a; }
+.player-history { margin-top: 13px; border-top: 1px solid #dce5f1; }
+.player-history > summary { min-height: 44px; padding: 13px 0 8px; color: #294e85; font-size: 13px; font-weight: 600; cursor: pointer; }
+.player-history-note { margin-top: 0; }
+.player-history-list { list-style: none; padding: 0; margin: 13px 0 0; }
+.player-attempt { padding: 12px 0; border-top: 1px solid #e0e8f3; }
+.player-attempt-heading { display: flex; align-items: start; justify-content: space-between; gap: 9px; }
+.player-attempt-heading > a { min-width: 0; color: #1d477f; font-size: 13px; font-weight: 600; line-height: 1.4; text-decoration: none; }
+.player-attempt-heading > a:hover { text-decoration: underline; }
+.attempt-state { flex-shrink: 0; padding: 2px 6px; border: 1px solid #d4dfef; border-radius: 4px; color: #576a86; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.attempt-completed { border-color: #c8dfd6; color: #316653; background: #eef8f3; }
+.player-attempt-detail { margin: 6px 0 3px; color: #556984; font-size: 12px; line-height: 1.55; }
+.player-attempt-date { color: #718099; font-size: 11px; }
+.player-table-wrap { width: 100%; overflow-x: auto; }
+.player-table { font-size: 13px; }
+.player-table th { padding: 0 5px 9px; font-size: 11px; }
+.player-table td { padding: 12px 5px; }
+.player-table .player-name-cell { padding: 12px 5px; border-top: 1px solid #e6edf5; color: #253d61; font-size: 13px; font-weight: 600; text-align: left; overflow-wrap: anywhere; }
+.player-table .player-name-cell > span:first-child { display: inline; }
+.player-table .player-rank { width: 30px; }
+.player-table .player-round-count { white-space: nowrap; }
+.player-table small { display: block; margin-top: 3px; color: #65758d; font-size: 10px; font-weight: 400; line-height: 1.4; white-space: normal; }
+.player-table .is-you { background: #f4f8ff; }
+.player-you { display: inline-block; margin: 3px 0 0 5px; padding: 1px 5px; border-radius: 4px; color: #235ac4; background: #e8f0ff; font-size: 10px; font-weight: 600; }
+.player-table .score-time { font-size: 12px; }
+.player-leave-dialog { max-width: 440px; width: calc(100% - 32px); padding: 26px; border: 1px solid #d8e1ee; border-radius: 16px; color: #243e61; background: #fff; box-shadow: 0 20px 70px #10254d30; }
+.player-leave-dialog::backdrop { background: #0c173f66; }
+.player-leave-dialog h3 { margin: 0 0 12px; font-size: 22px; }
+.player-leave-dialog p { margin: 0; font-size: 14px; line-height: 1.6; }
+.player-dialog-actions { display: flex; justify-content: end; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.player-dialog-actions button { min-height: 44px; font-size: 13px; }
+.player-profile button:disabled, .player-board > .leaderboard-bottom button:disabled { opacity: .55; cursor: wait; }
+@media (min-width: 900px) {
+  .home-community .community-grid { grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); }
+}
+@media (max-width: 599px) {
+  .player-profile { padding: 14px; margin-bottom: 20px; }
+  .player-join-fields { flex-direction: column; }
+  .player-join-submit { width: 100%; }
+  .player-board .leaderboard-bottom { gap: 6px; }
+  .player-board .leaderboard-bottom .home-secondary { font-size: 13px; }
+  .player-table th { padding-left: 3px; padding-right: 3px; font-size: 10px; }
+  .player-table td, .player-table .player-name-cell { padding-left: 3px; padding-right: 3px; font-size: 11px; }
+  .player-table .score-time { font-size: 11px; }
+  .player-table .player-rank { width: 24px; }
+  .player-table small { font-size: 9px; }
+  .player-attempt-heading { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .player-profile *, .player-table * { scroll-behavior: auto; }
+}

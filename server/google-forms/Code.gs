@@ -1,7 +1,8 @@
 /**
  * GREGoR Puzzles: anonymous, write-only suggestion receiver.
  * Deploy as a web app, execute as the owner, accessible to anyone.
- * Only the Forms OAuth scope is needed. Never add a response-reading endpoint.
+ * Only the Forms OAuth scope is needed. Suggestion responses are never readable.
+ * Named-player routes use a separate private form in Leaderboard.gs.
  * Client requests use text/plain JSON (no custom headers or credentials).
  * Cache-based retry protection is best effort, expires within six hours, and
  * cannot guarantee exactly-once delivery across cache eviction or service failure.
@@ -26,7 +27,8 @@ function jsonOutput_(value) {
 }
 
 // Reports only protocol readiness. Does not open the form or expose responses.
-function doGet() {
+function doGet(event) {
+  if (event && event.parameter && event.parameter.action === 'leaderboard') return leaderboardGet_(event);
   return jsonOutput_({ok: true, service: 'gregor-suggestions', schema: 1});
 }
 
@@ -107,6 +109,13 @@ function checkedForm_(form) {
 }
 
 function doPost(event) {
+  // Keep the suggestion protocol separate. Only this explicit schema can reach
+  // the named-player service; its handler validates media type and size again.
+  if (event && event.postData && typeof event.postData.contents === 'string' && event.postData.contents.length <= 48000) {
+    let route;
+    try { route = JSON.parse(event.postData.contents); } catch (_) { /* validated below */ }
+    if (route && route.schema === 'gregor-player-v1') return leaderboardPost_(event);
+  }
   let lock;
   let locked = false;
   try {

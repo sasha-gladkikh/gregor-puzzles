@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="./home.css">
   <link rel="stylesheet" href="./home-demo.css">
   <link rel="stylesheet" href="./home-map.css">
+  <link rel="stylesheet" href="./player.css">
   <script type="module" src="./home.mjs"></script>
 </head>
 <body class="home-page">
@@ -104,14 +105,14 @@
     <section class="home-community" aria-labelledby="communityTitle">
       <div class="home-section-heading"><div><p class="home-eyebrow">Join in</p><h2 id="communityTitle">Play and contribute.</h2></div></div>
       <div class="community-grid">
-        <section id="leaderboard" class="community-card leaderboard-card" aria-labelledby="leaderboardTitle">
-          <div class="card-heading"><div><h3 id="leaderboardTitle">Community leaderboard</h3><p>Try a timed round and find your next personal best.</p></div></div>
-          <div class="leaderboard-filter"><label for="leaderboardRound">Round</label><select id="leaderboardRound"><option value="01">01 · Membrane transport</option></select></div>
+        <section id="leaderboard" class="community-card leaderboard-card player-board" aria-labelledby="leaderboardTitle">
+          <div class="card-heading"><div><h3 id="leaderboardTitle">Community leaderboard</h3><p>Build your collection. Keep every attempt. Find your personal best.</p></div></div>
+          <div id="playerProfile" class="player-profile" aria-label="Your player profile"></div>
+          <div class="leaderboard-filter"><label for="leaderboardRound">View</label><select id="leaderboardRound"><option value="overall">Overall progress</option></select></div>
           <div id="leaderboardResults" class="leaderboard-results" aria-live="polite"><p class="board-loading">Loading the leaderboard…</p></div>
           <p id="leaderboardUpdated" class="board-updated" hidden></p>
-          <div class="leaderboard-bottom"><a id="timedPlay" class="home-secondary" href="./play.html?level=01&amp;mode=timed">Play a timed round <span aria-hidden="true">→</span></a><button id="showScore" class="home-text-button" type="button" hidden>Submit a time <span aria-hidden="true">↗</span></button></div>
-          <p id="scoreRequirement" class="score-requirement" hidden>Submit via GitHub · reviewed before publishing</p>
-          <details class="board-rules"><summary>How times work</summary><p>Place all 12 pieces in Timed mode. The clock starts at your first correct placement and continues in the background. Hints and reference views are allowed. Completing a round with a gene answer does not qualify.</p><p>Times are self-reported, ranked within each round, and published after review. This measures puzzle speed, not genetics knowledge. GitHub sign-in is needed to submit.</p></details>
+          <div class="leaderboard-bottom"><a id="timedPlay" class="home-secondary" href="./play.html?level=01&amp;mode=timed">Play a timed round <span aria-hidden="true">→</span></a><button id="refreshLeaderboard" class="home-text-button" type="button">Refresh standings</button></div>
+          <details class="board-rules"><summary>How the leaderboard works</summary><p>Overall standings count distinct rounds completed. Replaying a round adds an attempt, not another completed round. Players with the same partial progress share a rank. Once every round has a qualifying timed result, the total of their best times breaks ties.</p><p>Round standings use your fastest eligible image-puzzle time. Hints and reference views are allowed and shown. Gene-answer completions and untimed practice count toward progress, but not speed rankings. Times are recorded by the browser and are not independently verified; they measure puzzle speed, not genetics knowledge.</p><p>Join with a display name to save your attempts for the GREGoR Puzzles team and appear publicly. No account required. Use the same browser to keep one player record; matching names on different devices are separate players.</p></details>
         </section>
         <section id="suggest" class="community-card suggestion-card" aria-labelledby="suggestTitle">
           <details id="suggestionDisclosure" class="suggestion-disclosure">
@@ -142,6 +143,6 @@
     <noscript><p class="home-noscript">Enable JavaScript to play and view the leaderboard. You can still <a href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">suggest a puzzle</a> without signing in.</p></noscript>
   </main>
   <div id="siteFooter"></div>
-  <dialog id="scoreDialog" aria-labelledby="scoreTitle"><button id="closeScore" class="dialog-close" type="button" aria-label="Close time submission">×</button><p class="home-eyebrow">Your next personal best</p><h2 id="scoreTitle">Share a puzzle time.</h2><p>Choose a completed timed round from this browser.</p><div id="scoreChoices"></div><p class="form-note">GitHub opens with your time and play details. Check them, then submit. Your GitHub username and time will be public; leaderboard entries appear after review.</p></dialog>
+
 </body>
 </html>

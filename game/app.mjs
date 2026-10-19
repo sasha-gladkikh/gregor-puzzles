@@ -16,7 +16,8 @@ import {createFigureView} from './figure-view.mjs';
 import {artworkSource} from './artwork-source.mjs';
 import {latestPlayClue} from './play-learning.mjs';
 import {nextOpenSlot} from './board-navigation.mjs';
-import {eligibleScore,scoreIssueURL} from './community.mjs';
+import {eligibleScore} from './community.mjs';
+import {getPlayer,getPlayerStatus,getAttempt,hasAttempt,startAttempt,updateAttempt,finishAttempt,syncPlayer,newPlayer} from './player.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
@@ -36,6 +37,12 @@ try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
 let {state,timed,order} = restoreSession(stored);
 // Preserve timing provenance when restoreSession normalizes older saves.
 if(stored?.timed&&stored.state&&(stored.state.sessionVersion!==3||stored.state.timingVersion!==2||(stored.state.placed?.length&&!Number.isFinite(stored.state.startedAt))||(stored.state.placed?.length===SIZE&&!Number.isFinite(stored.state.finishedAt))))state.leaderboardIneligible=true;
+// Only an accepted action in a fresh round creates history. Older saved
+// completions and untracked progress are never backfilled as new attempts.
+let attemptMeta=hasAttempt(state.playerAttempt)&&getAttempt(state.playerAttempt).roundNumber===round.number?state.playerAttempt:null;
+const pagePlayerId=getPlayer().id;
+window.addEventListener('gregor-player-change',()=>{if(getPlayer().id!==pagePlayerId)location.replace(`./play.html?level=${rounds[0].number}`);});
+let canTrackFresh=!state.placed.length&&!state.seconds&&state.startedAt===null&&!state.timingUnavailable&&!state.leaderboardIneligible;
 let timedEntry=params.get('mode')==='timed';
 if(timedEntry){const entryURL=new URL(location.href);entryURL.searchParams.delete('mode');history.replaceState(null,'',entryURL.href);}
 if(timedEntry&&!modeLocked(state)){timed=changeTimingMode(state,timed,true);timedEntry=false;}
@@ -85,7 +92,11 @@ function discoveryTarget(item){
   if(!latest.hidden&&rect.height&&rect.top>=0&&rect.bottom<=innerHeight)return latest;
   return $('discoveriesButton');
 }
-const save = () => { try {localStorage.setItem(KEY,JSON.stringify({state,timed,order}));$('saveNotice').hidden=true;} catch {$('saveNotice').hidden=false;} renderCollection(); };
+const save = () => {
+  if(attemptMeta)updateAttempt(attemptMeta,{state,timed});
+  try {localStorage.setItem(KEY,JSON.stringify({state,timed,order}));$('saveNotice').hidden=getPlayerStatus().available;} catch {$('saveNotice').hidden=false;}
+  renderCollection();renderPlayerResult();
+};
 function strip(message,items=[]) {
   const fresh=items.length>0;
   $('placementFeedback').textContent=fresh?`${state.placed.length} of ${SIZE} placed. New clue.`:message;
@@ -110,7 +121,18 @@ function openDiscoveries(noteIndex=null) {
   if(!unlocked.length&&!found.length)body.append(node('p','Place pieces to reveal clues. The first milestone clue appears at two pieces.'));
   $('discoveriesButton').classList.remove('has-new');openDialog('discoveriesDialog');
 }
-function start(useRoute = 'image',accepted=false) { void sound.prepare();if(!artworkPrepared){artworkPrepared=true;void preloadArtwork(round);} if(accepted)startRound(state,timed,useRoute);else recordInteraction(state,useRoute);save();updateMode(); }
+function start(useRoute='image',accepted=false,before=state.placed.length){
+  void sound.prepare();if(!artworkPrepared){artworkPrepared=true;void preloadArtwork(round);}
+  if(accepted){
+    startRound(state,timed,useRoute);
+    if(!attemptMeta&&canTrackFresh&&before===0){
+      attemptMeta=startAttempt({roundNumber:round.number,state,timed,before});
+      if(attemptMeta)state.playerAttempt=attemptMeta;
+      canTrackFresh=false;void syncPlayer().catch(()=>{});
+    }
+  }else recordInteraction(state,useRoute);
+  save();updateMode();
+}
 function svgEl(tag,attrs={}) { const n=document.createElementNS(NS,tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); return n; }
 function artworkPiece(id,prefix) {
   const g=svgEl('g'), clip=svgEl('clipPath',{id:prefix+id});
@@ -186,6 +208,10 @@ function discoveries(before,previous) {
 }
 function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   finishRound(state);
+  if(roundComplete(state)&&attemptMeta){
+    finishAttempt(attemptMeta,{state,timed,eligible:Boolean(eligibleScore(round,{state,timed}))});
+    void syncPlayer().catch(()=>{});
+  }
   const found=discoveries(before,previous);
   const finishing=roundComplete(state)&&before<SIZE;
   $('board').classList.toggle('finishing',finishing&&!reducedMotion());
@@ -225,7 +251,7 @@ function attempt(slot) {
     const path=slotAt(slot);path?.classList.remove('miss');path?.getBoundingClientRect();path?.classList.add('miss');setTimeout(()=>path?.classList.remove('miss'),450);
     strip('Try another position. Match the shape and image.');return;
   }
-  start('image',true);selected=null; hinted=null; afterProgress(before,previous,{id,from});
+  start('image',true,before);selected=null; hinted=null; afterProgress(before,previous,{id,from});
 }
 function startDrag(e,id,b) {
   if(e.pointerType==='touch'||e.button!==0||state.placed.includes(id))return;
@@ -266,11 +292,20 @@ function updateMode() {
   $('timingNote').textContent=modeLocked(state)?'Restart to change mode.':'Choose a mode before placing your first piece. Hints and reference views do not start the timer.';
   $('clock').hidden=!timed||state.timingUnavailable||complete(state); $('clock').textContent=formatTime(elapsedSeconds(state));
 }
+function renderPlayerResult(){
+  const target=$('playerResult');if(!target)return;
+  const attempt=attemptMeta?getAttempt(attemptMeta):null;target.hidden=!complete(state)||!attempt;
+  if(target.hidden)return;
+  const player=getPlayer(),status=getPlayerStatus();
+  target.textContent=!status.available?'Your browser is blocking saved history. Keep this page open.':player.joined?(status.pending?'Saved to your player history. Leaderboard sync pending.':`Saved to ${player.displayName}’s player history and leaderboard.`):'Saved to your player history in this browser. Add a name on the leaderboard to share your progress.';
+}
+window.addEventListener('gregor-player-change',renderPlayerResult);
 function renderResults() {
   const plural=(n,word)=>`${n} ${word}${n===1?'':'s'}`;
   const mode=timed?(state.timingUnavailable?'Timed · time unavailable':`Timed · ${formatTime(elapsedSeconds(state))}`):'Practice';
   const route=state.solvedByGuess?(state.namedAt!==null?`Identified this round at ${state.namedAt} of ${SIZE} pieces`:'Gene recognition'):state.usedRoutes.includes('legacy')?'Restored progress':'Image puzzle';
   $('roundResults').textContent=[mode,route,plural(state.hints,'hint'),plural(state.peeks,'reference view')].join(' · ');
+  renderPlayerResult();
 }
 function render(before=state.placed.length) {
   const n=state.placed.length, done=complete(state);
@@ -364,7 +399,7 @@ function checkGene(value,fromBank=false){
   start('guess');const before=state.placed.length,previous=[...state.placed];
   const answer=recognizeGene(value,round);
   if(answer&&answer.kind!=='ambiguous'&&guess(state,round.gene,round.gene)){
-    start('guess',true);
+    start('guess',true,before);
     const alias=answer.kind==='product'?` ${answer.name} is encoded by ${round.gene}.`:answer.kind==='alias'?` ${answer.name} is a previous symbol for ${round.gene}.`:'';
     if(fromBank)$('geneBankDialog').close();
     selected=null;hinted=null;afterProgress(before,previous,{alias});
@@ -398,12 +433,14 @@ $('enlargeButton').onclick=()=>{if(complete(state))figureView.open();};
 $('closeFigure').onclick=()=>figureView.close();
 function resetRestartCopy(){
   $('restartDialog').querySelector('h2').textContent='Restart this round?';
-  $('restartDialog').querySelector('p').textContent='Restarting clears your pieces and timer. You can choose Practice or Timed again.';
+  $('restartDialog').querySelector('p').textContent='Restarting resets this puzzle. Your recorded attempts stay in your player history.';
   $('confirmRestart').textContent='Restart round';
 }
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>{timedEntry=false;$('restartDialog').close();resetRestartCopy();};
 $('restartDialog').addEventListener('cancel',()=>{timedEntry=false;resetRestartCopy();});
 $('confirmRestart').onclick=()=>{
+  if(attemptMeta){finishAttempt(attemptMeta,{state,timed,status:'restarted'});void syncPlayer().catch(()=>{});}
+  attemptMeta=null;canTrackFresh=true;
   completionPlayback.cancel();
   feedbackEpoch++;roundGeneration++;pieceMotion.clear();figureView.close();artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
   $('board').classList.remove('finishing');
@@ -421,9 +458,14 @@ $('confirmRestart').onclick=()=>{
 };
 document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();openDialog('newPlayerDialog');});
 $('cancelNewPlayer').onclick=()=>$('newPlayerDialog').close();
-$('confirmNewPlayer').onclick=()=>{
-  try{newPlayerKeys(Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))).forEach(key=>localStorage.removeItem(key));}catch{}
-  location.href=`./play.html?level=${rounds[0].number}`;
+$('confirmNewPlayer').onclick=async()=>{
+  const button=$('confirmNewPlayer'),notice=$('newPlayerStatus');button.disabled=true;notice.textContent='Saving any pending results…';
+  try{
+    await newPlayer();
+    // Preserve the newly rotated player identity while clearing old game saves.
+    try{newPlayerKeys(Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))).filter(key=>!key.startsWith('gregor-puzzles:player:v1:')).forEach(key=>localStorage.removeItem(key));}catch{}
+    location.href=`./play.html?level=${rounds[0].number}`;
+  }catch(error){notice.textContent=`${error.message} Your current player and history have been kept. Retry when connected, or cancel.`;button.disabled=false;}
 };
 window.addEventListener('keydown',e=>{
   if(e.defaultPrevented||e.key!=='Escape'||selected===null||document.querySelector('dialog[open]'))return;
@@ -468,21 +510,19 @@ $('figureDialogTitle').textContent=round.gene;$('figureDialogCondition').textCon
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
 $('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
 buildBoard();buildTray();render();save();
+void syncPlayer().catch(()=>{});
+window.addEventListener('pageshow',()=>void syncPlayer().catch(()=>{}));
 if(roundComplete(state))strip('Round complete. Your illustration and results are saved.');
 else if(state.started)strip('Your progress is restored.'+(timed&&state.startedAt!==null?' Elapsed time continues.':''));
 else strip('Tap a piece, then tap its matching space.');
 if(timedEntry&&modeLocked(state)){
   $('restartDialog').querySelector('h2').textContent='Start a new timed round?';
-  $('restartDialog').querySelector('p').textContent='This replaces your saved attempt for this round. Your other rounds stay saved.';
+  $('restartDialog').querySelector('p').textContent='This starts a fresh timed puzzle. Your recorded attempts and other rounds stay saved.';
   $('confirmRestart').textContent='Start timed round';
   openDialog('restartDialog');
 }
 
 function renderCollection(includeCards=false) {
-  const score=eligibleScore(round,{state,timed,order});
-  let scoreLink=$('submitRoundTime');
-  if(score&&!scoreLink){scoreLink=node('a','Submit time ↗','tool');scoreLink.id='submitRoundTime';scoreLink.target='_blank';scoreLink.rel='noopener noreferrer';$('completionActions').append(scoreLink);}
-  if(scoreLink){scoreLink.hidden=!score;if(score){scoreLink.href=scoreIssueURL(score);scoreLink.title='Review your public time submission on GitHub';}}
   const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
   const count=progress.filter(p=>p.done).length,anyStarted=progress.some(p=>p.started);
   $('collectionCount').textContent=`${count} of ${rounds.length} complete`;
