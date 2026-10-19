@@ -81,35 +81,6 @@ export function scoreIssueURL(score) {
   ].join('\n'));
 }
 
-function cleanField(value, name, limit, required = true) {
-  if (typeof value !== 'string') throw new TypeError(`${name} must be text.`);
-  const text = value.trim().replace(/\r\n?/g, '\n');
-  if (required && !text) throw new TypeError(`Add ${name.toLowerCase()}.`);
-  if (text.length > limit) throw new RangeError(`${name} must be ${limit} characters or fewer.`);
-  if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u202a-\u202e\u2066-\u2069]/u.test(text)) throw new TypeError(`${name} contains unsupported characters.`);
-  return text;
-}
-const quote = value => value.split('\n').map(line => `> ${line.replace(/[\\`*_{}\[\]()<>#!|~]/g, '\\$&')}`).join('\n');
-export function suggestionIssueURL({gene, condition, phenotypes = '', reference = ''} = {}) {
-  const symbol = cleanField(gene, 'Gene', 60);
-  if (!/^[A-Za-z0-9][A-Za-z0-9 ._/-]*$/.test(symbol)) throw new TypeError('Use a gene symbol or name without links or formatting.');
-  const disease = cleanField(condition, 'Condition', 160);
-  const features = cleanField(phenotypes, 'Phenotypes', 600, false);
-  const source = cleanField(reference, 'Reference', 300, false);
-  if (source) {
-    let parsed;
-    try { parsed = new URL(source); } catch { throw new TypeError('Reference must be a complete http or https URL.'); }
-    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) throw new TypeError('Reference must be a public http or https URL without credentials.');
-  }
-  return newIssueURL(`Puzzle suggestion · ${symbol.replace(/\s+/g, ' ')} · ${disease.replace(/\s+/g, ' ')}`, [
-    '## Suggested gene–condition association',
-    `**Gene**\n${quote(symbol)}`, `**Condition**\n${quote(disease)}`,
-    `**Phenotypes or teaching points**\n${quote(features || 'Not provided')}`,
-    `**Public reference**\n${quote(source || 'Not provided')}`,
-    '', 'This is a suggestion for educational content, not a patient case or a claim that this association has been verified. Please include public scientific information only. Do not submit patient details, personal genetic results, contact details, or unpublished family data.',
-  ].join('\n\n'));
-}
-
 export function parseIssueScore(issue) {
   if (!plainObject(issue) || Object.hasOwn(issue, 'pull_request') || !Array.isArray(issue.labels) || !issue.labels.some(label => (typeof label === 'string' ? label : label?.name) === SCORE_LABEL)) return null;
   if (!integerWithin(issue.number, 1, Number.MAX_SAFE_INTEGER) || issue.html_url !== `${COMMUNITY_REPOSITORY}/issues/${issue.number}`) return null;

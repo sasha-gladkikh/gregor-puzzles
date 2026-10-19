@@ -1,9 +1,10 @@
 import {renderSite} from './site.mjs';
+import {initSuggestionForm} from './suggestions.mjs';
 import {rounds,saveKey} from './rounds.mjs';
 import {collectionProgress} from './collection.mjs';
 import {pathFor,SIZE} from './engine.mjs';
 import {legacyPlayURL,nextHomeRound} from './home-state.mjs';
-import {eligibleScore,formatTime,scoreIssueURL,suggestionIssueURL,rankScores} from './community.mjs';
+import {eligibleScore,formatTime,scoreIssueURL,rankScores} from './community.mjs';
 
 const legacy=legacyPlayURL(location.search,location.hash);
 if(legacy)location.replace(legacy);
@@ -16,6 +17,7 @@ function initHome(){
  const saved=round=>{try{return JSON.parse(read(saveKey(round)));}catch{return null;}};
  const playURL=(round,timed=false)=>`./play.html?level=${round.number}${timed?'&mode=timed':''}`;
  renderSite({active:'home'});
+ initSuggestionForm();
  $('roundCount').textContent=rounds.length;
  function progress(){
   const items=collectionProgress(read),next=nextHomeRound(items),done=items.filter(item=>item.done).length;
@@ -47,7 +49,6 @@ function initHome(){
   $('scoreDialog').showModal();
  });
  $('closeScore').addEventListener('click',()=>$('scoreDialog').close());
- $('suggestionForm').addEventListener('submit',event=>{event.preventDefault();const values=Object.fromEntries(new FormData(event.currentTarget));try{const href=suggestionIssueURL(values);const link=external(node('a','Open your suggestion on GitHub ↗'),href);$('suggestionStatus').replaceChildren(document.createTextNode('Your draft is ready. '),link);window.open(href,'_blank','noopener,noreferrer');}catch(error){$('suggestionStatus').textContent=error.message||'Check the fields and try again.';}});
  // One short assembly, never a looping distraction. The same geometry as play.
  const svg=$('heroPuzzle'),ns='http://www.w3.org/2000/svg';
  const imageURL=$('heroFallback').getAttribute('src');

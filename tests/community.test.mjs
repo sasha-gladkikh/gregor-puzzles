@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {allRounds} from '../game/rounds.mjs';
 import {newState, place} from '../game/engine.mjs';
 import {startRound, finishRound} from '../game/session.mjs';
-import {eligibleScore, formatTime, scoreIssueURL, suggestionIssueURL, parseIssueScore, rankScores, loadLeaderboard, COMMUNITY_REPOSITORY} from '../game/community.mjs';
+import {eligibleScore, formatTime, scoreIssueURL, parseIssueScore, rankScores, loadLeaderboard, COMMUNITY_REPOSITORY} from '../game/community.mjs';
 
 function session(seconds = 45.125) {
   const state = newState();
@@ -122,26 +122,6 @@ test('time formatting carries rounded seconds and stays meaningful above an hour
   assert.equal(formatTime(-2), '—');
 });
 
-test('suggestions are bounded public drafts with no labels or executable links', () => {
-  const url = new URL(suggestionIssueURL({gene: 'FAM177A1', condition: 'Neurodevelopmental disorder', phenotypes: 'Developmental delay\nSpeech delay', reference: 'https://omim.org/entry/619812'}));
-  assert.deepEqual([...url.searchParams.keys()], ['title', 'body']);
-  assert.equal(url.origin + url.pathname, `${COMMUNITY_REPOSITORY}/issues/new`);
-  assert.match(url.searchParams.get('body'), /patient details/);
-  assert.match(url.searchParams.get('body'), /> Developmental delay\n> Speech delay/);
-  assert.match(new URL(suggestionIssueURL({gene: 'ABC1', condition: '<script>alert(1)</script>'})).searchParams.get('body'), /\\<script\\>/);
-  for (const invalid of [
-    {gene: '', condition: 'Example'},
-    {gene: 'A'.repeat(61), condition: 'Example'},
-    {gene: 'ABC1', condition: 'A'.repeat(161)},
-    {gene: 'ABC1', condition: 'Example', phenotypes: 'A'.repeat(601)},
-    {gene: 'ABC1', condition: 'Example', reference: 'https://example.com/' + 'a'.repeat(300)},
-    {gene: 'ABC1', condition: 'Example', reference: 'javascript:alert(1)'},
-    {gene: 'ABC1', condition: 'Example', reference: 'https://user:secret@example.com/'},
-    {gene: '<img>', condition: 'Example'},
-    {gene: 'ABC1', condition: 'Example\u202e'},
-  ]) assert.throws(() => suggestionIssueURL(invalid));
-});
-
 test('leaderboard loader uses all states and pages without following arbitrary URLs', async () => {
   const requests = [];
   const controller = new AbortController();
@@ -178,11 +158,6 @@ test('legacy provenance remains disqualifying after a normalized session is save
   const persistedAgain = JSON.parse(JSON.stringify(saved));
   assert.equal(eligibleScore(allRounds[0], persistedAgain), null);
   assert.ok(eligibleScore(allRounds[0], session()), 'a new timed attempt is eligible');
-});
-
-test('encoded suggestion URLs have a conservative bound even when field character limits pass', () => {
-  assert.throws(() => suggestionIssueURL({gene:'G'.repeat(60),condition:'病'.repeat(160),phenotypes:'病'.repeat(600),reference:'https://example.org/'+'r'.repeat(280)}), /draft is too long/);
-  assert.ok(suggestionIssueURL({gene:'GJB2',condition:'聴覚の状態',phenotypes:'Published phenotype',reference:''}).length < 7500);
 });
 
 const {revokeScoreApproval} = await import('../scripts/revoke-score-approval.mjs');

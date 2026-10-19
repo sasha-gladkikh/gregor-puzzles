@@ -41,18 +41,26 @@
     </section>
     <section id="suggest" class="community-card suggestion-card" aria-labelledby="suggestTitle">
       <div class="card-heading"><span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6m-5 3h4M8 14a6 6 0 1 1 8 0l-1 2H9Z"/></svg></span><div><h3 id="suggestTitle">What should we puzzle over next?</h3><p>Suggest a gene, a condition, and its clinical features.</p></div></div>
-      <form id="suggestionForm">
-        <div class="form-pair"><label for="suggestGene">Gene<input id="suggestGene" name="gene" placeholder="e.g. FAM177A1" maxlength="60" required autocomplete="off" spellcheck="false"></label><label for="suggestCondition">Condition<input id="suggestCondition" name="condition" placeholder="Associated condition" maxlength="160" required autocomplete="off"></label></div>
-        <label for="suggestPhenotypes">Phenotypes<textarea id="suggestPhenotypes" name="phenotypes" placeholder="Key clinical features or HPO terms" rows="2" maxlength="600" required></textarea></label>
-        <label for="suggestReference">Reference <span class="field-optional">optional</span><input id="suggestReference" name="reference" type="url" placeholder="https://…  OMIM or a publication" maxlength="300"></label>
-        <div class="suggestion-footer"><button class="home-secondary" type="submit">Review on GitHub <span aria-hidden="true">↗</span></button><span>Then submit your suggestion.</span></div>
-        <p class="form-note">Submissions are public and require a GitHub account. Share published science, without patient details.</p><p id="suggestionStatus" class="form-status" role="status"></p>
+      <form id="suggestionForm" method="post" aria-describedby="suggestionPrivacy">
+        <fieldset id="suggestionFields" class="suggestion-fields" disabled>
+          <legend class="sr-only">Your puzzle suggestion</legend>
+          <div class="suggestion-pair"><label for="suggestGene">Gene<input id="suggestGene" name="gene" placeholder="Gene symbol" maxlength="60" required autocomplete="off" spellcheck="false"></label><label for="suggestCondition">Condition<input id="suggestCondition" name="condition" placeholder="Associated condition" maxlength="160" required autocomplete="off"></label></div>
+          <label for="suggestPhenotypes">Phenotypes<textarea id="suggestPhenotypes" name="phenotypes" placeholder="Key clinical features or HPO terms" rows="3" maxlength="2000" required></textarea></label>
+          <label for="suggestReference">Reference <span class="field-optional">optional</span><input id="suggestReference" name="reference" type="url" placeholder="OMIM entry or publication URL" maxlength="500" autocomplete="off"></label>
+          <div class="suggestion-pair suggestion-contact"><label for="suggestName">Name <span class="field-optional">optional</span><input id="suggestName" name="name" maxlength="100" autocomplete="name"></label><label for="suggestEmail">Email <span class="field-optional">optional</span><input id="suggestEmail" name="email" type="email" maxlength="254" autocomplete="email" aria-describedby="suggestionPrivacy"></label></div>
+          <div class="suggestion-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+          <div class="suggestion-footer"><button id="suggestionSubmit" class="suggestion-submit" type="submit">Send suggestion <span aria-hidden="true">→</span></button><span>No sign-in required.</span></div>
+        </fieldset>
+        <p id="suggestionPrivacy" class="form-note">Responses go privately to the GREGoR Puzzles team. Leave an email if you’d like us to follow up. Share published science, without patient details.</p>
+        <p id="suggestionStatus" class="suggestion-status" role="status" tabindex="-1"></p>
+        <p id="suggestionFallback" class="suggestion-fallback" hidden><a id="suggestionLink" href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">Use the alternative form <span aria-hidden="true">↗</span></a><span>An earlier attempt may already have been received.</span></p>
       </form>
+      <div id="suggestionSuccess" class="suggestion-success" tabindex="-1" role="status" hidden><span class="suggestion-check" aria-hidden="true">✓</span><h4>Thank you for the idea.</h4><p>Your suggestion has been saved for the GREGoR Puzzles team.</p><button id="suggestionAnother" class="home-secondary" type="button">Suggest another puzzle</button></div>
     </section>
   </div>
 </section>
 <section class="home-explore" aria-labelledby="exploreTitle"><div><p class="home-eyebrow">Small pieces. Fascinating science.</p><h2 id="exploreTitle">There’s a whole collection to discover.</h2><a class="home-text-link" href="./collection.html">Find your next puzzle <span aria-hidden="true">→</span></a></div><div class="explore-thumbnails" aria-hidden="true"><img src="./artwork/02.webp" alt="" width="800" height="600" loading="lazy"><img src="./artwork/05.webp" alt="" width="800" height="600" loading="lazy"><img src="./artwork/10.webp" alt="" width="800" height="600" loading="lazy"></div></section>
-<noscript><p class="home-noscript">Enable JavaScript to play and use the community features. <a href="https://github.com/sasha-gladkikh/gregor-puzzles/issues/new">You can also suggest a puzzle on GitHub.</a></p></noscript>
+<noscript><p class="home-noscript">Enable JavaScript to play and view the leaderboard. You can still <a href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">suggest a puzzle</a> without signing in.</p></noscript>
 </main><div id="siteFooter"></div>
 <dialog id="scoreDialog" aria-labelledby="scoreTitle"><button id="closeScore" class="dialog-close" type="button" aria-label="Close time submission">×</button><p class="home-eyebrow">Your next personal best</p><h2 id="scoreTitle">Share a puzzle time.</h2><p>Choose a completed timed round from this browser.</p><div id="scoreChoices"></div><p class="form-note">GitHub opens with your time and play details. Check them, then submit. Your GitHub username and time will be public; leaderboard entries appear after review.</p></dialog>
 </body></html>
