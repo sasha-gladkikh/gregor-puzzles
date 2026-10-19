@@ -67,7 +67,6 @@
 .leaderboard-sample-time { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .leaderboard-sample-time > strong { color: #253d61; font-size: 23px; font-weight: 650; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .leaderboard-sample-time > span { color: #65758d; font-size: 10px; }
-.leaderboard-sample-note { grid-column: 1 / -1; margin: 0; padding-top: 10px; border-top: 1px solid #e1e9f5; color: #65758d; font-size: 11px; line-height: 1.5; }
 .player-leave-dialog { max-width: 440px; width: calc(100% - 32px); padding: 26px; border: 1px solid #d8e1ee; border-radius: 16px; color: #243e61; background: #fff; box-shadow: 0 20px 70px #10254d30; }
 .player-leave-dialog::backdrop { background: #0c173f66; }
 .player-leave-dialog h3 { margin: 0 0 12px; font-size: 22px; }

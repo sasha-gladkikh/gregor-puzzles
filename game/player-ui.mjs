@@ -89,7 +89,7 @@ function sampleEntry(){
  identity.append(heading,node('p',`${LEADERBOARD_SAMPLE.roundsCompleted} of 10 rounds`,'leaderboard-sample-rounds'));
  const time=node('div',undefined,'leaderboard-sample-time');
  time.append(node('strong',`${Math.floor(LEADERBOARD_SAMPLE.totalSeconds/60)}:${String(LEADERBOARD_SAMPLE.totalSeconds%60).padStart(2,'0')}`),node('span','Total time'));
- sample.append(identity,time,node('p','Illustrative time · Not ranked','leaderboard-sample-note'));
+ sample.append(identity,time);
  return sample;
 }
 const assistance=attempt=>[
