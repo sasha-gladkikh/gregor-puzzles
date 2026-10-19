@@ -271,9 +271,10 @@ export function initPlayerUI(catalogue){
   const ranked=rankPlayers(players,selection.value,catalogue.length);
   const estimates=estimatedRoundTimes(players,selection.value);
   if(!ranked.length){
+   if(estimates.length){result.append(estimatedEntries(estimates));return;}
    const empty=node('div',undefined,'leaderboard-empty');
    empty.append(node('h4',selection.value==='overall'?'Be part of the first collection.':'Set the first time.'),node('p',selection.value==='overall'?'Join above, then play a round. Your progress will appear here.':'Finish this round in Timed mode while joined to the leaderboard.'));
-   result.append(empty);if(estimates.length)result.append(estimatedEntries(estimates));return;
+   result.append(empty);return;
   }
   const table=node('table',undefined,'leaderboard-table player-table');table.setAttribute('aria-label',selection.value==='overall'?'Overall player standings':`Round ${selection.value} best times`);
   const head=node('thead'),headRow=node('tr');
