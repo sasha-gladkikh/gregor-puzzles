@@ -1,6 +1,9 @@
 import {getPlayer,getAttempts,joinPlayer,leaveLeaderboard,syncPlayer,getPlayerStatus} from './player.mjs';
 import {SUGGESTION_ENDPOINT} from './suggestions.mjs';
 
+// An illustrative entry only. It never enters the player data or ranking logic.
+export const LEADERBOARD_SAMPLE=Object.freeze({displayName:'Sasha Gladkikh',roundsCompleted:10,totalSeconds:563});
+
 const namePattern=/^[\p{L}\p{N} .'’_-]{2,32}$/u;
 const nonnegative=value=>Number.isFinite(value)&&value>=0;
 const integer=value=>Number.isInteger(value)&&value>=0;
@@ -78,6 +81,17 @@ export function rankPlayers(players,selection='overall',roundCount=10){
 
 const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
 const button=(text,className='home-text-button')=>{const element=node('button',text,className);element.type='button';return element;};
+function sampleEntry(){
+ const sample=node('aside',undefined,'leaderboard-sample');sample.setAttribute('aria-label','Sample leaderboard entry');
+ const identity=node('div',undefined,'leaderboard-sample-identity');
+ const heading=node('div',undefined,'leaderboard-sample-heading');
+ heading.append(node('strong',LEADERBOARD_SAMPLE.displayName),node('span','Sample','leaderboard-sample-badge'));
+ identity.append(heading,node('p',`${LEADERBOARD_SAMPLE.roundsCompleted} of 10 rounds`,'leaderboard-sample-rounds'));
+ const time=node('div',undefined,'leaderboard-sample-time');
+ time.append(node('strong',`${Math.floor(LEADERBOARD_SAMPLE.totalSeconds/60)}:${String(LEADERBOARD_SAMPLE.totalSeconds%60).padStart(2,'0')}`),node('span','Total time'));
+ sample.append(identity,time,node('p','Illustrative time · Not ranked','leaderboard-sample-note'));
+ return sample;
+}
 const assistance=attempt=>[
  attempt.hints?`${attempt.hints} hint${attempt.hints===1?'':'s'}`:null,
  attempt.peeks?`${attempt.peeks} reference view${attempt.peeks===1?'':'s'}`:null,
@@ -233,8 +247,11 @@ export function initPlayerUI(catalogue){
   }
   const ranked=rankPlayers(players,selection.value,catalogue.length);
   if(!ranked.length){
+   if(selection.value==='overall'){
+    result.append(node('p','Play a timed round to join the rankings.','leaderboard-ranking-invite'),sampleEntry());return;
+   }
    const empty=node('div',undefined,'leaderboard-empty');
-   empty.append(node('h4',selection.value==='overall'?'Be part of the first collection.':'Set the first time.'),node('p',selection.value==='overall'?'Join above, then play a round. Your progress will appear here.':'Finish this round in Timed mode while joined to the leaderboard.'));
+   empty.append(node('h4','Set the first time.'),node('p','Finish this round in Timed mode while joined to the leaderboard.'));
    result.append(empty);return;
   }
   const table=node('table',undefined,'leaderboard-table player-table');table.setAttribute('aria-label',selection.value==='overall'?'Overall player standings':`Round ${selection.value} best times`);
@@ -266,6 +283,7 @@ export function initPlayerUI(catalogue){
   table.append(head,body);const scroll=node('div',undefined,'player-table-wrap');scroll.append(table);result.append(scroll);
   if(body.querySelector('time'))result.append(node('p','Dates and times are shown in your local time zone.','player-timezone-note'));
   if(ranked.length>boardLimit){const morePlayers=button(`Show ${Math.min(10,ranked.length-boardLimit)} more players`);morePlayers.addEventListener('click',()=>{boardLimit+=10;renderBoard();});result.append(morePlayers);}
+  if(selection.value==='overall')result.append(sampleEntry());
  }
  async function loadBoard(){
   if(loading){refreshQueued=true;return;}
