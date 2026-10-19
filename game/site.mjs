@@ -22,7 +22,7 @@ export function siteMarkup({active='play',roundNumber='01',playControls=false}={
     </header>`;
   const footer=`<footer class="site-footer">
     <div class="site-footer-identity"><span class="site-footer-name"><img src="./icons/brand-mark.png" alt="" width="24" height="24">GREGoR Puzzles</span></div>
-    <nav aria-label="Project links"><a href="./about.html${level}"${current('about')}>About</a><a href="https://gregor.stanford.edu/" ${external}>GREGoR Stanford Site <span aria-hidden="true">↗</span></a><a href="./science.html${level}"${current('science')}>Science</a><a href="./about.html#collaborate">For educators</a><a href="https://github.com/sasha-gladkikh/gregor-puzzles/issues/new" ${external}>Report an issue <span aria-hidden="true">↗</span></a></nav>
+    <nav aria-label="Project links"><a href="./about.html${level}"${current('about')}>About</a><a href="https://gregor.stanford.edu/" ${external}>GREGoR Stanford Site <span aria-hidden="true">↗</span></a><a href="./science.html${level}"${current('science')}>Science</a><a href="./#leaderboard">Leaderboard</a><a href="./#suggest">Suggest a puzzle</a><a href="./about.html#collaborate">For educators</a><a href="https://github.com/sasha-gladkikh/gregor-puzzles/issues/new" ${external}>Report an issue <span aria-hidden="true">↗</span></a></nav>
   </footer>`;
   return {header,footer};
 }
