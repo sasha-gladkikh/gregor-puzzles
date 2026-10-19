@@ -22,7 +22,7 @@ function showRound(round){
  head.append(node('p',`Round ${round.number} · ${round.topic}`,'science-kicker'),title,condition);
  const facts=node('dl',null,'science-facts');for(const [label,value]of[['Inheritance',round.inheritance],['Variant context',round.variant]]){const pair=node('div');pair.append(node('dt',label),node('dd',value));facts.append(pair);}
  const actions=node('div',null,'science-actions');
- if(playable.includes(round)){const play=node('a','Play this round','primary');play.href=`./?level=${round.number}`;actions.append(play);}
+ if(playable.includes(round)){const play=node('a','Play this round','primary');play.href=`./play.html?level=${round.number}`;actions.append(play);}
  const review=node('a','Editorial review →','science-review-link');review.href=`./review.html?level=${round.number}#round-${round.number}`;actions.append(review);head.append(actions);
  const sections=node('details',null,'science-section-nav');sections.open=wideLayout.matches;
  sections.append(node('summary','On this page'));

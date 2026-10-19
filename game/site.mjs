@@ -11,10 +11,11 @@ export function renderSite({active='play',roundNumber='01',playControls=false}={
   const header=document.getElementById('siteHeader');
   if(header)header.innerHTML=`
     <div class="institution-strip"><div class="institution-inner"><a href="https://gregor.stanford.edu/" ${external}>GREGoR Stanford Site <span aria-hidden="true">↗</span></a><span>Genetics education</span></div></div>
-    <header class="site-masthead">
-      <a class="site-wordmark" href="./${level}" aria-label="GREGoR Puzzles home"><img src="./icons/brand-wordmark.png" alt="GREGoR Puzzles" width="2172" height="724" fetchpriority="high" decoding="async"></a>
+    <header class="site-masthead${playControls?' has-play-controls':' without-play-controls'}">
+      <a class="site-wordmark" href="./" aria-label="GREGoR Puzzles home"><img src="./icons/brand-wordmark.png" alt="GREGoR Puzzles" width="2172" height="724" fetchpriority="high" decoding="async"></a>
       <nav class="main-nav" aria-label="Main navigation">
-        <a id="playTab" href="./${level}"${current('play')}>Play</a>
+        <a id="homeTab" href="./"${current('home')}>Home</a>
+        <a id="playTab" href="./play.html${level}"${current('play')}>Play</a>
         <a id="collectionTab" href="./collection.html${level}"${current('collection')}>Collection</a>
         <a id="scienceTab" href="./science.html${level}"${current('science')}>Science</a>
       </nav>

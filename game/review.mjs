@@ -18,7 +18,7 @@ for(const round of rounds){
  const condition=node('p',null,'review-condition');condition.append(node('span',round.condition),citation(`https://omim.org/entry/${round.omim}`,`OMIM ${round.omim}`));
  head.append(condition);
  const links=node('div',null,'review-round-links');const science=node('a','Science →','tool');science.href=`./science.html?level=${round.number}`;links.append(science);
- if(playable.includes(round)){const play=node('a','Play this round','tool');play.href=`./?level=${round.number}`;links.append(play);}head.append(links);card.append(head);
+ if(playable.includes(round)){const play=node('a','Play this round','tool');play.href=`./play.html?level=${round.number}`;links.append(play);}head.append(links);card.append(head);
  const body=node('div',null,'review-columns'),visual=node('div',null,'review-visual');
  const figure=node('div',null,'artwork-figure');
  const img=node('img');img.src=round.artwork;img.srcset=artworkSrcset(round);

@@ -10,7 +10,7 @@ export function relatedRoundLinks(number,progress){
   const item=progress.find(entry=>entry.round.number===n);
   if(!item)return [];
   const {round,done}=item;
-  return [{number:n,title:done?round.gene:round.topic,href:`./?level=${n}`,done,relationship:pair.relationship,...(done?{gene:round.gene,condition:round.condition}:{})}];
+  return [{number:n,title:done?round.gene:round.topic,href:`./play.html?level=${n}`,done,relationship:pair.relationship,...(done?{gene:round.gene,condition:round.condition}:{})}];
  }));
 }
 export const relatedCompletedRounds=(number,progress)=>relatedRoundLinks(number,progress).filter(item=>item.done);

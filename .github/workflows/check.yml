@@ -5,16 +5,45 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  issues:
+    types: [labeled, unlabeled, edited, deleted]
 
 permissions:
   contents: read
-
-concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: false
+  issues: read
 
 jobs:
+  revoke-score-approval:
+    if: github.event_name == 'issues' && github.event.action == 'edited' && github.event.changes.body && contains(github.event.issue.labels.*.name, 'leaderboard')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Require review after score-body edits
+        run: node scripts/revoke-score-approval.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+
   test-and-build:
+    needs: revoke-score-approval
+    concurrency:
+      group: pages-build-${{ github.ref }}
+      cancel-in-progress: false
+    # GITHUB_TOKEN label changes do not trigger another workflow. Refresh here,
+    # after revocation, while allowing ordinary builds when that job is skipped.
+    if: >-
+      always() && !cancelled() &&
+      (needs.revoke-score-approval.result == 'success' || needs.revoke-score-approval.result == 'skipped') &&
+      (github.event_name != 'issues' || github.event.label.name == 'leaderboard' || contains(github.event.issue.labels.*.name, 'leaderboard'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -26,6 +55,11 @@ jobs:
           node-version: 24
       - run: npm test
       - run: npm run build
+      - name: Refresh reviewed leaderboard
+        if: github.event_name != 'pull_request'
+        run: node scripts/leaderboard.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Configure GitHub Pages
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
@@ -36,8 +70,11 @@ jobs:
           path: dist
 
   deploy:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: always() && !cancelled() && needs.test-and-build.result == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: test-and-build
+    concurrency:
+      group: pages-deploy-${{ github.ref }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

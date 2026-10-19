@@ -16,6 +16,7 @@ import {createFigureView} from './figure-view.mjs';
 import {artworkSource} from './artwork-source.mjs';
 import {latestPlayClue} from './play-learning.mjs';
 import {nextOpenSlot} from './board-navigation.mjs';
+import {eligibleScore,scoreIssueURL} from './community.mjs';
 const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
@@ -33,6 +34,11 @@ const imageMarkers=artworkMarkers(round,index=>showNote(index)),markers=[...imag
 let stored;
 try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
 let {state,timed,order} = restoreSession(stored);
+// Preserve timing provenance when restoreSession normalizes older saves.
+if(stored?.timed&&stored.state&&(stored.state.sessionVersion!==3||stored.state.timingVersion!==2||(stored.state.placed?.length&&!Number.isFinite(stored.state.startedAt))||(stored.state.placed?.length===SIZE&&!Number.isFinite(stored.state.finishedAt))))state.leaderboardIneligible=true;
+let timedEntry=params.get('mode')==='timed';
+if(timedEntry){const entryURL=new URL(location.href);entryURL.searchParams.delete('mode');history.replaceState(null,'',entryURL.href);}
+if(timedEntry&&!modeLocked(state)){timed=changeTimingMode(state,timed,true);timedEntry=false;}
 let selected = null, hinted = null, peek = false, drag = null;
 let activeSlot=0;
 let lastCount = -1, extrasShown = false;
@@ -390,28 +396,34 @@ const figureView=createFigureView({dialog:$('figureDialog'),frame:$('board').clo
 $('figureDialog').addEventListener('close',()=>{if(!$('figureDialog').open)positionCompletion();});
 $('enlargeButton').onclick=()=>{if(complete(state))figureView.open();};
 $('closeFigure').onclick=()=>figureView.close();
-$('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>$('restartDialog').close();
+function resetRestartCopy(){
+  $('restartDialog').querySelector('h2').textContent='Restart this round?';
+  $('restartDialog').querySelector('p').textContent='Restarting clears your pieces and timer. You can choose Practice or Timed again.';
+  $('confirmRestart').textContent='Restart round';
+}
+$('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>{timedEntry=false;$('restartDialog').close();resetRestartCopy();};
+$('restartDialog').addEventListener('cancel',()=>{timedEntry=false;resetRestartCopy();});
 $('confirmRestart').onclick=()=>{
   completionPlayback.cancel();
   feedbackEpoch++;roundGeneration++;pieceMotion.clear();figureView.close();artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
   $('board').classList.remove('finishing');
   for(const panel of [$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
-  state=newState();selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
+  state=newState();if(timedEntry){timed=true;timedEntry=false;}selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
   $('discoveriesButton').classList.remove('has-new');
   $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
   $('typingDetails').open=false;$('revealExtras').open=false;$('clueRecap').open=false;$('clinicalDetails').open=false;
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
   $('guessFeedback').textContent='Optional. A gene symbol or unambiguous product name completes the image.';$('geneHint').disabled=false;
   markers.forEach(m=>{m.hidden=true;m.classList.remove('is-new');});
-  board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();
+  board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();resetRestartCopy();
   strip('Tap a piece, then tap its matching space.');$('roundSettings').open=false;trayButton(order[0])?.focus({preventScroll:true});
 };
 document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();openDialog('newPlayerDialog');});
 $('cancelNewPlayer').onclick=()=>$('newPlayerDialog').close();
 $('confirmNewPlayer').onclick=()=>{
   try{newPlayerKeys(Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))).forEach(key=>localStorage.removeItem(key));}catch{}
-  location.href=`./?level=${rounds[0].number}`;
+  location.href=`./play.html?level=${rounds[0].number}`;
 };
 window.addEventListener('keydown',e=>{
   if(e.defaultPrevented||e.key!=='Escape'||selected===null||document.querySelector('dialog[open]'))return;
@@ -459,8 +471,18 @@ buildBoard();buildTray();render();save();
 if(roundComplete(state))strip('Round complete. Your illustration and results are saved.');
 else if(state.started)strip('Your progress is restored.'+(timed&&state.startedAt!==null?' Elapsed time continues.':''));
 else strip('Tap a piece, then tap its matching space.');
+if(timedEntry&&modeLocked(state)){
+  $('restartDialog').querySelector('h2').textContent='Start a new timed round?';
+  $('restartDialog').querySelector('p').textContent='This replaces your saved attempt for this round. Your other rounds stay saved.';
+  $('confirmRestart').textContent='Start timed round';
+  openDialog('restartDialog');
+}
 
 function renderCollection(includeCards=false) {
+  const score=eligibleScore(round,{state,timed,order});
+  let scoreLink=$('submitRoundTime');
+  if(score&&!scoreLink){scoreLink=node('a','Submit time ↗','tool');scoreLink.id='submitRoundTime';scoreLink.target='_blank';scoreLink.rel='noopener noreferrer';$('completionActions').append(scoreLink);}
+  if(scoreLink){scoreLink.hidden=!score;if(score){scoreLink.href=scoreIssueURL(score);scoreLink.title='Review your public time submission on GitHub';}}
   const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
   const count=progress.filter(p=>p.done).length,anyStarted=progress.some(p=>p.started);
   $('collectionCount').textContent=`${count} of ${rounds.length} complete`;

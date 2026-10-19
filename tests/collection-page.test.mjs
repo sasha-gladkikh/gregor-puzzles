@@ -11,7 +11,7 @@ test('a related round reveals its identity only after completion',()=>{
  assert.equal(JSON.stringify(hidden).includes('RNU4ATAC'),false);assert.equal(JSON.stringify(hidden).includes('Roifman'),false);
  assert.deepEqual(relatedCompletedRounds('05',progress('05')),[]);
  const complete=relatedCompletedRounds('05',progress('05','08'));
- assert.equal(complete[0].gene,'RNU4ATAC');assert.equal(complete[0].condition,'Roifman syndrome');assert.equal(complete[0].href,'./?level=08');
+ assert.equal(complete[0].gene,'RNU4ATAC');assert.equal(complete[0].condition,'Roifman syndrome');assert.equal(complete[0].href,'./play.html?level=08');
 });
 test('field guide and spliceosome connection reflect completion and reset without changing progress',()=>{
  const items=progress('01','05');const original=JSON.stringify(items);
@@ -25,7 +25,7 @@ test('related links never expose unpublished rounds and process groups cover the
  assert.deepEqual(relatedRoundLinks('05',progress('05').filter(item=>item.round.number==='05')),[]);
  const numbers=processGroups.flatMap(group=>group.numbers);assert.equal(new Set(numbers).size,numbers.length);
  assert.deepEqual([...numbers].sort(),allRounds.map(round=>round.number));
- for(const item of progress())for(const link of relatedRoundLinks(item.round.number,progress()))assert.match(link.href,/^\.\/\?level=\d{2}$/);
+ for(const item of progress())for(const link of relatedRoundLinks(item.round.number,progress()))assert.match(link.href,/^\.\/play\.html\?level=\d{2}$/);
 });
 test('field guide preserves clinical course, significance, and family context for every completed round',()=>{
  for(const round of allRounds){

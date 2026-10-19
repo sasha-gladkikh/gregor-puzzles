@@ -15,7 +15,7 @@ test('production build resolves every local file reference and excludes developm
   assert.ok(names.includes('index.html'));
   assert.ok(names.includes('review.html'));
   // Every public entry point retains the same indexing preference.
-  for (const page of ['index.html', 'review.html', 'science.html', 'collection.html', 'field-guide.html', 'about.html']) {
+  for (const page of ['index.html', 'play.html', 'review.html', 'science.html', 'collection.html', 'field-guide.html', 'about.html']) {
     const html = await readFile(join(dist, page), 'utf8');
     const head = html.split('</head>')[0];
     assert.match(head, /<meta name="robots" content="[^\"]*\bnoindex\b[^\"]*">/, page);
