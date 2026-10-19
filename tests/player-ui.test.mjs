@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {summarizeAttempts,publicPlayers,rankPlayers,reportedRoundCompletions,playerTime,playerDateTime} from '../game/player-ui.mjs';
+import {summarizeAttempts,publicPlayers,rankPlayers,allocatedRoundTimes,playerTime,playerDateTime} from '../game/player-ui.mjs';
 
 const catalogue=Array.from({length:10},(_,index)=>({number:String(index+1).padStart(2,'0')}));
 const attempt=(roundNumber,overrides={})=>({roundNumber,status:'completed',mode:'timed',route:'image',eligible:true,seconds:60,...overrides});
@@ -90,16 +90,18 @@ test('a reported complete total ranks alongside faster and slower measured total
  assert.equal(sasha.reportedResult.submittedAt,'2026-10-19T23:59:00.000Z');
 });
 
-test('reported round completions omit invented times and yield to measured round results',()=>{
+test('allocated splits preserve each duration and yield to measured round results',()=>{
  const players=publicList([
   player('Sasha',{attempts:1,roundsPlayed:10,roundsCompleted:10,best:[{roundNumber:'01',seconds:42}],reportedResult:report()}),
   player('Recorded',{best:[{roundNumber:'02',seconds:90}]})
  ]);
  assert.deepEqual(rankPlayers(players,'02').map(({id,rank})=>[id,rank]),[['Recorded',1]]);
- for(const round of catalogue.slice(1))assert.deepEqual(reportedRoundCompletions(players,round.number),[{id:'Sasha',displayName:'Sasha'}]);
- assert.deepEqual(reportedRoundCompletions(players,'01'),[]);
- assert.deepEqual(reportedRoundCompletions(players,'overall'),[]);
- assert.deepEqual(reportedRoundCompletions(players,'11'),[]);
+ for(const entry of report().estimatedTimes.slice(1))assert.deepEqual(allocatedRoundTimes(players,entry.roundNumber),[{id:'Sasha',displayName:'Sasha',seconds:entry.seconds}]);
+ assert.deepEqual(allocatedRoundTimes(players,'01'),[]);
+ assert.deepEqual(allocatedRoundTimes(players,'overall'),[]);
+ assert.deepEqual(allocatedRoundTimes(players,'11'),[]);
+ const unmeasured=publicList([player('Sasha',{attempts:0,best:[],reportedResult:report()})]);
+ assert.equal(catalogue.reduce((sum,round)=>sum+allocatedRoundTimes(unmeasured,round.number)[0].seconds,0),563);
  assert.equal(players[0].totalBestSeconds,563);
  assert.equal(players[0].best.length,1);assert.equal(players[0].timedRounds,1);
 });

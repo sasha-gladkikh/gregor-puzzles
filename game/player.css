@@ -58,11 +58,12 @@
 .player-table .player-activity-date { margin-top: 5px; max-width: 190px; font-size: 10px; line-height: 1.5; }
 .player-activity-date time { white-space: normal; }
 .player-timezone-note { margin: 10px 0 0; color: #65758d; font-size: 11px; line-height: 1.5; }
-.leaderboard-completions { margin-top: 18px; padding-top: 16px; border-top: 1px solid #e6edf5; }
-.leaderboard-completion-list { list-style: none; padding: 0; margin: 0; }
-.leaderboard-completion { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
-.leaderboard-completion > strong { min-width: 0; color: #253d61; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.leaderboard-completion-badge { padding: 2px 6px; border: 1px solid #d4dfef; border-radius: 4px; color: #536987; background: #f8faff; font-size: 10px; line-height: 1.4; }
+.leaderboard-allocations { margin-top: 18px; padding-top: 16px; border-top: 1px solid #e6edf5; }
+.leaderboard-allocation-list { list-style: none; padding: 0; margin: 0; }
+.leaderboard-allocation { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.leaderboard-allocation > strong { min-width: 0; color: #253d61; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.leaderboard-allocation-time { color: #253d61; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.leaderboard-allocation-note { margin: 4px 0 0; color: #65758d; font-size: 11px; line-height: 1.5; }
 .player-leave-dialog { max-width: 440px; width: calc(100% - 32px); padding: 26px; border: 1px solid #d8e1ee; border-radius: 16px; color: #243e61; background: #fff; box-shadow: 0 20px 70px #10254d30; }
 .player-leave-dialog::backdrop { background: #0c173f66; }
 .player-leave-dialog h3 { margin: 0 0 12px; font-size: 22px; }

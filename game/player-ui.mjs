@@ -38,12 +38,12 @@ function reportedResult(value,allowed){
 const shortPlayerTime=seconds=>playerTime(seconds).replace(/\.000$/,'');
 const rankedTotal=(player,roundCount)=>player.roundsCompleted===roundCount&&(player.timedRounds===roundCount||player.reportedResult?.roundsCompleted===roundCount)&&nonnegative(player.totalBestSeconds)?millis(player.totalBestSeconds):Infinity;
 
-export function reportedRoundCompletions(players,selection){
+export function allocatedRoundTimes(players,selection){
  if(selection==='overall')return [];
  return players.flatMap(player=>{
   if(player.best.some(entry=>entry.roundNumber===selection))return [];
-  const completed=player.reportedResult?.estimatedTimes.some(entry=>entry.roundNumber===selection);
-  return completed?[{id:player.id,displayName:player.displayName}]:[];
+  const split=player.reportedResult?.estimatedTimes.find(entry=>entry.roundNumber===selection);
+  return split?[{id:player.id,displayName:player.displayName,seconds:split.seconds}]:[];
  }).sort((a,b)=>a.displayName.localeCompare(b.displayName)||a.id.localeCompare(b.id));
 }
 
@@ -104,14 +104,14 @@ export function rankPlayers(players,selection='overall',roundCount=10){
 
 const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
 const button=(text,className='home-text-button')=>{const element=node('button',text,className);element.type='button';return element;};
-function completionEntries(entries){
- const section=node('section',undefined,'leaderboard-completions');section.setAttribute('aria-label','Round completions');
- const list=node('ul',undefined,'leaderboard-completion-list');
+function allocationEntries(entries){
+ const section=node('section',undefined,'leaderboard-allocations');section.setAttribute('aria-label','Round time breakdown');
+ const list=node('ul',undefined,'leaderboard-allocation-list');
  for(const entry of entries){
-  const item=node('li',undefined,'leaderboard-completion');
-  item.append(node('strong',entry.displayName),node('span','Completed','leaderboard-completion-badge'));list.append(item);
+  const item=node('li',undefined,'leaderboard-allocation');
+  item.append(node('strong',entry.displayName),node('span',shortPlayerTime(entry.seconds),'leaderboard-allocation-time'));list.append(item);
  }
- section.append(list);
+ section.append(list,node('p','Round times allocated from the reported overall total.','leaderboard-allocation-note'));
  return section;
 }
 const assistance=attempt=>[
@@ -268,9 +268,9 @@ export function initPlayerUI(catalogue){
    const again=button('Try again');again.addEventListener('click',loadBoard);empty.append(again);result.append(empty);return;
   }
   const ranked=rankPlayers(players,selection.value,catalogue.length);
-  const completions=reportedRoundCompletions(players,selection.value);
+  const allocations=allocatedRoundTimes(players,selection.value);
   if(!ranked.length){
-   if(completions.length){result.append(completionEntries(completions));return;}
+   if(allocations.length){result.append(allocationEntries(allocations));return;}
    const empty=node('div',undefined,'leaderboard-empty');
    empty.append(node('h4',selection.value==='overall'?'Be part of the first collection.':'Set the first time.'),node('p',selection.value==='overall'?'Join above, then play a round. Your progress will appear here.':'Finish this round in Timed mode while joined to the leaderboard.'));
    result.append(empty);return;
@@ -305,7 +305,7 @@ export function initPlayerUI(catalogue){
   table.append(head,body);const scroll=node('div',undefined,'player-table-wrap');scroll.append(table);result.append(scroll);
   if(body.querySelector('time'))result.append(node('p','Dates and times are shown in your local time zone.','player-timezone-note'));
   if(ranked.length>boardLimit){const morePlayers=button(`Show ${Math.min(10,ranked.length-boardLimit)} more players`);morePlayers.addEventListener('click',()=>{boardLimit+=10;renderBoard();});result.append(morePlayers);}
-  if(completions.length)result.append(completionEntries(completions));
+  if(allocations.length)result.append(allocationEntries(allocations));
  }
  async function loadBoard(){
   if(loading){refreshQueued=true;return;}
