@@ -39,6 +39,6 @@ test('built home exposes only playable rounds before JavaScript runs',async()=>{
  assert.ok(playLinks.length>0);assert.ok(playLinks.every(number=>number==='06'));
  const two=prepareHomeHTML(html,[{number:'01'},{number:'05'}]);
  assert.match(two,/class="hero-figure"/);
- assert.equal([...two.matchAll(/class="featured-card"/g)].length,1);
+ assert.doesNotMatch(two,/class="featured-card"/);
  assert.throws(()=>prepareHomeHTML(html,[]),/playable/);
 });

@@ -2,6 +2,7 @@ import {collectionProgress} from './collection.mjs';
 import {findRound} from './rounds.mjs';
 import {processGroups,splicingPairComplete} from './collection-data.mjs';
 import {renderSite} from './site.mjs';
+import {availableJourneys,journeyRoundHref} from './journeys.mjs';
 
 const currentRound=findRound(new URLSearchParams(location.search).get('level'));
 renderSite({active:'collection',roundNumber:currentRound.number,playControls:false});
@@ -21,9 +22,26 @@ function roundCard({round,done,pieces},first){
  const arrow=node('span','→');arrow.setAttribute('aria-hidden','true');action.append(arrow);
  body.append(action);link.append(figure,body);card.append(link);return card;
 }
+function renderJourneys(items){
+ const disclosure=document.querySelector('#collectionJourneys'),list=document.querySelector('#collectionJourneyList');
+ const lookup=new Map(items.map(item=>[item.round.number,item]));
+ const journeys=availableJourneys(items.map(item=>item.round)).filter(journey=>journey.rounds.length>=2);
+ disclosure.hidden=!journeys.length;
+ list.replaceChildren(...journeys.map(journey=>{
+  const members=journey.rounds.map(round=>lookup.get(round.number));
+  const complete=members.filter(item=>item.done).length;
+  const next=members.find(item=>!item.done&&item.pieces>0)??members.find(item=>!item.done)??members[0];
+  const entry=node('li',null,'collection-journey'),copy=node('div',null,'collection-journey-copy');
+  copy.append(node('h2',journey.title),node('p',journey.question),node('p',`${members.length} rounds${complete?` · ${complete} complete`:''}`,'collection-journey-progress'));
+  const label=complete===members.length?'Revisit path':next.pieces?'Continue path':'Start path';
+  const action=node('a',`${label} →`,'collection-guide-link');action.href=journeyRoundHref(next.round,journey.id);action.setAttribute('aria-label',`${label}: ${journey.title}`);
+  entry.append(copy,action);return entry;
+ }));
+}
 function render(){
  const items=progress(),complete=items.filter(item=>item.done).length;
  document.querySelector('#collectionSummary').textContent=`${complete} of ${items.length} rounds complete`;
+ renderJourneys(items);
  document.querySelector('#roundCards').replaceChildren(...items.map((item,index)=>roundCard(item,index===0)));
  const groups=document.querySelector('#mapGroups');groups.replaceChildren();
  for(const group of processGroups){
@@ -38,3 +56,6 @@ for(const [button,panel] of [['gridView','roundCards'],['mapView','processMap']]
 window.addEventListener('pageshow',render);
 window.addEventListener('storage',event=>{if(event.key===null||event.key.startsWith('gregor-puzzles:'))render();});
 render();
+
+const openJourneyLink=()=>{if(location.hash==='#collectionJourneys')document.getElementById('collectionJourneys').open=true;};
+openJourneyLink();window.addEventListener('hashchange',openJourneyLink);

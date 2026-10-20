@@ -15,8 +15,6 @@
   <link rel="stylesheet" href="./site.css">
   <link rel="stylesheet" href="./home.css">
   <link rel="stylesheet" href="./home-demo.css">
-  <link rel="stylesheet" href="./home-map.css">
-  <link rel="stylesheet" href="./home-explore.css">
   <link rel="stylesheet" href="./player.css">
   <script type="module" src="./home.mjs"></script>
 </head>
@@ -30,7 +28,7 @@
         <p class="hero-description">Build the image. Reveal the clues. Discover the genetics.</p>
         <div class="hero-actions">
           <a id="homePlay" class="home-primary" href="./play.html?level=01">Play your first puzzle <span aria-hidden="true">→</span></a>
-          <a class="home-text-link" href="#discover">Find your puzzle <span aria-hidden="true">→</span></a>
+          <a id="homeBrowse" class="home-text-link" href="./collection.html">Browse all <span id="roundCount">10</span> rounds <span aria-hidden="true">→</span></a>
         </div>
         <p id="homeProgress" class="hero-progress">10 rounds · 12 pieces each · No account required</p>
       </div>
@@ -42,67 +40,11 @@
       </figure>
     </section>
 
-    <section class="home-how" aria-labelledby="howTitle">
-      <h2 id="howTitle" class="sr-only">How to play</h2>
-      <div><span class="step-number" aria-hidden="true">01</span><p><strong>Place a piece.</strong><span>Tap or drag 12 pieces into place.</span></p></div>
-      <div><span class="step-number" aria-hidden="true">02</span><p><strong>Follow a clue.</strong><span>Reveal the biology as you build.</span></p></div>
-      <div><span class="step-number" aria-hidden="true">03</span><p><strong>Make the connection.</strong><span>Discover the gene and condition.</span></p></div>
-    </section>
-
-    <div id="homeProgressCollection" hidden></div>
-
-    <section id="discover" class="home-collection" aria-labelledby="collectionTitle">
-      <div class="home-section-heading">
-        <div><p class="home-eyebrow">The collection</p><h2 id="collectionTitle">Follow your curiosity.</h2></div>
-        <a class="home-text-link" href="./collection.html">Browse all <span id="roundCount">10</span> rounds <span aria-hidden="true">→</span></a>
-      </div>
-      <div id="featuredGallery" class="featured-grid">
-        <a class="featured-card" href="./play.html?level=02" aria-labelledby="featured02Title" aria-describedby="featured02Question">
-          <div class="featured-image"><img src="./artwork/02.webp" alt="Illustrated channels connecting two neighboring cells" width="1200" height="900" loading="lazy" decoding="async"></div>
-          <div class="featured-copy"><p class="featured-round">Round 02 · Cell communication</p><h3 id="featured02Title">How do neighboring cells stay connected?</h3><p id="featured02Question" class="sr-only">Cell communication</p><span class="featured-link">Explore this puzzle <span aria-hidden="true">→</span></span></div>
-        </a>
-        <a class="featured-card" href="./play.html?level=05" aria-labelledby="featured05Title" aria-describedby="featured05Question">
-          <div class="featured-image"><img src="./artwork/05.webp" alt="Conceptual illustration of a spliceosome processing an RNA message" width="1200" height="900" loading="lazy" decoding="async"></div>
-          <div class="featured-copy"><p class="featured-round">Round 05 · RNA splicing</p><h3 id="featured05Title">How does a cell edit an RNA message?</h3><p id="featured05Question" class="sr-only">RNA splicing</p><span class="featured-link">Explore this puzzle <span aria-hidden="true">→</span></span></div>
-        </a>
-        <a class="featured-card" href="./play.html?level=10" aria-labelledby="featured10Title" aria-describedby="featured10Question">
-          <div class="featured-image"><img src="./artwork/10.webp" alt="Conceptual illustration of a repeated sequence expanding within DNA" width="1200" height="900" loading="lazy" decoding="async"></div>
-          <div class="featured-copy"><p class="featured-round">Round 10 · Repeat expansion</p><h3 id="featured10Title">What can an expanded DNA repeat change?</h3><p id="featured10Question" class="sr-only">Repeat expansion</p><span class="featured-link">Explore this puzzle <span aria-hidden="true">→</span></span></div>
-        </a>
-      </div>
-    </section>
-
-    <div class="home-discovery-tools"><section id="homeDaily" aria-label="Today’s pick"></section><section id="homeJourneys" aria-label="Learning journeys"></section></div>
-
-    <section class="home-cell" aria-labelledby="cellTitle">
-      <div class="home-section-heading"><div><p class="home-eyebrow">A different way in</p><h2 id="cellTitle">Explore the cell.</h2></div></div>
-        <div id="homeProcessMap">
-          <p class="process-intro">Choose a process to explore its illustrated puzzle.</p>
-          <ol class="process-fallback">
-            <li><a href="./play.html?level=01"><span>01</span>Membrane transport</a></li>
-            <li><a href="./play.html?level=02"><span>02</span>Cell communication</a></li>
-            <li><a href="./play.html?level=03"><span>03</span>Lysosomal transport</a></li>
-            <li><a href="./play.html?level=04"><span>04</span>Ribosome maturation</a></li>
-            <li><a href="./play.html?level=05"><span>05</span>Major RNA splicing</a></li>
-            <li><a href="./play.html?level=06"><span>06</span>Synaptic communication</a></li>
-            <li><a href="./play.html?level=07"><span>07</span>RAS / MAPK signaling</a></li>
-            <li><a href="./play.html?level=08"><span>08</span>Minor RNA splicing</a></li>
-            <li><a href="./play.html?level=09"><span>09</span>Innate immune signaling</a></li>
-            <li><a href="./play.html?level=10"><span>10</span>Repeat expansions</a></li>
-          </ol>
-        </div>
-    </section>
-
-    <section class="home-science" aria-labelledby="scienceTitle">
-      <div><p class="home-eyebrow">Learn the connections</p><h2 id="scienceTitle">From molecular mechanism to clinical features.</h2><p>Conceptual illustrations. Published references. Genetics worth remembering.</p><p class="science-attribution">Developed by Sasha Gladkikh with Dr. Matthew Wheeler for genetics education.</p></div>
-      <a class="home-secondary" href="./science.html">Explore the science <span aria-hidden="true">→</span></a>
-    </section>
-
     <section class="home-community" aria-labelledby="communityTitle">
-      <div class="home-section-heading"><div><p class="home-eyebrow">Join in</p><h2 id="communityTitle">Make your mark.</h2></div></div>
+      <div class="home-section-heading"><h2 id="communityTitle">Community</h2></div>
       <div class="community-grid">
         <section id="leaderboard" class="community-card leaderboard-card player-board" aria-labelledby="leaderboardTitle">
-          <div class="card-heading"><div><h3 id="leaderboardTitle">Community leaderboard</h3><p>Build your collection. Find your personal best.</p></div></div>
+          <div class="card-heading"><div><h3 id="leaderboardTitle">Leaderboard</h3></div></div>
           <div class="leaderboard-filter"><label for="leaderboardRound">View</label><select id="leaderboardRound"><option value="overall">Overall progress</option></select></div>
           <div id="leaderboardResults" class="leaderboard-results" aria-live="polite"><p class="board-loading">Loading the leaderboard…</p></div>
           <p id="leaderboardUpdated" class="board-updated" hidden></p>
@@ -135,14 +77,14 @@
           </details>
           <p class="suggestion-invitation"><button id="openSuggestion" type="button" class="home-text-button">Suggest a puzzle <span aria-hidden="true">→</span></button> No account required.</p>
         </section>
-        <section class="community-card educator-card" aria-labelledby="educatorTitle"><p class="home-eyebrow">For educators</p><h3 id="educatorTitle">Bring the biology to life.</h3><p>Use the puzzles with your class or explore a teaching collaboration.</p><a class="home-text-link" href="./about.html#collaborate">Teach with GREGoR Puzzles <span aria-hidden="true">→</span></a></section>
+        <a class="home-text-link educator-link" href="./about.html#collaborate">For educators <span aria-hidden="true">→</span></a>
         </div>
       </div>
     </section>
+    <p class="home-credit">Developed by Sasha Gladkikh with Dr. Matthew Wheeler for genetics education.</p>
     <noscript><p class="home-noscript">Enable JavaScript to play and view the leaderboard. You can still <a href="https://docs.google.com/forms/d/e/1FAIpQLSfp7A0Q9Izf9Fuy1ro7PaoQm120WlTLA4MNQNuBnbaQWN1ekg/viewform" target="_blank" rel="noopener noreferrer">suggest a puzzle</a> without signing in.</p></noscript>
   </main>
   <div id="siteFooter"></div>
-  <div id="homeQuickPlay" class="home-quick-play" hidden><a id="homeQuickPlayLink" class="home-primary" href="./play.html?level=01">Play your first puzzle <span aria-hidden="true">→</span></a></div>
 
 </body>
 </html>

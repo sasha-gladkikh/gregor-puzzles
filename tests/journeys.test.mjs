@@ -14,10 +14,10 @@ test('journeys preserve their ordered scientific path rather than the numeric co
  assert.equal(third.round.number,'04');assert.equal(third.complete,false);
 });
 
-test('all complete journeys end at discovery instead of continuing numerically',()=>{
+test('completed journeys return to Collection instead of continuing numerically',()=>{
  const next=nextJourneyStep(catalogue,done('05','08','04'),'rna','04');
  assert.equal(next.complete,true);assert.equal(next.round,null);
- assert.equal(next.href,'./#discover');assert.equal(next.label,'Explore more puzzles');
+ assert.equal(next.href,'./collection.html#collectionJourneys');assert.equal(next.label,'Explore more puzzles');
 });
 
 test('a completed current step is skipped even before its saved progress refreshes',()=>{
@@ -57,7 +57,7 @@ test('journey URLs accept only declared identifiers and round membership',()=>{
  assert.equal(journeyRoundHref(catalogue[4],'rna'),'./play.html?level=05&journey=rna');
  assert.equal(journeyRoundHref(catalogue[4],'rna&unsafe=1'),'./play.html?level=05');
  assert.equal(journeyRoundHref(catalogue[0],'rna'),'./play.html?level=01');
- assert.equal(journeyRoundHref({number:'01&unsafe=1'},'transport'),'./#discover');
+ assert.equal(journeyRoundHref({number:'01&unsafe=1'},'transport'),'./collection.html#collectionJourneys');
 });
 
 test('duplicate catalogue records and invalid progress cannot duplicate or finish route steps',()=>{

@@ -23,7 +23,7 @@ export function getJourney(catalogue,journeyId){
 
 export function journeyRoundHref(round,journeyId){
  const definition=definitions.find(item=>item.id===journeyId);
- if(!round||!/^\d{2}$/.test(round.number))return './#discover';
+ if(!round||!/^\d{2}$/.test(round.number))return './collection.html#collectionJourneys';
  const path=`./play.html?level=${round.number}`;
  return definition?.numbers.includes(round.number)?`${path}&journey=${definition.id}`:path;
 }
@@ -40,7 +40,7 @@ export function nextJourneyStep(catalogue,progressItems,journeyId,currentNumber)
  const round=after.find(item=>!completed.has(item.number))??null;
  return {
   journey,round,complete:!round,
-  href:round?journeyRoundHref(round,journey.id):'./#discover',
+  href:round?journeyRoundHref(round,journey.id):'./collection.html#collectionJourneys',
   label:round?'Continue journey':'Explore more puzzles',
  };
 }
