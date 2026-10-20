@@ -551,7 +551,7 @@ function resetRestartCopy(){
 }
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>{timedEntry=false;$('restartDialog').close();resetRestartCopy();};
 $('restartDialog').addEventListener('cancel',()=>{timedEntry=false;resetRestartCopy();});
-$('confirmRestart').onclick=()=>runRoundAction(()=>{
+function restartRound(){
   if(attemptMeta){finishAttempt(attemptMeta,{state,timed,status:'restarted'});void syncPlayer().catch(()=>{});}
   attemptMeta=null;canTrackFresh=true;
   completionPlayback.cancel();
@@ -570,6 +570,12 @@ $('confirmRestart').onclick=()=>runRoundAction(()=>{
   markers.forEach(m=>{m.hidden=true;m.classList.remove('is-new');});
   board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();if(!save({force:true}))return;$('restartDialog').close();resetRestartCopy();
   strip('Tap a piece, then tap its matching space.');$('roundSettings').open=false;trayButton(order[0])?.focus({preventScroll:true});
+  return true;
+}
+$('confirmRestart').onclick=()=>runRoundAction(restartRound);
+$('replayPuzzle').onclick=()=>runRoundAction(()=>{
+  if(!complete(state))return;
+  if(restartRound())$('roundTitle').scrollIntoView({block:'start',behavior:reducedMotion()?'instant':'smooth'});
 });
 document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();openDialog('newPlayerDialog');});
 const playerReset=createDialogCommit({
