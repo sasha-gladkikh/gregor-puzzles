@@ -1,4 +1,4 @@
-import {collectionProgress} from './collection.mjs';
+import {collectionProgress,affectsRoundProgress,progressSignature} from './collection.mjs';
 import {findRound} from './rounds.mjs';
 import {completedGuideRounds,guideClinicalSections,guideReferences,relatedCompletedRounds,splicingPairComplete} from './collection-data.mjs';
 import {renderSite} from './site.mjs';
@@ -9,6 +9,7 @@ renderSite({active:'collection',roundNumber:currentRound.number,playControls:fal
 document.querySelector('.guide-back a').href=`./collection.html?level=${currentRound.number}`;
 const node=(tag,text,className)=>{const el=document.createElement(tag);if(text)el.textContent=text;if(className)el.className=className;return el;};
 const external=(label,url)=>{const a=node('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;};
+let lastProgress;
 function entry(round,progress){
  const profile=round.clinical,article=node('article',null,'guide-entry');article.id=`round-${round.number}`;
  const header=node('header',null,'guide-entry-header'),identity=node('div',null,'guide-identity');identity.append(node('span','GREGoR Puzzles'),node('span',`Round ${round.number} · ${round.topic}`));
@@ -39,13 +40,16 @@ function entry(round,progress){
 function render(){
  let storageUnavailable=false;
  const progress=collectionProgress(key=>{try{return localStorage.getItem(key);}catch{storageUnavailable=true;return null;}}),completed=completedGuideRounds(progress);
+ const signature=`${storageUnavailable}:${progressSignature(progress,{completedOnly:true})}`;if(signature===lastProgress)return;lastProgress=signature;
+ const focused=document.activeElement,href=focused?.getAttribute('href'),entryId=focused?.closest('.guide-entry')?.id;
  document.querySelector('#guideSummary').textContent=storageUnavailable?'Your saved progress could not be read.':`${completed.length} of ${progress.length} rounds complete. Each page connects an illustration with its scientific context.`;
  document.querySelector('#guideStorageNotice').hidden=!storageUnavailable;
  document.querySelector('#guideEmpty').hidden=storageUnavailable||completed.length>0;document.querySelector('#printGuide').hidden=storageUnavailable||completed.length===0;
  document.querySelector('#firstRound').href=`./play.html?level=${progress.find(item=>!item.done)?.round.number??progress[0]?.round.number??'01'}`;
  document.querySelector('#guideEntries').replaceChildren(...completed.map(round=>entry(round,progress)));
+ if(href&&entryId&&!focused.isConnected)[...document.getElementById(entryId)?.querySelectorAll('a')??[]].find(link=>link.getAttribute('href')===href)?.focus({preventScroll:true});
 }
 document.querySelector('#printGuide').addEventListener('click',()=>window.print());
 window.addEventListener('pageshow',render);
-window.addEventListener('storage',event=>{if(event.key===null||event.key.startsWith('gregor-puzzles:'))render();});
+window.addEventListener('storage',event=>{if(affectsRoundProgress(event))render();});
 render();

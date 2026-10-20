@@ -8,7 +8,7 @@ const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
   'index.html', 'home.mjs', 'home.css', 'home-state.mjs', 'home-demo.mjs', 'home-demo.css', 'journeys.mjs', 'puzzle-geometry.mjs', 'suggestions.mjs', 'community.mjs', 'player.mjs', 'player-ui.mjs', 'player.css', 'play.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
-  'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
+  'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs', 'round-save.mjs', 'round-carousel.mjs', 'round-carousel.css',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork-source.mjs', 'artwork.css',

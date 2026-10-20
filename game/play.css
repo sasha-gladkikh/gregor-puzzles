@@ -200,7 +200,7 @@ body{background:var(--surface)}
 #figureDialog .eyebrow{color:#526a88;font-size:10px;font-weight:650;letter-spacing:.12em}
 #figureDialog h2{font-size:28px;line-height:1.15;margin:8px 0 5px;letter-spacing:-.5px}
 #figureDialog .figure-dialog-heading p{font-size:15px;line-height:1.4;margin:0;color:var(--muted)}
-#figureDialog .figure-stage{width:min(100%,calc((100dvh - 360px) * 4 / 3),940px);margin:0 auto}
+#figureDialog .figure-stage{width:min(100%,940px);min-width:0;margin:0 auto}
 #figureDialog .board-frame{padding:0;border-radius:9px;overflow:visible;background:#fff;box-sizing:border-box}
 #figureDialog .board{border-radius:8px;aspect-ratio:4/3;overflow:clip}
 #figureDialog .artwork-markers{display:none}
@@ -257,7 +257,7 @@ body{background:var(--surface)}
 
 }
 @media(max-width:600px){
- /* DOM order starts with the tray for keyboard users; visual order stays board first. */
+ /* Help, picture, feedback, and pieces follow the same reading order. */
  #game .assembly-area>.board-frame{order:0}
  #game .assembly-area>.status-strip{order:1}
  #game .assembly-area>.piece-bank{order:2}
@@ -309,3 +309,90 @@ body{background:var(--surface)}
  #game .connection-panel .clue-connection{font-size:16px;line-height:1.6}
 }
 @media(prefers-reduced-motion:reduce){#game .board.completion-settled{animation:none}}
+
+/* The visual collection replaces adjacent arrows without adding another menu. */
+#game .play-collection{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin-bottom:12px}
+#game .play-collection .collection-progress{justify-self:end;margin:0}
+#game .play-collection .collection-track,#game .play-collection .round-navigation{display:none}
+#game .play-collection .discovery-strip{grid-column:1/-1;display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:88px;justify-content:start;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#c4d1e5 transparent;margin:0 -4px;padding:5px 4px 8px;scroll-padding-inline:4px}
+#game .play-collection .discovery-thumb{border-radius:6px}
+#game .play-collection .discovery-thumb-number{top:3px;left:3px;min-width:19px;height:19px;border-radius:4px;font-size:10px}
+#game .play-collection .discovery-thumb[data-state=complete] .discovery-thumb-number{font-size:12px}
+#game:not(.round-complete) .assembly-area{--figure-row:2;--feedback-row:3;--settings-row:4}
+#game:not(.round-complete) .assembly-area:has(>.inline-gene-hint:not([hidden])){--figure-row:3;--feedback-row:4;--settings-row:5}
+#game:not(.round-complete) .figure-tools{grid-row:1;grid-column:1/-1}
+#game:not(.round-complete) .inline-gene-hint{grid-row:2;grid-column:1/-1}
+#game:not(.round-complete) .board-frame{grid-row:var(--figure-row)}
+#game:not(.round-complete) .status-strip{grid-row:var(--feedback-row)}
+#game:not(.round-complete) .piece-bank{grid-row:var(--figure-row)/span 2}
+#game:not(.round-complete) .round-settings{grid-row:var(--settings-row)}
+#game:not(.round-complete) .board-caption{grid-row:calc(var(--settings-row) + 1)}
+#game:not(.round-complete) .diagram-description{grid-row:calc(var(--settings-row) + 2)}
+#game .completion-summary .completion-actions .primary{font-weight:650}
+#game .completion-summary .completion-actions .tool{background:transparent;border-color:transparent;color:#435a7a;padding-inline:8px}
+#game .completion-summary .completion-actions .tool:hover{background:#edf2fa;color:var(--accent)}
+#game .completion-summary>.artwork-guide-caption{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:16px 0 0;margin-top:18px}
+#game .completion-summary .artwork-guide-navigation{justify-content:flex-start;gap:8px}
+#game .completion-summary .artwork-guide-navigation .tool{background:transparent;border-color:var(--line)}
+#figureDialog{overflow:auto;overscroll-behavior:contain}
+@media(min-width:601px) and (max-height:600px){
+ #figureDialog{width:calc(100% - 24px);max-height:calc(100dvh - 16px);padding:16px 20px;border-radius:12px}
+ #figureDialog .figure-dialog-heading{padding-bottom:12px}
+ #figureDialog h2{font-size:22px;margin:4px 0}
+ #figureDialog .figure-dialog-heading p{font-size:13px}
+ #figureDialog figure{display:grid;grid-template-columns:minmax(300px,1.2fr) minmax(220px,1fr);align-items:start;gap:0 18px}
+ #figureDialog .figure-stage{grid-column:1;grid-row:1/span 2;width:100%}
+ #figureDialog .figure-playback{grid-column:2;grid-row:1;margin:0;align-content:start;justify-content:flex-start;min-height:0}
+ #figureDialog figcaption{grid-column:2;grid-row:2;margin:12px 0 0;text-align:left}
+ #figureDialog .artwork-guide-caption{padding:12px}
+}
+@media(max-width:600px){
+ .play-page .site-masthead{padding-top:3px;row-gap:0}
+ .play-page .site-wordmark{width:196px}
+ .play-page .main-nav{margin:0;min-height:44px}
+ .play-page .main-nav>a{min-height:44px;padding-block:6px}
+ .play-page .institution-inner{padding-block:4px}
+ #game .play-collection{gap:0 8px;margin-bottom:7px}
+ #game .play-collection .library-button{min-height:44px;background:transparent;border-color:transparent;padding-inline:0;font-size:12px;gap:5px}
+ #game .play-collection .menu-mark{display:none}
+ #game .play-collection .collection-progress{font-size:11px}
+ #game .play-collection .discovery-strip{grid-auto-columns:72px;gap:7px;padding-block:4px 7px}
+ #game .section-bar{padding:0 0 7px}
+ #game .section-bar h1{font-size:20px;margin-top:3px;line-height:1.2}
+ #game .section-bar .eyebrow{font-size:11px}
+ #game:not(.round-complete) .assembly-area>.figure-tools{order:0;margin:0 0 8px;gap:5px}
+ #game:not(.round-complete) .assembly-area>.inline-gene-hint{order:1;margin:0 0 10px}
+ #game:not(.round-complete) .assembly-area>.board-frame{order:2}
+ #game:not(.round-complete) .assembly-area>.status-strip{order:3}
+ #game:not(.round-complete) .assembly-area>.piece-bank{order:4}
+ #game .figure-tools .tool{min-height:44px;padding:8px 7px;font-size:12px;gap:5px}
+ #game .completion-summary .completion-actions .primary{flex-basis:100%;text-align:center;justify-content:center}
+ #game .completion-summary .completion-actions .tool{font-size:13px}
+ #game .completion-summary>.artwork-guide-caption{padding-top:14px;margin-top:12px}
+}
+@media(max-width:370px){
+ .play-page .site-wordmark{width:184px}
+ #game .figure-tools{gap:3px!important}
+ #game .figure-tools .tool{font-size:11px;padding-inline:5px;gap:3px}
+ #game .figure-tools .tool svg{width:13px;height:13px}
+}
+@media print{#game .play-collection{display:none}}
+
+#game .library-grid-icon{display:none}
+@media(max-width:600px) and (max-height:760px){
+ /* Small phones keep the visual collection and a usable first row of pieces.
+    The institutional link remains available in the footer. */
+ .play-page .institution-strip{display:none}
+ #game .play-collection{grid-template-columns:44px minmax(0,1fr);gap:0 8px;margin-bottom:5px}
+ #game .play-collection .library-button{grid-column:1;grid-row:1;justify-content:center;align-self:center;min-width:44px;min-height:44px;padding:0;border:1px solid var(--line);background:white}
+ #game .play-collection .library-button>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+ #game .play-collection .library-grid-icon{display:block;width:22px;height:22px;flex:none}
+ #game .play-collection .discovery-strip{grid-column:2;grid-row:1;margin:0 -4px;padding-block:4px 6px}
+ #game .play-collection .collection-progress{grid-column:2;grid-row:2;line-height:1.2;font-size:10px;min-height:12px}
+ #game .section-bar h1{font-size:19px}
+ #game:not(.round-complete) .assembly-area>.board-frame{max-width:320px;align-self:center}
+ #game:not(.round-complete) .status-strip{min-height:44px;padding:6px 9px;margin-top:6px;gap:2px}
+ #game:not(.round-complete) .assembly-area:has(.board:not(.started)) .start-reassurance{display:none}
+ #game .piece-bank{margin-top:8px}
+ #game .tray-heading{margin-bottom:4px}
+}

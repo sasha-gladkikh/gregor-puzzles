@@ -27,7 +27,7 @@ export function createPlayerStore({storage,fetchImpl=globalThis.fetch,uuid=()=>g
  function profile(){let value=read(PROFILE_KEY);if(!value||!UUID.test(value.id??'')||!UUID.test(value.token??'')){value=fresh();write(PROFILE_KEY,value);}if(!Number.isSafeInteger(value.actionRevision)||value.actionRevision<0){value={...value,actionRevision:value.pendingName||value.leavePending?1:0};write(PROFILE_KEY,value);}return value;}
  const attemptKey=(owner,id)=>`${PLAYER_PREFIX}attempt:${owner}:${id}`;
  const storedAttempts=owner=>keys().filter(key=>key.startsWith(`${PLAYER_PREFIX}attempt:${owner}:`)).map(read).filter(record=>record?.playerId===owner&&UUID.test(record.id??'')&&Number.isInteger(record.revision)).sort((a,b)=>a.startedAt-b.startedAt||a.id.localeCompare(b.id));
- const getPlayer=()=>{const p=profile();return {id:p.id,displayName:p.displayName,joined:p.joined===true,pendingName:p.pendingName||''};};
+ const getPlayer=()=>{const p=profile();return {id:p.id,displayName:p.displayName,joined:p.joined===true,pendingName:p.pendingName||'',actionRevision:p.actionRevision};};
  const getAttempts=()=>storedAttempts(profile().id).map(publicAttempt);
  const getPlayerStatus=()=>{const p=profile();return {available,joined:p.joined===true,pending:storedAttempts(p.id).filter(a=>(a.ackRevision??0)<a.revision).length,syncing:Boolean(inFlight),error,leavePending:p.leavePending===true};};
  function owned(meta){const p=profile();if(!meta||meta.playerId!==p.id||!UUID.test(meta.id??''))return null;return read(attemptKey(p.id,meta.id));}
@@ -96,6 +96,19 @@ export function createPlayerStore({storage,fetchImpl=globalThis.fetch,uuid=()=>g
   if(profile().id!==p.id||profile().actionRevision!==revision)throw new Error('Player settings changed in another tab. Check the current player before trying again.');
   return getPlayer();
  }
+ async function cancelNameChange(previous){
+  const p=profile();
+  if(!previous||p.id!==previous.id||p.actionRevision!==previous.actionRevision||!p.joined||p.leavePending)throw new Error('Player settings changed in another tab. Check the current player before trying again.');
+  const name=validatePlayerName(previous.displayName);
+  if(!p.pendingName&&p.displayName===name)return getPlayer();
+  // A failed receipt may still have reached the server. Restore the previous
+  // confirmed name with a newer intent, so a delayed rename cannot win later.
+  const revision=p.actionRevision+1;
+  write(PROFILE_KEY,{...p,displayName:name,pendingName:name,actionRevision:revision});changed();
+  if(inFlight)await inFlight.catch(()=>{});await syncPlayer();
+  if(profile().id!==p.id||profile().actionRevision!==revision)throw new Error('Player settings changed in another tab. Check the current player before trying again.');
+  return getPlayer();
+ }
  async function leaveLeaderboard(){
   const p=profile();if(!p.joined&&!p.pendingName&&!p.leavePending)return getPlayer();
   const revision=p.leavePending?p.actionRevision:p.actionRevision+1;
@@ -112,7 +125,7 @@ export function createPlayerStore({storage,fetchImpl=globalThis.fetch,uuid=()=>g
   for(const key of keys().filter(key=>key.startsWith(PLAYER_PREFIX)))remove(key);
   write(PROFILE_KEY,fresh());error='';changed();return getPlayer();
  }
- return {getPlayer,getAttempts,getPlayerStatus,joinPlayer,leaveLeaderboard,syncPlayer,newPlayer,startAttempt,updateAttempt,finishAttempt,hasAttempt:meta=>Boolean(owned(meta)),getAttempt:meta=>{const value=owned(meta);return value?publicAttempt(value):null;}};
+ return {getPlayer,getAttempts,getPlayerStatus,joinPlayer,cancelNameChange,leaveLeaderboard,syncPlayer,newPlayer,startAttempt,updateAttempt,finishAttempt,hasAttempt:meta=>Boolean(owned(meta)),getAttempt:meta=>{const value=owned(meta);return value?publicAttempt(value):null;}};
 }
 let singleton;
 const store=()=>singleton??=createPlayerStore({notify:()=>{if(globalThis.window)window.dispatchEvent(new Event('gregor-player-change'));}});
@@ -120,6 +133,7 @@ export const getPlayer=()=>store().getPlayer();
 export const getAttempts=()=>store().getAttempts();
 export const getPlayerStatus=()=>store().getPlayerStatus();
 export const joinPlayer=name=>store().joinPlayer(name);
+export const cancelNameChange=previous=>store().cancelNameChange(previous);
 export const leaveLeaderboard=()=>store().leaveLeaderboard();
 export const syncPlayer=()=>store().syncPlayer();
 export const newPlayer=()=>store().newPlayer();

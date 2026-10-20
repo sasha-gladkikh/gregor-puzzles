@@ -286,7 +286,7 @@ export async function preloadArtwork(round){
 
 // This is a cutout animation of the actual completed artwork. Original pixels
 // provide every moving object; a local clean plate only replaces its old position.
-export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
+export function animatedArtwork(round,{board,autoplay=false,guided=false,onInteract=()=>{}}={}){
   const scene=artworkMotionData[round.number];
   if(!scene||!board)return null;
   const prefix=`artwork-motion-${round.number}-${++instance}`;
@@ -325,7 +325,7 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
   // disabled or unavailable. No raster assets are needed to read the notes.
   const guideOverlay=svgNode('svg',{class:'artwork-guide-overlay',viewBox:'0 0 800 600','aria-hidden':'true',focusable:'false'});
   board.append(guideOverlay);
-  const guide=createArtworkGuide(round,{parent:guideOverlay,guided,onNavigate:()=>pause(),onFocus:index=>{element.dataset.guideIndex=String(index);}});
+  const guide=createArtworkGuide(round,{parent:guideOverlay,guided,onNavigate:()=>{onInteract();pause();},onFocus:index=>{element.dataset.guideIndex=String(index);}});
 
   const controls=node('div','artwork-motion-controls');controls.setAttribute('role','group');controls.setAttribute('aria-label','Illustration animation');
   const button=node('button','tool artwork-motion-toggle','Play illustration');button.type='button';button.disabled=true;button.setAttribute('aria-controls',prefix);button.setAttribute('aria-pressed','false');element.id=prefix;
@@ -397,8 +397,8 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
     if(disposed)return;
     pause();guide.select(index);element.dataset.guideIndex=String(guide.index);paint();
   }
-  button.addEventListener('click',()=>{if(clock.playing)pause();else play();});
-  guideButton.addEventListener('click',replayGuide);
+  button.addEventListener('click',()=>{onInteract();if(clock.playing)pause();else play();});
+  guideButton.addEventListener('click',()=>{onInteract();replayGuide();});
   const visibility=()=>{if(document.hidden)pause();};
   const resetPointer=()=>{pointer.x=0;pointer.y=0;targetPointer.x=0;targetPointer.y=0;lastDraw=0;for(const sprite of sprites)sprite.elapsed=0;};
   const preference=()=>{pendingPlay=false;if(guide.enabled)guide.restart();resetPointer();clock.reset();stage.reset();element.hidden=true;paint();if(!media.matches)void loadAssets();};

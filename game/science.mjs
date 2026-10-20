@@ -71,7 +71,13 @@ chooser.addEventListener('keydown',event=>{if(event.key==='Escape'){chooser.open
 document.addEventListener('click',event=>{if(chooser.open&&!chooser.contains(event.target))chooser.open=false;});
 wideLayout.addEventListener('change',()=>{const sections=mount.querySelector('.science-section-nav');if(sections)sections.open=wideLayout.matches;});
 document.getElementById('clearScienceSearch').addEventListener('click',()=>{search.value='';filter();search.focus();});
-window.addEventListener('popstate',()=>{search.value='';chooser.open=false;showRound(findRound(new URLSearchParams(location.search).get('level'),allRounds));filter();});
+window.addEventListener('popstate',()=>{
+ const next=findRound(new URLSearchParams(location.search).get('level'),allRounds);
+ // Fragment history belongs to the current article. Rebuilding it here would
+ // discard open notes, model selections, and the reader's focus.
+ if(next.id===current.id){if(location.hash)revealHash();return;}
+ search.value='';chooser.open=false;showRound(next);filter();
+});
 window.addEventListener('hashchange',revealHash);
 window.addEventListener('beforeprint',()=>{mount.querySelectorAll('details').forEach(details=>{details.dataset.wasOpen=String(details.open);details.open=true;});});
 window.addEventListener('afterprint',()=>{mount.querySelectorAll('[data-was-open]').forEach(details=>{details.open=details.dataset.wasOpen==='true';delete details.dataset.wasOpen;});});

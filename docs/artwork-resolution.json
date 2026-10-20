@@ -1,5 +1,5 @@
 {
-  "encoding": "Lossless WebP of approved native PNG masters. No resizing, redrawing, or added pixels.",
+  "encoding": "Lossless WebP native masters. Rounds 05 and 08 received a localized nuclear-background correction on 2026-10-20; molecular structures and composition are retained.",
   "images": [
     {
       "round": "01",
@@ -37,9 +37,9 @@
       "round": "05",
       "width": 1447,
       "height": 1087,
-      "bytes": 1166966,
-      "sourceSha256": "06a6fbbfc1a3f490562c5b7fb466666e011428ed9655e6c33a6739fce087fc05",
-      "pixelSha256": "35eef0a6869d7d9ea05770a80ac7780309813bf2b6f87bcd0efade8ce3fb6515"
+      "bytes": 1123466,
+      "sourceSha256": "d92a30bb06dac89cd19fc4564fc1c4c0e2be7a1acc810035a45374adc228e535",
+      "pixelSha256": "de7f4c12cf6573d51f9614868515d2c16a2dd9bf43b99ac5b3ce3f0335b5cfff"
     },
     {
       "round": "06",
@@ -61,9 +61,9 @@
       "round": "08",
       "width": 1448,
       "height": 1086,
-      "bytes": 1098218,
-      "sourceSha256": "8f809475e3d5c0deb413cc38a7c998afc16dbaa3bfb7a541bb1264cb7e2b9560",
-      "pixelSha256": "5f07845efe79d7ba7b6874dfbe221bac949e2de1b02b73afe709f66b7a9d713c"
+      "bytes": 1054246,
+      "sourceSha256": "b303631340b03a9115091e618b934e6b2b5ea96943cd5cc83cc2be4e5555fa6a",
+      "pixelSha256": "65f167682691f44d75cb2a654ed2fca54afc34a9afac5530bbe4dad00dc2904d"
     },
     {
       "round": "09",

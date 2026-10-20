@@ -27,7 +27,8 @@ export const terminology=[
   {id:'histiocytosis',term:'histiocytosis',aliases:[],definition:'Accumulation of histiocytes, a type of immune cell, in tissues.'},
   {id:'cytopenia',term:'cytopenia',aliases:['cytopenias'],definition:'A lower-than-expected number of one or more types of blood cells.'},
   {id:'neutropenia',term:'neutropenia',aliases:[],definition:'A low number of neutrophils, white blood cells that help protect against infection.'},
-  {id:'retina',term:'retina',aliases:['retinal'],definition:'The light-sensitive tissue lining the back of the eye.'}
+  {id:'retina',term:'retina',aliases:['retinal'],definition:'The light-sensitive tissue lining the back of the eye.'},
+  {id:'penetrance',term:'penetrance',aliases:[],definition:'The proportion of people with a particular genetic variant who develop its associated features. Reduced penetrance means some do not.'}
 ];
 
 // Completion-only visual connections. Each label is an exact substring of the

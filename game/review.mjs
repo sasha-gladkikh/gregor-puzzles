@@ -7,10 +7,18 @@ import {illustrationWalkthrough} from './experience.mjs';
 import {renderSite} from './site.mjs';
 import {scientificPrinciples} from './science-ui.mjs';
 import {geneClueConnection} from './gene-hints.mjs';
+import {GENE_HINT_VERSION,geneHintText} from './engine.mjs';
+import {terminology} from './teaching-data.mjs';
 const returnRound=findRound(new URLSearchParams(location.search).get('level')??'01',rounds);
 renderSite({active:'review',roundNumber:returnRound.number,playControls:false});
 const cards=[],indexLinks=[];
 const panel=(label,open=false)=>{const d=node('details',null,'learning-panel');d.open=open;d.append(node('summary',label));return d;};
+const glossary=panel('Terminology definitions');
+glossary.id='reviewGlossary';glossary.className='review-guidance';
+const definitions=node('dl',null,'review-definitions');
+for(const entry of terminology)definitions.append(node('dt',entry.term),node('dd',entry.definition));
+glossary.append(node('p','Shared definitions used by the in-game terminology controls.'),definitions);
+document.querySelector('.review-intro').append(glossary);
 for(const round of rounds){
  const p=round.clinical;
  const jump=node('a',`${round.number} · ${round.gene}`);jump.href=`#round-${round.number}`;document.getElementById('reviewIndex').append(jump);indexLinks.push(jump);
@@ -37,7 +45,7 @@ for(const round of rounds){
  const connection=node('p',geneClueConnection(round));connection.append(referenceMarks(round,p.connectionSources,'How the picture connects'));
  reveal.append(node('h4','How the picture connects'),connection);content.append(reveal);
  const context=panel('Clinical context wording');
- const completionParts=[['How it connects',p.connection,p.connectionSources],['Clinical pattern',p.pattern,[p.patternSource]],['Onset and course',p.onset,[p.patternSource]],['Clinical significance',p.significance.text,p.significance.sources],['Family implications',p.family.text,p.family.sources]];
+ const completionParts=[['How it connects',p.connection,p.connectionSources],['Clinical pattern',p.pattern,[p.patternSource]],['Onset and course',p.onset,[p.patternSource]],['Clinical significance',p.significance.text,p.significance.sources],['Family implications',p.family.text,p.family.sources],['Remember',p.memory,[p.patternSource,...p.connectionSources]]];
  const sourceKeys=completionParts.map(([, ,urls])=>[...new Set(urls)].sort().join('|'));
  for(const [i,[label,text,urls]]of completionParts.entries()){
   const paragraph=node('p',text);
@@ -47,8 +55,17 @@ for(const round of rounds){
  const interpretation=panel('Variant interpretation');const interpretationText=node('p',p.interpretation.text);interpretationText.append(referenceMarks(round,p.interpretation.sources,'Variant interpretation'));interpretation.append(interpretationText,scientificPrinciples(round));content.append(interpretation);
  const clues=panel('Progressive clues and image notes during play');const list=node('ol',null,'review-clues');
  for(const c of round.clues){const li=node('li');li.append(node('strong',`${c.at} pieces · ${c.label}: ${c.title}. `),document.createTextNode(c.body));if(c.sourceUrl)li.append(referenceMarks(round,c.sourceUrl,c.label));list.append(li);}clues.append(list);
- const playNotes=node('ol',null,'review-clues');round.illustration.landmarks.forEach((l,i)=>{const li=node('li');li.append(node('strong',`Image note ${i+1}: ${l.playTitle} `),document.createTextNode(l.playText));playNotes.append(li);});
- clues.append(node('h4','Anonymous image notes'),node('p','This wording is shown during play. Gene and condition names are revealed at the end of the round.','small'),playNotes);content.append(clues);
+ const playNotes=node('ol',null,'review-clues');round.illustration.landmarks.forEach((l,i)=>{
+  const li=node('li');li.append(node('strong',l.playTitle),node('p',l.playText));
+  if(l.playPreview!==l.playText){const preview=node('p');preview.append(node('strong','Compact clue: '),document.createTextNode(l.playPreview));li.append(preview);}
+  playNotes.append(li);
+ });
+ const hints=node('ol',null,'review-clues');
+ for(const [i,text]of geneHintText({geneHintVersion:GENE_HINT_VERSION,geneHintsSeen:3},round).split('\n\n').entries()){
+  const li=node('li');li.append(node('strong',`${['Picture hint','Biology hint','Symbol hint'][i]}: `),document.createTextNode(text));hints.append(li);
+ }
+ clues.append(node('h4','Anonymous image notes'),node('p','Full notes and their compact clues, as shown during play. Gene and condition names are revealed at completion.','small'),playNotes,node('h4','Optional gene hints'),hints);
+ const terms=node('a','Shared terminology definitions ↑');terms.href='#reviewGlossary';terms.addEventListener('click',()=>glossary.open=true);clues.append(terms);content.append(clues);
  const references=panel('References');references.append(referenceList(round,{heading:''}));content.append(references);
  body.append(visual,content);card.append(body);document.getElementById('reviewRounds').append(card);
  cards.push({card,walkthrough,search:searchText(round)});
@@ -61,6 +78,6 @@ const search=document.getElementById('reviewSearch');search.addEventListener('in
 });
 document.getElementById('clearSearch').onclick=()=>{search.value='';search.dispatchEvent(new Event('input'));search.focus();};
 document.getElementById('collapseProfiles').onclick=()=>{for(const {card,walkthrough}of cards)if(!card.hidden){card.querySelectorAll('.learning-panel, .science-detail-panel').forEach(d=>d.open=false);walkthrough.close();}};
-if(/^#(?:round-|ref-)/.test(location.hash))requestAnimationFrame(()=>{const target=document.getElementById(location.hash.slice(1));if(!target)return;for(let parent=target.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;target.scrollIntoView();});
+if(/^#(?:round-|ref-|reviewGlossary)/.test(location.hash))requestAnimationFrame(()=>{const target=document.getElementById(location.hash.slice(1));if(!target)return;if(target===glossary)glossary.open=true;for(let parent=target.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;target.scrollIntoView();});
 window.addEventListener('beforeprint',()=>{document.querySelectorAll('.learning-panel, .science-detail-panel').forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});});
 window.addEventListener('afterprint',()=>{document.querySelectorAll('[data-was-open]').forEach(d=>{d.open=d.dataset.wasOpen==='true';delete d.dataset.wasOpen;});});

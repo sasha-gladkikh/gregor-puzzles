@@ -25,7 +25,7 @@ export function scientificFigure(round){
  const markers=artworkMarkers(round,select);
  markers.querySelectorAll('button').forEach((button,i)=>button.setAttribute('aria-label',`Explore structure ${i+1}: ${round.illustration.landmarks[i].title}`));
  imageBox.append(image,markers);
- const caption=node('figcaption');caption.append(node('span','Illustrated mechanism','science-kicker'),node('p',round.illustration.takeaway),node('span','Select a numbered structure to connect image, explanation, and source.','figure-instruction'));
+ const caption=node('figcaption');caption.append(node('span','Illustrated mechanism','science-kicker'),node('p',round.illustration.takeaway),node('span','Select a numbered structure to explore it.','figure-instruction'));
  figure.append(imageBox,caption);section.append(figure);
  round.illustration.landmarks.forEach((point,i)=>{
   const li=node('li');const button=node('button',null,'figure-step');button.type='button';

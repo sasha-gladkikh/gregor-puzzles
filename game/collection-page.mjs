@@ -1,4 +1,4 @@
-import {collectionProgress} from './collection.mjs';
+import {collectionProgress,affectsRoundProgress,progressSignature} from './collection.mjs';
 import {findRound} from './rounds.mjs';
 import {processGroups,splicingPairComplete} from './collection-data.mjs';
 import {renderSite} from './site.mjs';
@@ -8,7 +8,12 @@ const currentRound=findRound(new URLSearchParams(location.search).get('level'));
 renderSite({active:'collection',roundNumber:currentRound.number,playControls:false});
 document.querySelector('.collection-intro .collection-guide-link').href=`./field-guide.html?level=${currentRound.number}`;
 const node=(tag,text,className)=>{const el=document.createElement(tag);if(text)el.textContent=text;if(className)el.className=className;return el;};
-function progress(){return collectionProgress(key=>{try{return localStorage.getItem(key);}catch{document.querySelector('#storageNotice').hidden=false;return null;}});}
+let lastProgress;
+function progress(){
+ let unavailable=false;
+ const items=collectionProgress(key=>{try{return localStorage.getItem(key);}catch{unavailable=true;return null;}});
+ document.querySelector('#storageNotice').hidden=!unavailable;return items;
+}
 function roundCard({round,done,pieces},first){
  const card=node('article',null,'collection-card');
  const link=node('a',null,'collection-card-link');link.href=`./play.html?level=${round.number}`;
@@ -40,6 +45,8 @@ function renderJourneys(items){
 }
 function render(){
  const items=progress(),complete=items.filter(item=>item.done).length;
+ const signature=progressSignature(items);if(signature===lastProgress)return;lastProgress=signature;
+ const focused=document.activeElement,href=focused?.getAttribute('href'),label=focused?.getAttribute('aria-label');
  document.querySelector('#collectionSummary').textContent=`${complete} of ${items.length} rounds complete`;
  renderJourneys(items);
  document.querySelector('#roundCards').replaceChildren(...items.map((item,index)=>roundCard(item,index===0)));
@@ -51,11 +58,20 @@ function render(){
  }
  const connection=document.querySelector('#collectionConnection');connection.replaceChildren();connection.hidden=!splicingPairComplete(items);
  if(!connection.hidden){const copy=node('div');const h=node('h2','Two ways to process RNA');h.id='connectionHeading';copy.append(node('p','Make a connection','page-kicker'),h,node('p','Revisit RNU4-2 and RNU4ATAC side by side: major and minor spliceosomes, distinct gene–condition relationships.'));const a=node('a','Compare RNA splicing →','collection-guide-link');a.href='./science.html?level=05#compare-splicing';connection.append(copy,a);}
+ if(href&&!focused.isConnected)[...document.querySelectorAll('#collectionMain a')].find(link=>link.getAttribute('href')===href&&link.getAttribute('aria-label')===label)?.focus({preventScroll:true});
 }
-for(const [button,panel] of [['gridView','roundCards'],['mapView','processMap']])document.getElementById(button).addEventListener('click',()=>{for(const [other,target]of [['gridView','roundCards'],['mapView','processMap']]){document.getElementById(other).setAttribute('aria-pressed',String(other===button));document.getElementById(target).hidden=other!==button;}document.getElementById(panel).scrollIntoView({block:'nearest',behavior:'instant'});});
+function restoreView(){
+ const map=location.hash==='#processMap'||processGroups.some(group=>location.hash===`#process-${group.id}`);
+ for(const [button,panel,isMap]of [['gridView','roundCards',false],['mapView','processMap',true]]){
+  document.getElementById(button).setAttribute('aria-pressed',String(map===isMap));document.getElementById(panel).hidden=map!==isMap;
+ }
+ if(location.hash==='#collectionJourneys')document.getElementById('collectionJourneys').open=true;
+}
+for(const [button,panel] of [['gridView','roundCards'],['mapView','processMap']])document.getElementById(button).addEventListener('click',()=>{
+ const hash=`#${panel}`;if(location.hash!==hash)history.pushState({},'',hash);
+ restoreView();document.getElementById(panel).scrollIntoView({block:'nearest',behavior:'instant'});
+});
 window.addEventListener('pageshow',render);
-window.addEventListener('storage',event=>{if(event.key===null||event.key.startsWith('gregor-puzzles:'))render();});
+window.addEventListener('storage',event=>{if(affectsRoundProgress(event))render();});
 render();
-
-const openJourneyLink=()=>{if(location.hash==='#collectionJourneys')document.getElementById('collectionJourneys').open=true;};
-openJourneyLink();window.addEventListener('hashchange',openJourneyLink);
+restoreView();window.addEventListener('hashchange',restoreView);window.addEventListener('popstate',restoreView);

@@ -1,5 +1,5 @@
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
-import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,newState,place,guess,complete,shuffled,normalizeGene,recognizeGene,revealGeneHint,geneHintText,geneHintStatus,geneClueConnection,landmarkPiece} from './engine.mjs';
+import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,place,guess,complete,shuffled,normalizeGene,recognizeGene,revealGeneHint,geneHintText,geneHintStatus,geneClueConnection,landmarkPiece} from './engine.mjs';
 import {rounds,allRounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink,newPlayerKeys} from './collection.mjs';
 import {artworkMarkers} from './artwork-ui.mjs';
@@ -19,6 +19,8 @@ import {initShareCard} from './share-card.mjs';
 import {latestPlayClue,latestClueKey} from './play-learning.mjs';
 import {createTermLens,renderTeachingConnection} from './teaching-ui.mjs';
 import {nextOpenSlot} from './board-navigation.mjs';
+import {createRoundSaveGuard,createRoundActionQueue} from './round-save.mjs';
+import {createRoundCarousel} from './round-carousel.mjs';
 import {eligibleScore} from './community.mjs';
 import {getPlayer,getPlayerStatus,getAttempt,hasAttempt,startAttempt,updateAttempt,finishAttempt,syncPlayer,newPlayer} from './player.mjs';
 const params=new URLSearchParams(location.search);
@@ -30,6 +32,8 @@ const journey=requestedJourney?.rounds.some(item=>item.number===round.number)?re
 
 const $ = id => document.getElementById(id);
 renderSite({active:'play',roundNumber:round.number,playControls:true});
+const playCarousel=createRoundCarousel($('playDiscoveryStrip'),rounds,{currentRound:round.number,assetQuery:new URL(import.meta.url).search,href:roundLink});
+window.addEventListener('resize',()=>playCarousel.revealCurrent());
 const sound=soundFeedback($('soundButton'));
 const termLens=createTermLens();
 const PIECE_PAD=44;
@@ -38,8 +42,35 @@ const position = id => `row ${Math.floor(id/COLS)+1}, column ${id%COLS+1}`;
 // Each landmark belongs to the piece that contains it; placing that piece reveals the note.
 const landmarkPieces=round.illustration.landmarks.map(landmarkPiece);
 const imageMarkers=artworkMarkers(round,index=>showNote(index)),markers=[...imageMarkers.children];markers.forEach(m=>m.hidden=true);$('board').append(imageMarkers);
-let stored;
-try { stored = JSON.parse(localStorage.getItem(KEY)); } catch {}
+let stored,storedRaw=null;
+try { storedRaw=localStorage.getItem(KEY);stored=JSON.parse(storedRaw); } catch {}
+const roundSave=createRoundSaveGuard({read:()=>localStorage.getItem(KEY),write:value=>localStorage.setItem(KEY,value),initial:storedRaw});
+let refreshingSave=false;
+function ensureCurrentSave(){
+  if(refreshingSave)return false;
+  if(getPlayer().id!==pagePlayerId){refreshingSave=true;location.replace(`./play.html?level=${rounds[0].number}`);return false;}
+  try{
+    if(roundSave.current())return true;
+    refreshingSave=true;location.reload();return false;
+  }catch{return true;} // Storage-disabled play remains available.
+}
+const roundActions=createRoundActionQueue({isCurrent:ensureCurrentSave});
+function runRoundAction(action){
+  void sound.prepare();
+  return roundActions.run(action).catch(error=>{
+    console.error('Could not update this round.',error);
+    $('saveNotice').hidden=false;
+  });
+}
+// Check before handlers mutate state, not just at the next checkpoint. This
+// also covers a tab awakened after missing a storage event.
+for(const event of ['pointerdown','click','keydown','submit'])document.addEventListener(event,e=>{
+  if(!ensureCurrentSave()){e.preventDefault();e.stopImmediatePropagation();}
+},true);
+window.addEventListener('storage',event=>{
+  if(event.key===KEY||event.key===null)ensureCurrentSave();
+  else if(rounds.some(item=>saveKey(item)===event.key))renderCollection();
+});
 let {state,timed,order} = restoreSession(stored);
 // Preserve timing provenance when restoreSession normalizes older saves.
 if(stored?.timed&&stored.state&&(stored.state.sessionVersion!==3||stored.state.timingVersion!==2||(stored.state.placed?.length&&!Number.isFinite(stored.state.startedAt))||(stored.state.placed?.length===SIZE&&!Number.isFinite(stored.state.finishedAt))))state.leaderboardIneligible=true;
@@ -49,9 +80,9 @@ let attemptMeta=hasAttempt(state.playerAttempt)&&getAttempt(state.playerAttempt)
 const pagePlayerId=getPlayer().id;
 window.addEventListener('gregor-player-change',()=>{if(getPlayer().id!==pagePlayerId)location.replace(`./play.html?level=${rounds[0].number}`);});
 let canTrackFresh=!state.placed.length&&!state.seconds&&state.startedAt===null&&!state.timingUnavailable&&!state.leaderboardIneligible;
-let timedEntry=params.get('mode')==='timed';
+let timedEntry=params.get('mode')==='timed',persistInitialMode=false;
 if(timedEntry){const entryURL=new URL(location.href);entryURL.searchParams.delete('mode');history.replaceState(null,'',entryURL.href);}
-if(timedEntry&&!modeLocked(state)){timed=changeTimingMode(state,timed,true);timedEntry=false;}
+if(timedEntry&&!modeLocked(state)){timed=changeTimingMode(state,timed,true);timedEntry=false;persistInitialMode=true;}
 let selected = null, hinted = null, peek = false, drag = null;
 let activeSlot=0;
 let lastCount = -1, extrasShown = false;
@@ -74,13 +105,13 @@ function positionCompletion(){
     if($('clueDetails').parentElement!==$('clueRecap'))$('clueRecap').append($('clueDetails'));
   }else if($('clueDetails').parentElement!==panel)$('learningHeading').after($('clueDetails'));
   if(artworkAnimation&&!$('figureDialog').open){
-    $('completionActions').before(artworkAnimation.caption);
+    $('completionActions').after(artworkAnimation.caption);
   }
 }
 walkthroughLayout.addEventListener('change',positionCompletion);
 const board = $('puzzle');
 const pieceMotion=createPieceMotion({board,makePiece:artworkPiece,pathFor,COLS,W,H,CW,CH,pad:PIECE_PAD,reduceMotion:reducedMotion,onCancel:()=>sound.stop({preserveCompletion:true})});
-const bank=geneBank(rounds,{onChoose:value=>checkGene(value,true)});
+const bank=geneBank(rounds,{onChoose:value=>runRoundAction(()=>checkGene(value,true))});
 $('geneBankBody').append(bank.element);
 const discoveryGuide=discoveryMotion({board:$('board'),target:discoveryTarget,isCurrent:(item,target)=>
   target!==$('latestClue')||target.dataset.discoveryKey===(item.kind==='landmark'?`landmark:${item.index}`:`clue:${item.at}`)});
@@ -112,10 +143,15 @@ function discoveryTarget(item){
   if(!latest.hidden&&rect.height&&rect.top>=0&&rect.bottom<=innerHeight)return latest;
   return $('discoveriesButton');
 }
-const save = () => {
+const save = ({force=false}={}) => {
+  if(!ensureCurrentSave())return false;
+  try {
+    if(!roundSave.save({state,timed,order},{force})){ensureCurrentSave();return false;}
+    $('saveNotice').hidden=getPlayerStatus().available;
+  } catch {$('saveNotice').hidden=false;}
   if(attemptMeta)updateAttempt(attemptMeta,{state,timed});
-  try {localStorage.setItem(KEY,JSON.stringify({state,timed,order}));$('saveNotice').hidden=getPlayerStatus().available;} catch {$('saveNotice').hidden=false;}
   renderCollection();renderPlayerResult();
+  return true;
 };
 function strip(message,items=[]) {
   const fresh=items.length>0;
@@ -149,16 +185,19 @@ function openDiscoveries(noteIndex=null) {
   $('discoveriesButton').classList.remove('has-new');openDialog('discoveriesDialog');
 }
 function start(useRoute='image',accepted=false,before=state.placed.length){
+  if(!ensureCurrentSave())return false;
   void sound.prepare();if(!artworkPrepared){artworkPrepared=true;void preloadArtwork(round);}
+  if(accepted)startRound(state,timed,useRoute);
+  else recordInteraction(state,useRoute);
+  if(!save())return false;
   if(accepted){
-    startRound(state,timed,useRoute);
     if(!attemptMeta&&canTrackFresh&&before===0){
       attemptMeta=startAttempt({roundNumber:round.number,state,timed,before});
       if(attemptMeta)state.playerAttempt=attemptMeta;
-      canTrackFresh=false;void syncPlayer().catch(()=>{});
+      canTrackFresh=false;if(!save())return false;void syncPlayer().catch(()=>{});
     }
-  }else recordInteraction(state,useRoute);
-  save();updateMode();
+  }
+  updateMode();return true;
 }
 function svgEl(tag,attrs={}) { const n=document.createElementNS(NS,tag); Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v)); return n; }
 function artworkPiece(id,prefix) {
@@ -178,9 +217,9 @@ function buildBoard() {
     const g=svgEl('g',{'data-slot':i});
     const slot=svgEl('path',{d:pathFor(i),class:'slot',tabindex:'-1',role:'button','aria-label':`Board position, ${position(i)}`});
     slot.addEventListener('focus',()=>{activeSlot=i;updateSelection();});
-    slot.addEventListener('click',()=>attempt(i));
+    slot.addEventListener('click',()=>runRoundAction(()=>attempt(i)));
     slot.addEventListener('keydown',e=>{
-      if(e.key==='Enter'||e.key===' '){e.preventDefault();attempt(i);}
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();void runRoundAction(()=>attempt(i));}
       else if(e.key.startsWith('Arrow')){e.preventDefault();slotAt(nextSlot(i,e.key))?.focus();}
     });
     g.append(slot); board.append(g);
@@ -197,7 +236,7 @@ function buildTray() {
     const svg=svgEl('svg',{viewBox:`${x-PIECE_PAD} ${y-PIECE_PAD} ${CW+PIECE_PAD*2} ${CH+PIECE_PAD*2}`,'aria-hidden':'true'});
     svg.append(artworkPiece(id,'tray-')); b.append(svg);
     const label=document.createElement('span');label.className='piece-label';label.textContent=String.fromCharCode(65+index);label.setAttribute('aria-hidden','true');b.append(label);
-    b.addEventListener('click',e=>{if(b.dataset.suppress==='1'){delete b.dataset.suppress;return;}select(id,e.detail===0);});
+    b.addEventListener('click',e=>{if(b.dataset.suppress==='1'){delete b.dataset.suppress;return;}void runRoundAction(()=>select(id,e.detail===0));});
     b.addEventListener('pointerdown',e=>startDrag(e,id,b)); tray.append(b);
   });
 }
@@ -207,7 +246,7 @@ function updateTrayHint(){
 window.addEventListener('resize',updateTrayHint);
 function select(id,fromKeyboard=false) {
   if(complete(state))return;
-  start(); ({selected,hinted}=choosePiece(selected,id)); updateSelection();
+  if(!start())return;({selected,hinted}=choosePiece(selected,id)); updateSelection();
   strip(selected===null?'Selection cleared.':`Piece ${trayButton(id).querySelector('.piece-label').textContent} selected. Choose its place.`);
   if(fromKeyboard&&selected!==null)slotAt(Array.from({length:SIZE},(_,i)=>i).find(i=>!state.placed.includes(i)))?.focus();
 }
@@ -238,18 +277,19 @@ function discoveries(before,previous) {
   return [...notes,...clues];
 }
 function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
+  if(!ensureCurrentSave())return;
   finishRound(state);
-  if(roundComplete(state)&&attemptMeta){
-    finishAttempt(attemptMeta,{state,timed,eligible:Boolean(eligibleScore(round,{state,timed}))});
-    void syncPlayer().catch(()=>{});
-  }
   const found=discoveries(before,previous);
   const finishing=roundComplete(state)&&before<SIZE;
   $('board').classList.toggle('finishing',finishing&&!reducedMotion());
   $('completion').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   $('identityCard').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   $('completionSummary').classList.toggle('reveal-pending',finishing&&!reducedMotion());
-  render(before); save();
+  render(before);if(!save())return;
+  if(roundComplete(state)&&attemptMeta){
+    finishAttempt(attemptMeta,{state,timed,eligible:Boolean(eligibleScore(round,{state,timed}))});
+    void syncPlayer().catch(()=>{});
+  }
   const epoch=feedbackEpoch,generation=roundGeneration,progress=state.placed.length/SIZE;
   const settled=id===null?Promise.resolve({cancelled:false}):pieceMotion.place(id,from);
   settled.then(result=>{if(epoch===feedbackEpoch&&!result.cancelled)void sound.play(finishing?'complete':'place',{progress});});
@@ -285,14 +325,14 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
     $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
   }
 }
-function attempt(slot) {
+function attempt(slot,{fromDrag=false}={}) {
   if(selected===null){strip('First select a piece from the tray.');return;}
-  start(); const before=state.placed.length,previous=[...state.placed],id=selected,from=drag?null:trayButton(id)?.querySelector('svg').getBoundingClientRect();
+  if(!start())return;const before=state.placed.length,previous=[...state.placed],id=selected,from=fromDrag?null:trayButton(id)?.querySelector('svg').getBoundingClientRect();
   if(!place(state,id,slot)){
     const path=slotAt(slot);path?.classList.remove('miss');path?.getBoundingClientRect();path?.classList.add('miss');setTimeout(()=>path?.classList.remove('miss'),450);
     strip('Try another position. Match the shape and image.');return;
   }
-  start('image',true,before);selected=null; hinted=null; afterProgress(before,previous,{id,from});
+  if(!start('image',true,before))return;selected=null; hinted=null; afterProgress(before,previous,{id,from});
 }
 function startDrag(e,id,b) {
   if(e.pointerType==='touch'||e.button!==0||state.placed.includes(id))return;
@@ -302,7 +342,7 @@ window.addEventListener('pointermove',e=>{
   if(!drag||e.pointerId!==drag.pointer)return;
   const d=drag; if(!d.moved&&Math.hypot(e.clientX-d.x,e.clientY-d.y)<7)return;
   if(!d.moved){
-    d.moved=true; start(); selected=d.id; hinted=null; d.b.classList.add('dragging');
+    d.moved=true;selected=d.id;hinted=null;d.b.classList.add('dragging');
     d.ghost=d.b.querySelector('svg').cloneNode(true);
     d.ghost.querySelectorAll('[id]').forEach(el=>el.id='drag-'+el.id);
     d.ghost.querySelectorAll('[clip-path]').forEach(el=>el.setAttribute('clip-path',el.getAttribute('clip-path').replace('#','#drag-')));
@@ -319,7 +359,7 @@ function endDrag(e,cancelled=false) {
   d.b.dataset.suppress='1'; setTimeout(()=>delete d.b.dataset.suppress,0);
   if(!cancelled){
     const rect=board.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*W,y=(e.clientY-rect.top)/rect.height*H;
-    if(dropMatchesSlot(d.id,{x,y},{COLS,ROWS,CW,CH}))attempt(d.id);
+    if(dropMatchesSlot(d.id,{x,y},{COLS,ROWS,CW,CH}))void runRoundAction(()=>{selected=d.id;attempt(d.id,{fromDrag:true});});
     else strip('Move closer to its place, or click to place it.');
   }
   drag=null;
@@ -414,7 +454,7 @@ function render(before=state.placed.length) {
     if(!extrasShown){
       extrasShown=true;
       // Begin motion only after the final piece has settled. Restored rounds stay still.
-      artworkAnimation=animatedArtwork(round,{board:$('board'),guided:before<SIZE});
+      artworkAnimation=animatedArtwork(round,{board:$('board'),guided:before<SIZE,onInteract:()=>completionPlayback.cancel()});
       $('artworkPlayback').replaceChildren(artworkAnimation.controls,artworkAnimation.caption);
       artworkAnimation.controls.addEventListener('click',()=>completionPlayback.cancel());
       const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
@@ -430,25 +470,25 @@ function render(before=state.placed.length) {
 }
 function formatTime(s) {return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
 setInterval(()=>{if(timed)$('clock').textContent=formatTime(elapsedSeconds(state));},1000);
-$('calm').onclick=()=>{timed=changeTimingMode(state,timed,false);render();save();};
-$('timed').onclick=()=>{timed=changeTimingMode(state,timed,true);render();save();};
-$('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);strip(peek?'Picture shown.':'Picture hidden.');save();};
-$('hint').onclick=()=>openInlineHint();
+$('calm').onclick=()=>runRoundAction(()=>{timed=changeTimingMode(state,timed,false);render();save();});
+$('timed').onclick=()=>runRoundAction(()=>{timed=changeTimingMode(state,timed,true);render();save();});
+$('peek').onclick=()=>runRoundAction(()=>{if(!start('image'))return;peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);strip(peek?'Picture shown.':'Picture hidden.');save();});
+$('hint').onclick=()=>runRoundAction(()=>openInlineHint());
 function checkGene(value,fromBank=false){
   if(complete(state))return;
   const feedback=message=>{if(fromBank)bank.feedback(message);else $('guessFeedback').textContent=message;};
   if(!normalizeGene(value)){feedback('Enter a gene symbol or product name, or keep building the image.');return;}
-  start('guess');const before=state.placed.length,previous=[...state.placed];
+  if(!start('guess'))return;const before=state.placed.length,previous=[...state.placed];
   const answer=recognizeGene(value,round);
   if(answer&&answer.kind!=='ambiguous'&&guess(state,round.gene,round.gene)){
-    start('guess',true,before);
+    if(!start('guess',true,before))return;
     const alias=answer.kind==='product'?` ${answer.name} is encoded by ${round.gene}.`:answer.kind==='alias'?` ${answer.name} is a previous symbol for ${round.gene}.`:'';
     if(fromBank)$('geneBankDialog').close();
     selected=null;hinted=null;afterProgress(before,previous,{alias});
   } else if(answer?.kind==='ambiguous'){feedback('That identifies the RNA family. More than one gene encodes it; use the specific gene symbol or finish the image.');}
   else {feedback('Not this gene. Compare the location and function clues, or keep building the image.');if(!fromBank)$('geneGuess').setAttribute('aria-invalid','true');}
 }
-$('guessForm').onsubmit=e=>{e.preventDefault();checkGene($('geneGuess').value);};
+$('guessForm').onsubmit=e=>{e.preventDefault();const value=$('geneGuess').value;void runRoundAction(()=>checkGene(value));};
 function updateGeneHint(){
   const inlineStepFocused=document.activeElement===$('nextInlineHint');
   const hintStatus=geneHintStatus(state);
@@ -460,26 +500,26 @@ function updateGeneHint(){
   if($('inlineHintText').dataset.copy!==text){$('inlineHintText').textContent=text;$('inlineHintText').dataset.copy=text;termLens.enhance($('inlineHintText'));}
   if(!hintStatus.hasNext&&inlineStepFocused)$('inlineHintTitle').focus({preventScroll:true});
 }
-function requestGeneHint(){start('guess');bank.hint(revealGeneHint(state,round));updateGeneHint();save();if($('geneBankDialog').open)bank.focusHint();}
+function requestGeneHint(){if(!start('guess'))return false;bank.hint(revealGeneHint(state,round));updateGeneHint();if(!save())return false;if($('geneBankDialog').open)bank.focusHint();return true;}
 function openInlineHint(opener=$('hint')){
   inlineHintOpener=opener;
   $('inlineGeneHint').hidden=false;$('hint').setAttribute('aria-expanded','true');
-  if(!geneHintStatus(state).seen)requestGeneHint();else updateGeneHint();
+  if(!geneHintStatus(state).seen){if(!requestGeneHint())return;}else updateGeneHint();
   $('inlineGeneHint').scrollIntoView({block:'nearest',behavior:'instant'});
   $('inlineHintTitle').focus({preventScroll:true});
 }
 function openGeneBank(){updateGeneHint();openDialog('geneBankDialog');bank.focus();}
-$('geneHint').onclick=()=>openInlineHint($('geneHint'));
+$('geneHint').onclick=()=>runRoundAction(()=>openInlineHint($('geneHint')));
 function closeInlineHint(){termLens.close();$('inlineGeneHint').hidden=true;$('hint').setAttribute('aria-expanded','false');(inlineHintOpener??$('hint')).focus({preventScroll:true});}
 $('closeInlineHint').onclick=closeInlineHint;
 $('inlineGeneHint').addEventListener('keydown',event=>{if(event.key==='Escape'&&!event.defaultPrevented){event.preventDefault();closeInlineHint();}});
-$('nextInlineHint').onclick=requestGeneHint;
+$('nextInlineHint').onclick=()=>runRoundAction(requestGeneHint);
 $('hintChoices').onclick=openGeneBank;
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
 function openDialog(id){termLens.close();highlightConnection(null);completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
 $('geneBankButton').onclick=openGeneBank;
 $('closeGeneBank').onclick=()=>$('geneBankDialog').close();
-$('bankSymbolHint').onclick=requestGeneHint;
+$('bankSymbolHint').onclick=()=>runRoundAction(requestGeneHint);
 $('discoveriesButton').onclick=()=>openDiscoveries();
 $('closeDiscoveries').onclick=()=>$('discoveriesDialog').close();
 $('libraryButton').onclick=()=>{renderCollection(true);openDialog('libraryDialog');};
@@ -497,7 +537,7 @@ function resetRestartCopy(){
 }
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>{timedEntry=false;$('restartDialog').close();resetRestartCopy();};
 $('restartDialog').addEventListener('cancel',()=>{timedEntry=false;resetRestartCopy();});
-$('confirmRestart').onclick=()=>{
+$('confirmRestart').onclick=()=>runRoundAction(()=>{
   if(attemptMeta){finishAttempt(attemptMeta,{state,timed,status:'restarted'});void syncPlayer().catch(()=>{});}
   attemptMeta=null;canTrackFresh=true;
   completionPlayback.cancel();
@@ -507,19 +547,19 @@ $('confirmRestart').onclick=()=>{
   $('board').classList.remove('finishing','completion-settled');
   for(const panel of [$('completionSummary'),$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
-  state=newState();if(timedEntry){timed=true;timedEntry=false;}selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
+  state=restoreSession(null).state;if(timedEntry){timed=true;timedEntry=false;}selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
   $('discoveriesButton').classList.remove('has-new');
   $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
   $('typingDetails').open=false;$('revealExtras').open=false;$('clueRecap').open=false;$('clinicalDetails').open=false;
   $('reference').hidden=true;$('peek').setAttribute('aria-pressed','false');$('geneGuess').value='';$('geneGuess').removeAttribute('aria-invalid');
   $('guessFeedback').textContent='Optional. A gene symbol or unambiguous product name completes the image.';$('geneHint').disabled=false;
   markers.forEach(m=>{m.hidden=true;m.classList.remove('is-new');});
-  board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();save();$('restartDialog').close();resetRestartCopy();
+  board.setAttribute('aria-label','Puzzle board, three rows and four columns');buildBoard();buildTray();render();if(!save({force:true}))return;$('restartDialog').close();resetRestartCopy();
   strip('Tap a piece, then tap its matching space.');$('roundSettings').open=false;trayButton(order[0])?.focus({preventScroll:true});
-};
+});
 document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();openDialog('newPlayerDialog');});
 $('cancelNewPlayer').onclick=()=>$('newPlayerDialog').close();
-$('confirmNewPlayer').onclick=async()=>{
+$('confirmNewPlayer').onclick=()=>runRoundAction(async()=>{
   const button=$('confirmNewPlayer'),notice=$('newPlayerStatus');button.disabled=true;notice.textContent='Saving any pending results…';
   try{
     await newPlayer();
@@ -527,7 +567,7 @@ $('confirmNewPlayer').onclick=async()=>{
     try{newPlayerKeys(Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))).filter(key=>!key.startsWith('gregor-puzzles:player:v1:')).forEach(key=>localStorage.removeItem(key));}catch{}
     location.href=`./play.html?level=${rounds[0].number}`;
   }catch(error){notice.textContent=`${error.message} Your current player and history have been kept. Retry when connected, or cancel.`;button.disabled=false;}
-};
+});
 window.addEventListener('keydown',e=>{
   if(e.defaultPrevented||e.key!=='Escape'||selected===null||document.querySelector('dialog[open]'))return;
   const back=selected,onBoard=document.activeElement?.classList.contains('slot');
@@ -581,7 +621,10 @@ window.addEventListener('pagehide',event=>{
   clearTimeout(completionTimer);clearTimeout(conceptTimer);termLens.close();
   if(!event.persisted){shareCard.destroy();termLens.destroy();}
 });
-buildBoard();buildTray();render();save();
+// Merely opening a round must not rewrite it: otherwise two tabs repeatedly
+// reload each other. A requested timing-mode change is the only startup write.
+buildBoard();buildTray();render();renderCollection();
+if(persistInitialMode)void runRoundAction(save);
 void syncPlayer().catch(()=>{});
 window.addEventListener('pageshow',()=>void syncPlayer().catch(()=>{}));
 if(roundComplete(state))strip('Round complete. Your illustration and results are saved.');
@@ -596,6 +639,7 @@ if(timedEntry&&modeLocked(state)){
 
 function renderCollection(includeCards=false) {
   const progress=collectionProgress(key=>localStorage.getItem(key),{id:round.id,state});
+  playCarousel.update(progress);
   const count=progress.filter(p=>p.done).length,anyStarted=progress.some(p=>p.started);
   $('collectionCount').textContent=`${count} of ${rounds.length} complete`;
   $('libraryProgress').textContent=`${count} of ${rounds.length} rounds complete. Progress is saved in this browser.`;
@@ -634,3 +678,4 @@ function renderCollection(includeCards=false) {
     a.append(bar);$('levelGrid').append(a);
   }
 }
+requestAnimationFrame(()=>playCarousel.revealCurrent());

@@ -11,13 +11,13 @@ A checklist for running GREGoR Puzzles on a shared device at ASHG, and for testi
 
 ## On the booth device
 
-- Start on Home. Invite the visitor to join the leaderboard with a display name, then open round 01. **Practice** is the default; joining is optional.
+- Start on Home. Invite the visitor to join the leaderboard with a display name, then open round 01. **Untimed** is the default; joining is optional.
 - Gene recognition is optional. **Gene hint** offers location/function, a biological connection, then a symbol hint. **Gene bank** explains that a correct choice completes the round.
 - Between visitors, open **Browse rounds → New player → Start fresh**. This saves pending results for a joined player before clearing that browser's progress and identity. If saving fails, reconnect and retry before handing over the device. Previously saved team records remain available.
 - **Collection** shows saved progress and a teaching map of the illustrated processes. Its field guide contains only completed rounds and can be printed or saved as a PDF through the browser's print dialog.
 - **Science** opens full gene profiles without requiring puzzle completion. Its **Editorial review** link opens the reviewer workspace.
 - On an iPad, use Guided Access (Settings → Accessibility) to keep the game in Safari.
-- Quiet placement and completion sounds start on. Mute them with the header sound control if needed; the choice is saved across rounds and reloads. New player resets sound to on. **Timed** begins at the first correct placement or accepted gene answer; mode choice remains available until then. The public board shows player summaries; qualifying timed image completions can be compared within a round. Practice and gene-answer completions remain in attempt history without a competitive time. Timing includes subsequent reading and is not a measure of genetic knowledge.
+- Quiet placement and completion sounds start on. Mute them with the header sound control if needed; the choice is saved across rounds and reloads. New player resets sound to on. **Timed** begins at the first correct placement or accepted gene answer; mode choice remains available until then. The public board shows player summaries; qualifying timed image completions can be compared within a round. Untimed and gene-answer completions remain in attempt history without a competitive time. Timing includes subsequent reading and is not a measure of genetic knowledge.
 
 ## Testing with first-time players
 
@@ -43,23 +43,26 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 ## iPhone and Safari checklist
 
 - Board, strip, and pieces fit on screen once the board is scrolled to the top.
+- On Play, use the thumbnail carousel to change rounds. Confirm the current round is outlined, completion adds a green check, and the current thumbnail remains visible after rotating the phone.
+- Open the same round in two tabs. Complete it in one: the other must show the saved completion without resetting progress or repeatedly reloading. Repeat with Restart and New player.
 - Taps on board positions do not zoom the page.
 - Place a piece, then scroll or resize during its flight. The transient piece should disappear, the placed piece remain visible, and no late contact sound play.
 - Portrait and landscape; Safari text size at 125% and 150%.
 - Private Browsing (progress clears when the tab closes).
 - Reduce Motion on: pieces place without movement and the completed image stays still. The guide shows a static takeaway; numbered image notes and **Revisit your clues** retain the explanations.
 - Complete a round and check that the original illustration lifts with a brief perimeter glow and light sweep, then floats while its components move. Pause during the glow and resume: the entrance should continue, not restart. Scroll the board offscreen and return; playback should remain paused until resumed.
+- Press Next in the image guide immediately after completion; delayed autoplay must not override the chosen note.
 - Open an image note immediately after the final piece lands. The illustration must stay still for reading. Try restarting while the illustration is loading, and opening and closing a dialog during completion. No delayed animation should override these actions.
 - Enable reduced motion while the illustration is playing. The frame and artwork should return to their static state. Returning to a previously completed round should also remain still until Play is selected.
 - On a fresh completion, follow the three highlights and captions on the original image. They should finish once, leaving ambient motion and an image takeaway. **Follow the image** or **Replay guide** restarts the guide; pause freezes both guide and illustration. Opening a dialog or leaving the tab pauses playback.
-- Check that the completion summary shows the gene, condition, and **One connection to remember** beside the image on a laptop and directly below it on a phone. **Clinical context** and **Revisit your clues** should expand without duplicating the summary.
+- Check that the completion summary shows the gene, condition, and **How the picture connects** beside the image on a laptop and directly below it on a phone. **Clinical context** and **Revisit your clues** should expand without duplicating the summary.
 - Complete a round in **Focus view**. The final piece should land without the board changing size; the illustration guide should remain accessible below it.
 - Watch the first second in rounds 01 and 02: particles should depart gradually without teleporting or vanishing. Observe one full cycle: source resets happen while cargo is invisible, and surface highlights remain attached to moving structures. Pause and confirm all motion stops together.
 - Enlarge the completed illustration. Playing artwork should continue; paused artwork should remain paused. Close or press Escape and confirm the same board and controls return to their original positions, with focus on Enlarge illustration. On a phone, enlarging must not shrink the image. Restart afterward.
 - Follow the **GREGoR Stanford Site** link; return to the game. Check Play, Collection, and Science on a narrow screen, then open Editorial review from Science.
 - Follow a reference number on a completion card and in Editorial review; the References panel should open at the cited item. Check that each external paper is listed once per round.
 - Try ENT3 in round 03 and confirm it completes the image and explains why SLC29A3 fits the clues. Search Science for ENT3 and H syndrome. Before placing pieces, request all three gene hints: location/function, the solute-carrier connection, and symbol. Enter an incorrect answer, reopen the bank, and reload; all hints should remain available and the count should stay at three.
-- Request hints and select a piece before placing it: Practice/Timed should remain selectable and the clock should not start. A correct placement locks the mode and starts a timed clock. Reload during play: remaining piece order and letters must remain unchanged.
+- Request hints and select a piece before placing it: Untimed/Timed should remain selectable and the clock should not start. A correct placement locks the mode and starts a timed clock. Reload during play: remaining piece order and letters must remain unchanged.
 - Complete two rounds, open the field guide from Collection, and print to PDF. Only the completed rounds should appear, with readable figures and references.
 - Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
 - Mute or restart during a piece flight or completion sound. No delayed placement or completion audio should follow. Confirm sounds align with piece contact when enabled.

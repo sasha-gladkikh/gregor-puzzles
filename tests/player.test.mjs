@@ -182,3 +182,62 @@ test('new player waits for an unconfirmed withdrawal and retries the same revisi
  await player.joinPlayer('Alex');const id=player.getPlayer().id;await assert.rejects(player.leaveLeaderboard());await assert.rejects(player.newPlayer());assert.equal(player.getPlayer().id,id);assert.equal(player.getPlayerStatus().leavePending,true);
  failLeave=false;await player.newPlayer();assert.notEqual(player.getPlayer().id,id);assert.deepEqual(calls.filter(x=>x.action==='leave').map(x=>x.revision),[2,2,2]);
 });
+
+test('cancelling an offline rename durably restores the previous name across reload and retry',async()=>{
+ let offline=false;const calls=[];
+ const fetchImpl=async(url,init)=>{const body=JSON.parse(init.body);calls.push(body);if(offline)throw new TypeError('offline');return response({ok:true,schema:PLAYER_SCHEMA,playerId:body.playerId,revision:body.revision});};
+ const {player,storage}=setup({fetchImpl});await player.joinPlayer('Alex');offline=true;
+ await assert.rejects(player.joinPlayer('Avery'),/connect/);
+ const pending=player.getPlayer();
+ await assert.rejects(player.cancelNameChange(pending),/connect/);
+ assert.equal(player.getPlayer().displayName,'Alex');assert.equal(player.getPlayer().pendingName,'Alex');assert.equal(player.getPlayer().joined,true);
+ offline=false;const reloaded=setup({storage,fetchImpl}).player;await reloaded.syncPlayer();
+ assert.equal(reloaded.getPlayer().displayName,'Alex');assert.equal(reloaded.getPlayer().pendingName,'');
+ assert.deepEqual(calls.map(({displayName,revision})=>[displayName,revision]),[['Alex',1],['Avery',2],['Alex',3],['Alex',3]]);
+});
+
+test('a timed-out rename arriving after cancellation cannot replace the restored name',async()=>{
+ let delayedRename,server={revision:0,displayName:''};
+ const deliver=body=>{if(body.revision>server.revision)server={revision:body.revision,displayName:body.displayName};return response({ok:true,schema:PLAYER_SCHEMA,playerId:body.playerId,revision:body.revision});};
+ const {player}=setup({timeoutMs:5,fetchImpl:async(url,init)=>{
+  const body=JSON.parse(init.body);
+  if(body.displayName==='Avery'){delayedRename=()=>deliver(body);return new Promise((resolve,reject)=>init.signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true}));}
+  return deliver(body);
+ }});
+ await player.joinPlayer('Alex');await assert.rejects(player.joinPlayer('Avery'),/in time/);
+ await player.cancelNameChange(player.getPlayer());
+ assert.deepEqual(server,{revision:3,displayName:'Alex'});
+ delayedRename();assert.deepEqual(server,{revision:3,displayName:'Alex'});assert.equal(player.getPlayer().displayName,'Alex');
+});
+
+test('cancelling an in-flight rename rejects its stale receipt and preserves attempt history',async()=>{
+ let release;const calls=[];
+ const {player}=setup({fetchImpl:async(url,init)=>{
+  const body=JSON.parse(init.body);calls.push(body);
+  const reply=()=>response({ok:true,schema:PLAYER_SCHEMA,playerId:body.playerId,revision:body.revision,...(body.action==='attempts'?{accepted:body.attempts.map(({id,revision})=>({id,revision}))}:{})});
+  if(body.displayName==='Avery')return new Promise(resolve=>{release=()=>resolve(reply());});return reply();
+ }});
+ await player.joinPlayer('Alex');start(player);const attempts=player.getAttempts();
+ const saving=player.joinPlayer('Avery'),superseded=assert.rejects(saving,/changed in another tab/);
+ const original=player.getPlayer();await new Promise(resolve=>setImmediate(resolve));
+ const cancelling=player.cancelNameChange(original);release();await Promise.all([superseded,cancelling]);
+ assert.equal(player.getPlayer().displayName,'Alex');assert.equal(player.getPlayer().pendingName,'');assert.deepEqual(player.getAttempts(),attempts);
+ assert.deepEqual(calls.filter(body=>body.action==='profile').map(({displayName,revision})=>[displayName,revision]),[['Alex',1],['Avery',2],['Alex',3]]);
+});
+
+test('cancellation restores the editor baseline if an automatic retry confirms the rename first',async()=>{
+ const {player,calls}=setup();await player.joinPlayer('Alex');
+ const saved=player.joinPlayer('Avery'),original=player.getPlayer();await saved;
+ assert.equal(original.displayName,'Alex');assert.equal(player.getPlayer().displayName,'Avery');
+ await player.cancelNameChange(original);
+ assert.equal(player.getPlayer().displayName,'Alex');assert.equal(calls.at(-1).revision,3);
+});
+
+test('cancellation cannot overwrite a newer name or leave intent from another tab',async()=>{
+ const {player:a,storage}=setup();await a.joinPlayer('Alex');
+ const saving=a.joinPlayer('Avery'),original=a.getPlayer();await saving;
+ const b=setup({storage}).player;await b.joinPlayer('Blair');const newer=b.getPlayer();
+ await assert.rejects(a.cancelNameChange(original),/changed in another tab/);assert.deepEqual(a.getPlayer(),newer);
+ const prior=b.getPlayer();await b.leaveLeaderboard();
+ await assert.rejects(a.cancelNameChange(prior),/changed in another tab/);assert.equal(b.getPlayer().joined,false);
+});

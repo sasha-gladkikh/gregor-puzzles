@@ -110,7 +110,7 @@ export const clinicalProfiles={
    feature('Blood','Anemia','HP:0001903','Red-cell production may be affected along with other marrow lineages.','Variable cytopenia',med('condition/shwachman-diamond-syndrome')),
    feature('Blood','Thrombocytopenia','HP:0001873','Low platelets may accompany marrow dysfunction.','Variable cytopenia',med('condition/shwachman-diamond-syndrome')),
    feature('Growth','Short stature','HP:0004322','Growth can be affected by nutritional and intrinsic factors.','Commonly described, variable severity',SD),
-   feature('Skeleton','Metaphyseal dysplasia','HP:0100255','Abnormal development of the ends of long bones can be part of the skeletal phenotype.','Useful associated finding',SD,true),
+   feature('Skeleton','Metaphyseal dysplasia','HP:0100255','Abnormal development near the growth plates, between the shaft and the ends of long bones, can be part of the skeletal phenotype.','Useful associated finding',SD,true),
    feature('Immune','Recurrent infections',null,'Neutropenia and altered neutrophil function can increase susceptibility to infections.','May be an early manifestation',SD),
    feature('Pancreas','Steatorrhea and poor weight gain',null,'Fatty stools and poor growth can reflect pancreatic malabsorption.','Variable; absence of steatorrhea does not exclude the condition',SD),
    feature('Course','Marrow failure and myeloid malignancy risk',null,'Myelodysplastic syndrome and acute myeloid leukemia are important possible complications.','Predisposition is not an inevitable outcome',SD)
@@ -267,7 +267,7 @@ export const clinicalProfiles={
   connection:'An expanded GAA repeat deep in intron 1 of FGF14 underlies this late-onset ataxia. The protein-coding sequence is unchanged, and standard exome sequencing does not reliably detect the expansion.',
   connectionSources:[FG,'https://www.nejm.org/doi/10.1056/NEJMoa2207406'],
   significance:evidence('Episodes can precede persistent ataxia and may be triggered by alcohol or physical exertion. The expansion does not precisely predict age at onset, severity, or progression.',FG),
-  family:evidence('A heterozygous parent has a 50% chance of transmitting the expanded allele, whose size can change between generations. Predictive testing of an asymptomatic relative is a personal choice; it cannot reliably predict when or how severely symptoms will develop.',FG),
+  family:evidence('A heterozygous parent has a 50% chance of transmitting the expanded allele, whose size can change between generations. This is an inheritance probability, not a certainty that symptoms will develop: some expansion sizes have reduced penetrance. Predictive testing is a personal choice and cannot reliably predict onset or severity.',FG),
   interpretation:evidence('Repeat size, sequence purity, and penetrance matter. Testing a symptomatic person and predictive testing of an asymptomatic relative answer different questions; a negative standard exome does not reliably exclude this expansion.',FG),
   features:[
    feature('Cerebellar','Gait ataxia','HP:0002066','Walking becomes unsteady because of impaired coordination.','Core presentation',FG,true),

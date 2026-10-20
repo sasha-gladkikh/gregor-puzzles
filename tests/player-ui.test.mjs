@@ -1,12 +1,66 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {summarizeAttempts,publicPlayers,rankPlayers,allocatedRoundTimes,leaderboardAttemptCount,playerTime,playerDateTime,nextTimedRound} from '../game/player-ui.mjs';
+import {summarizeAttempts,publicPlayers,rankPlayers,allocatedRoundTimes,leaderboardAttemptCount,playerTime,playerDateTime,nextTimedRound,initPlayerUI} from '../game/player-ui.mjs';
+import {createPlayerStore,PLAYER_SCHEMA} from '../game/player.mjs';
 
 const catalogue=Array.from({length:10},(_,index)=>({number:String(index+1).padStart(2,'0')}));
 const attempt=(roundNumber,overrides={})=>({roundNumber,status:'completed',mode:'timed',route:'image',eligible:true,seconds:60,...overrides});
 const player=(id,overrides={})=>({id,displayName:id,attempts:1,roundsPlayed:1,roundsCompleted:1,timedRounds:1,totalBestSeconds:null,best:[{roundNumber:'01',seconds:60,hints:0,peeks:0,geneHintsSeen:0}],...overrides});
 const report=(overrides={})=>({totalSeconds:563,roundsCompleted:10,estimatedTimes:[44,49,61,57,68,50,55,66,60,53].map((seconds,index)=>({roundNumber:catalogue[index].number,seconds})),submittedAt:'2026-10-19T23:59:00.000Z',...overrides});
 const publicList=players=>publicPlayers({ok:true,schema:'gregor-player-board-v1',players},catalogue);
+
+// Exercise the real form handlers and store with a small DOM and a private,
+// in-memory transport. The public leaderboard is never loaded or changed.
+class ProfileElement{
+ constructor(tag){this.tagName=tag;this.children=[];this.attrs={};this.dataset={};this.listeners=new Map();this.hidden=false;this.disabled=false;this.textContent='';this.value='';this.classes=new Set();this.classList={add:(value)=>this.classes.add(value),toggle:(value,on)=>on?this.classes.add(value):this.classes.delete(value)};}
+ setAttribute(key,value){this.attrs[key]=String(value);}
+ append(...children){this.children.push(...children);}
+ replaceChildren(...children){this.children=[];this.append(...children);if(this.tagName==='select')this.value=children[0]?.value??'';}
+ addEventListener(type,fn){this.listeners.set(type,fn);}
+ async dispatch(type){if(type==='click'&&this.disabled)return;return this.listeners.get(type)?.({preventDefault(){}});}
+ focus(){document.activeElement=this;}
+ querySelectorAll(){return [];}
+ setCustomValidity(value){this.validationMessage=value;}
+ reportValidity(){return !this.validationMessage;}
+}
+function profileDOM(){
+ const originals=Object.fromEntries(['document','window','Option','IntersectionObserver','localStorage'].map(key=>[key,globalThis[key]]));
+ const roots=new Map(['playerProfile','leaderboardRound','timedPlay','leaderboardResults','refreshLeaderboard','leaderboardUpdated','leaderboard'].map(id=>{const node=new ProfileElement(id==='leaderboardRound'?'select':'div');node.id=id;return [id,node];}));
+ const descendants=node=>[node,...node.children.flatMap(descendants)];
+ const all=()=>[...roots.values()].flatMap(descendants);
+ globalThis.document={activeElement:null,createElement:tag=>new ProfileElement(tag),getElementById:id=>all().find(node=>node.id===id)};
+ globalThis.window={IntersectionObserver:true,addEventListener(){}};
+ globalThis.Option=class extends ProfileElement{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
+ globalThis.IntersectionObserver=class{observe(){}disconnect(){}};
+ globalThis.localStorage={getItem(){return null;}};
+ return {button:text=>all().find(node=>node.tagName==='button'&&node.textContent===text),element:id=>document.getElementById(id),restore(){for(const [key,value] of Object.entries(originals)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}};
+}
+
+test('Cancel cannot interrupt Saving and then discards the failed rename rather than hiding its queue',async()=>{
+ const data=new Map();let sequence=0,rejectRename,offline=false;
+ const storage={get length(){return data.size;},key:i=>[...data.keys()][i],getItem:key=>data.get(key)??null,setItem:(key,value)=>data.set(key,value)};
+ const store=createPlayerStore({storage,uuid:()=>`00000000-0000-4000-8000-${String(++sequence).padStart(12,'0')}`,fetchImpl:async(_url,init)=>{
+  const body=JSON.parse(init.body);
+  if(offline)throw new TypeError('offline');
+  if(body.displayName==='Avery')return new Promise((_resolve,reject)=>{rejectRename=reject;});
+  return {ok:true,json:async()=>({ok:true,schema:PLAYER_SCHEMA,playerId:body.playerId,revision:body.revision})};
+ }});
+ await store.joinPlayer('Alex');const dom=profileDOM();
+ try{
+  initPlayerUI(catalogue,store);await new Promise(resolve=>setImmediate(resolve));
+  await dom.button('Change name').dispatch('click');
+  dom.element('playerDisplayName').value='Avery';
+  const saving=dom.element('playerJoinForm').dispatch('submit');await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(dom.button('Cancel').disabled,true);
+  await dom.button('Cancel').dispatch('click');assert.equal(store.getPlayer().pendingName,'Avery');
+  offline=true;rejectRename(new TypeError('offline'));await saving;
+  assert.equal(dom.button('Cancel').disabled,false);
+  await dom.button('Cancel').dispatch('click');
+  assert.equal(dom.element('playerJoinForm').hidden,true);
+  assert.equal(store.getPlayer().displayName,'Alex');assert.equal(store.getPlayer().pendingName,'Alex');
+  offline=false;await store.syncPlayer();assert.equal(store.getPlayer().displayName,'Alex');assert.equal(store.getPlayer().pendingName,'');
+ }finally{dom.restore();}
+});
 
 test('repeat attempts add history without inflating distinct rounds and fastest eligible time wins',()=>{
  const records=[attempt('01',{seconds:100}),attempt('01',{seconds:30}),attempt('02',{mode:'practice',eligible:false,seconds:null}),attempt('03',{route:'gene',eligible:false}),attempt('04',{status:'restarted',eligible:false,pieces:3}),attempt('04',{status:'active',eligible:false,pieces:2})];

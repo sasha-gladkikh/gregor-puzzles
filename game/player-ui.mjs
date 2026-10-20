@@ -1,4 +1,4 @@
-import {getPlayer,getAttempts,joinPlayer,leaveLeaderboard,syncPlayer,getPlayerStatus} from './player.mjs';
+import * as defaultPlayerStore from './player.mjs';
 import {SUGGESTION_ENDPOINT} from './suggestions.mjs';
 import {homeProgress} from './home-state.mjs';
 
@@ -141,7 +141,8 @@ const assistance=attempt=>[
  attempt.geneHintsSeen?`${attempt.geneHintsSeen} gene clue${attempt.geneHintsSeen===1?'':'s'}`:null
 ].filter(Boolean).join(' · ');
 
-export function initPlayerUI(catalogue){
+export function initPlayerUI(catalogue,playerStore=defaultPlayerStore){
+ const {getPlayer,getAttempts,joinPlayer,cancelNameChange,leaveLeaderboard,syncPlayer,getPlayerStatus}=playerStore;
  const $=id=>document.getElementById(id);
  const host=$('playerProfile');
  if(!host||!catalogue.length)return;
@@ -180,7 +181,7 @@ export function initPlayerUI(catalogue){
  history.append(historyLabel,historyNote,historyList,more);
  account.append(profile,history,actions);
  host.replaceChildren(invitation,form,account,status);
- let editing=false,joining=false,busy=false,message='',historyLimit=20,lastHistory='',boardLoaded=false;
+ let editing=false,joining=false,busy=false,message='',historyLimit=20,lastHistory='',boardLoaded=false,nameEdit=null;
  const formatDate=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 
  function renderHistory(attempts){
@@ -234,6 +235,7 @@ export function initPlayerUI(catalogue){
   submit.textContent=busy?'Saving…':joined?'Save name':'Join leaderboard';
   submit.disabled=busy||!state.available||Boolean(state.leavePending);
   input.disabled=busy||!state.available||Boolean(state.leavePending);
+  cancel.disabled=busy;
   if(document.activeElement!==input&&!editing&&!joined&&player?.pendingName)input.value=player.pendingName;
   name.textContent=joined?player.displayName:'Your saved attempts';
   digest.textContent=state.error||state.leavePending?'Sync needs attention':joined?'Progress, history and settings':`${summary.roundsCompleted}/${catalogue.length} rounds complete · ${summary.attempts} attempt${summary.attempts===1?'':'s'}`;
@@ -257,18 +259,30 @@ export function initPlayerUI(catalogue){
   renderHistory(attempts);
  }
  join.addEventListener('click',()=>{joining=true;message='';renderProfile();input.focus();});
- edit.addEventListener('click',()=>{editing=true;message='';input.value=getPlayer()?.displayName||'';renderProfile();input.focus();});
- cancel.addEventListener('click',()=>{
+ edit.addEventListener('click',()=>{editing=true;message='';nameEdit=getPlayer();input.value=nameEdit.displayName||'';renderProfile();input.focus();});
+ cancel.addEventListener('click',async()=>{
+  if(busy)return;
   const player=getPlayer();
   if(!player?.joined&&player?.pendingName){leaveDialog.showModal();return;}
-  editing=false;joining=false;message='';renderProfile();(player?.joined?edit:join).focus();
+  editing=false;joining=false;message='';
+  if(nameEdit&&(player.pendingName||player.displayName!==nameEdit.displayName)){
+   busy=true;renderProfile();
+   try{await cancelNameChange(nameEdit);if(boardLoaded)void loadBoard();}
+   catch(error){message=getPlayer().pendingName===nameEdit.displayName?'Name change cancelled. Your previous name will be confirmed when you reconnect.':error?.message||'Check the current player before trying again.';}
+   finally{busy=false;}
+  }
+  nameEdit=null;renderProfile();(getPlayer()?.joined?edit:join).focus();
  });
  input.addEventListener('input',()=>input.setCustomValidity(''));
  form.addEventListener('submit',async event=>{
   event.preventDefault();const value=input.value.trim().replace(/\s+/g,' ');
   if(!namePattern.test(value)||!/[\p{L}\p{N}]/u.test(value)){input.setCustomValidity('Use 2–32 letters, numbers, spaces, apostrophes, hyphens, dots or underscores.');input.reportValidity();return;}
   busy=true;message='';renderProfile();
-  try{await joinPlayer(value);editing=false;joining=false;message='';account.open=false;if(boardLoaded)void loadBoard();}
+  try{
+   const previous=getPlayer(),saving=joinPlayer(value);
+   if(previous.joined)nameEdit={...getPlayer(),displayName:previous.displayName};
+   await saving;editing=false;joining=false;nameEdit=null;message='';account.open=false;if(boardLoaded)void loadBoard();
+  }
   catch(error){message=error?.message||'Your name could not be saved yet. Try again.';}
   finally{busy=false;renderProfile();if(!message)accountLabel.focus();}
  });

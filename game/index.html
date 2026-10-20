@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="./brand.css">
   <link rel="stylesheet" href="./site.css">
   <link rel="stylesheet" href="./home.css">
+  <link rel="stylesheet" href="./round-carousel.css">
   <link rel="stylesheet" href="./home-demo.css">
   <link rel="stylesheet" href="./player.css">
   <script type="module" src="./home.mjs"></script>
@@ -55,7 +56,7 @@
           <p id="leaderboardUpdated" class="board-updated" hidden></p>
           <div id="playerProfile" class="player-profile" aria-label="Your player profile"></div>
           <div class="leaderboard-bottom"><a id="timedPlay" class="home-secondary" href="./play.html?level=01&amp;mode=timed">Play a timed round <span aria-hidden="true">→</span></a><button id="refreshLeaderboard" class="home-text-button" type="button">Refresh standings</button></div>
-          <details class="board-rules"><summary>How the leaderboard works</summary><p>Overall standings count distinct rounds completed. Replaying a round adds an attempt, not another completed round. Players with the same partial progress share a rank. Once every round has a qualifying timed result, the total of their best times breaks ties. Full-set totals reported by players and entered by the project team can also enter the overall standings. The attempt count includes one play per round in a manually entered run, plus recorded plays.</p><p>Round standings use your fastest eligible image-puzzle time. Hints and picture views are allowed and shown. Allocated round breakdowns appear separately from timed rankings. Gene-answer completions and untimed rounds count toward progress, but not speed rankings. Times are recorded by the browser or reported by players and are not independently verified; they measure puzzle speed, not genetics knowledge.</p><p>Join with a display name to save your attempts for the GREGoR Puzzles team and appear publicly. No account required. Use the same browser to keep one player record; matching names on different devices are separate players.</p></details>
+          <details class="board-rules"><summary>How the leaderboard works</summary><p>Rankings count distinct rounds completed. Replays add attempts. Players with equal partial progress share a rank; once every round has an eligible timed result, total best time breaks ties.</p><p>Round rankings use each player’s fastest timed image completion. Hints and picture views are allowed and recorded. Untimed and gene-answer completions count toward progress only. Team-entered, player-reported full-set totals can enter overall standings; their allocated round times stay separate from timed rankings. A team-entered run adds one attempt per round.</p><p>Join with a display name, without an account. Your name and summary are public; detailed attempts are saved privately for the team. Use the same browser to keep your player record. Times are browser-recorded or player-reported, not independently verified, and measure puzzle speed rather than genetics knowledge.</p></details>
         </section>
         <div class="community-contribute">
         <section id="suggest" class="community-card suggestion-card" aria-labelledby="suggestTitle">

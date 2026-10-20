@@ -321,6 +321,22 @@ test('all ten completed illustrations keep their readable guide under reduced mo
   }
 });
 
+test('manual caption navigation cancels delayed completion playback even outside the control bar',async context=>{
+  const keys=['document','matchMedia','IntersectionObserver','Image','requestAnimationFrame'];
+  const saved=new Map(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+  context.after(()=>{for(const [key,descriptor] of saved)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];});
+  globalThis.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
+  globalThis.IntersectionObserver=class{observe(){}disconnect(){}};
+  const {document,board}=stageDocument();globalThis.document=document;
+  const gate=createCompletionPlaybackGate(),takeAutoplay=gate.arm();
+  const animation=animatedArtwork(allRounds[0],{board,guided:true,onInteract:()=>gate.cancel()});
+  animation.caption.children[3].children[1].onclick();
+  assert.equal(animation.caption.dataset.phase,'static-1');
+  assert.equal(takeAutoplay(),false,'the pending completion timer cannot override Next');
+  assert.equal(animation.element.dataset.state,'loading');
+  animation.dispose();
+});
+
 test('cleanup retains the original footprint when a replacement cutout has a tighter boundary',context=>{
   const previous=globalThis.document,{document}=stageDocument();
   globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
