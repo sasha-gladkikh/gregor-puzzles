@@ -45,7 +45,7 @@ test('field-guide references cover explicit mechanism, clinical, family, and ill
   const refs=guideReferences(round),urls=refs.map(ref=>ref.url);
   assert.equal(new Set(urls).size,urls.length);
   assert.equal(urls.includes(`https://omim.org/entry/${round.omim}`),false,'OMIM is linked once in the guide header');
-  for(const url of [round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...round.clinical.connectionSources,...round.clinical.significance.sources,...round.clinical.family.sources].filter(Boolean))assert.ok(urls.includes(url),`${round.gene}: ${url}`);
+  for(const url of [round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...round.clinical.connectionSources,...round.molecular.mechanism.sourceUrl,...round.molecular.variantType.sourceUrl,...round.clinical.significance.sources,...round.clinical.family.sources].filter(Boolean))assert.ok(urls.includes(url),`${round.gene}: ${url}`);
   assert.ok(refs.every(ref=>ref.label&&ref.label!=='Supporting reference'&&ref.url.startsWith('https://')),`${round.gene}: references need descriptive registry labels`);
  }
  const cacna=allRounds.find(round=>round.gene==='CACNA1A');

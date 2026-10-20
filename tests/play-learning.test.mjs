@@ -3,6 +3,29 @@ import assert from 'node:assert/strict';
 import {allRounds} from '../game/rounds.mjs';
 import {landmarkPiece} from '../game/engine.mjs';
 import {cluePreview,latestPlayClue} from '../game/play-learning.mjs';
+import {newState,place} from '../game/engine.mjs';
+import {restoreSession} from '../game/session.mjs';
+
+test('mechanism and variant clues appear at their milestones and survive older partial saves',()=>{
+  for(const round of allRounds)for(const [count,label,key]of[[5,'Disease mechanism','mechanism'],[10,'Variant type','variantType']]){
+    const state=newState();for(let i=0;i<count;i++)place(state,i,i);
+    const restored=restoreSession(JSON.parse(JSON.stringify({state,timed:false}))).state;
+    const unlocked=round.clues.filter(clue=>clue.at<=restored.placed.length);
+    assert.equal(unlocked.at(-1).label,label);
+    assert.ok(!unlocked.some(clue=>['The gene','The condition'].includes(clue.label)));
+    const preview=latestPlayClue(round,restored.placed);
+    assert.deepEqual(preview,{title:round.molecular[key].title,text:round.molecular[key].preview});
+  }
+});
+
+test('short molecular previews preserve the scientific qualifications in the full clue',()=>{
+  const fact=(gene,key='mechanism')=>allRounds.find(round=>round.gene===gene).molecular[key];
+  for(const text of[fact('CACNA1A').body,fact('CACNA1A').preview])assert.match(text,/increase or decrease/);
+  for(const text of[fact('RNU4-2').body,fact('RNU4-2').preview])assert.match(text,/under investigation/);
+  for(const text of[fact('FGF14').body,fact('FGF14').preview])assert.match(text,/likely/);
+  assert.match(fact('STING1','variantType').preview,/Disease-associated/);
+  assert.match(fact('RNU4ATAC','variantType').preview,/RNA.*not an amino-acid/);
+});
 
 test('a mobile clue remains readable between milestones and after restoring placements',()=>{
   const round=allRounds.find(r=>r.gene==='CLCN1');

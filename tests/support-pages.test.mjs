@@ -117,6 +117,24 @@ test('Field guide keeps the current article on player writes and partial-round c
  saved.clear();p.emit('storage',{key:null});assert.equal(entries.children.length,0);assert.equal(p.document.getElementById('guideEmpty').hidden,false);
 });
 
+test('Science and the completed field guide retain the same molecular teaching, with reachable guide references',()=>{
+ const saved=new Map();for(const round of rounds){const state=newState();guess(state,round.gene,round.gene);saved.set(saveKey(round),JSON.stringify({state}));}
+ const guide=page('field-guide.mjs',{saved});
+ for(const round of allRounds){
+  const science=page('science.mjs',{url:`https://example.test/science.html?level=${round.number}`}),facts=science.document.querySelector('.science-facts');
+  assert.deepEqual(facts.querySelectorAll('dt').map(item=>item.textContent),['Inheritance','Disease mechanism','Variant type']);
+  assert.ok(facts.textContent.includes(round.inheritance));
+  for(const fact of [round.molecular.mechanism,round.molecular.variantType])assert.ok(facts.textContent.includes(fact.body),`${round.gene}: Science keeps the qualified molecular explanation`);
+  const article=guide.document.getElementById(`round-${round.number}`);if(!article)continue;
+  const molecular=article.querySelectorAll('.guide-variant');assert.equal(molecular.length,2);
+  for(const [index,fact]of [round.molecular.mechanism,round.molecular.variantType].entries()){
+   assert.ok(molecular[index].textContent.includes(fact.body));
+   const marks=molecular[index].querySelectorAll('a');assert.ok(marks.length>0,`${round.gene}: molecular fact is sourced`);
+   for(const mark of marks){const target=guide.document.getElementById(mark.href.slice(1));assert.ok(target,`${round.gene}: reference target exists`);assert.ok(fact.sourceUrl.includes(target.querySelector('a').href));}
+  }
+ }
+});
+
 test('Editorial review exposes exact compact notes, every hint step, memory text, and each shared definition once',()=>{
  const p=page('review.mjs'),cards=p.document.getElementById('reviewRounds').children;
  assert.equal(cards.length,allRounds.length);

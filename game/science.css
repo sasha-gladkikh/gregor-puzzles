@@ -150,7 +150,9 @@
  .science-section p{font-size:13px}
  .science-section .science-lead{font-size:14px}
  .science-reference a:after{content:' (' attr(href) ')';font-size:10px}
- .science-facts{grid-template-columns:1fr 2fr}
+ .science-facts{grid-template-columns:1fr;gap:12px}
+ .science-facts>div{break-inside:avoid}
+ .science-facts dt{font-size:11px}.science-facts dd{font-size:13px}
  .science-references{break-before:auto}
  .artwork-markers{print-color-adjust:exact}
 }

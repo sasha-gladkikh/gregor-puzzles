@@ -3,6 +3,7 @@ import {illustrations} from './artwork-data.mjs';
 import {signoff,requireApproval,isApproved} from './signoff.mjs';
 import {hpoTerms} from './hpo-terms.mjs';
 import {interpretationSources} from './interpretation.mjs';
+import {molecularClues,molecularSources} from './molecular-clues.mjs';
 
 // Public educational content only. No workbook rows, variants, or family data.
 const med = path => `https://medlineplus.gov/genetics/${path}/`;
@@ -10,7 +11,8 @@ const nord = ['NORD · rare disease support', 'https://rarediseases.org/'];
 const AR = 'Autosomal recessive', AD = 'Autosomal dominant';
 
 // Each entry supplies only what players or reviewers see. Location and function clues
-// unlock at 2 and 4 pieces; the clinical pattern, inheritance, gene, and condition follow.
+// unlock at 2 and 4 pieces. Mechanism, clinical pattern, inheritance, and variant
+// type follow; gene and condition remain the final two reveals.
 const entries=[
  {gene:'CLCN1',omim:'255700',id:'clcn1-recessive-v1',title:'Muscle-cell electrical balance',topic:'Membrane transport',
   condition:'Recessive myotonia congenita',otherName:'Also known as Becker myotonia',inheritance:AR,
@@ -130,20 +132,23 @@ const sourceNote='Original educational summary based on the linked references. O
 const reviewLabel=entry=>isApproved(entry)?`Scientifically reviewed${entry.reviewer?` · ${entry.reviewer}`:''}${entry.date?` · ${entry.date}`:''}`:'Pending scientific review';
 
 export const allRounds=entries.map((r,index)=>{
- const number=String(index+1).padStart(2,'0'),clinical=clinicalProfiles[r.gene],illustration=illustrations[number];
+ const number=String(index+1).padStart(2,'0'),clinical=clinicalProfiles[r.gene],illustration=illustrations[number],molecular=molecularClues[r.gene];
  const sources=new Map([[`https://omim.org/entry/${r.omim}`,`OMIM · condition #${r.omim}`],...r.sources.map(([label,url])=>[url,label])]);
  if(!sources.has(illustration.source))sources.set(illustration.source,referenceNames[illustration.source]??'Illustration · mechanistic reference');
  if(illustration.noteSource&&!sources.has(illustration.noteSource))sources.set(illustration.noteSource,referenceNames[illustration.noteSource]??'Spliceosome · assembly and activation');
  const urls=[clinical.patternSource,...clinical.connectionSources,...[clinical.significance,clinical.family,clinical.interpretation].flatMap(claim=>claim.sources),...clinical.features.map(f=>f.source),...clinical.pearls.flatMap(p=>p.sources),...(clinical.extraSources??[])];
  for(const url of urls) if(!sources.has(url)) sources.set(url,referenceNames[url]??(url.includes('ncbi.nlm.nih.gov/books')?'GeneReviews · clinical and molecular reference':url.includes('medlineplus')?'MedlinePlus Genetics · clinical reference':'Primary research · clinical and molecular evidence'));
  for(const [label,url] of interpretationSources)if(!sources.has(url))sources.set(url,label);
- return {...r,number,clinical,illustration,signoff:signoff[r.id],reviewStatus:reviewLabel(signoff[r.id]),checked:'15 October 2026',sourceNote,
+ for(const url of [...molecular.mechanism.sourceUrl,...molecular.variantType.sourceUrl])if(!sources.has(url))sources.set(url,molecularSources.find(([,source])=>source===url)?.[0]??referenceNames[url]??'Molecular mechanism and variant evidence');
+ return {...r,number,clinical,molecular,illustration,signoff:signoff[r.id],reviewStatus:reviewLabel(signoff[r.id]),checked:'15 October 2026',sourceNote,
   aliases:r.aliases??[],products:products[r.gene]??[],ambiguousProducts:r.gene==='RNU4-2'?['U4','U4 snRNA']:[],
   artwork:`./artwork/${number}.webp${new URL(import.meta.url).search}`,description:illustration.description,pieces:illustration.pieces,
   sources:[...sources].map(([url,label])=>[label,url]),
   clues:[...r.clues.map(([label,title,body],i)=>({at:[2,4][i],label,title,body})),
+   {at:5,label:'Disease mechanism',...molecular.mechanism},
    {at:6,label:'Clinical pattern',title:clinical.playPatternTitle,body:clinical.playPattern,sourceUrl:clinical.patternSource},
    {at:8,label:'Inheritance',title:r.inheritance,body:r.inheritance===AR?'Disease-causing variants affect both gene copies.':'A disease-causing variant in one gene copy can be sufficient.'},
+   {at:10,label:'Variant type',...molecular.variantType},
    {at:11,label:'The gene',title:r.gene,body:r.geneBody},{at:12,label:'The condition',title:r.condition,body:r.conditionBody}]
  };
 });
@@ -157,5 +162,5 @@ export const saveKey=round=>`gregor-puzzles:${round.id}`;
 // Search covers the terminology a learner may know before learning a symbol.
 export function searchText(round){
  const c=round.clinical;
- return [round.gene,...round.aliases,...round.products,round.condition,round.otherName,round.topic,round.inheritance,round.variant,c.pattern,c.overview,c.connection,c.onset,c.significance.text,c.family.text,c.interpretation.text,...c.pearls.flatMap(p=>[p.title,p.text]),...c.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase();
+ return [round.gene,...round.aliases,...round.products,round.condition,round.otherName,round.topic,round.inheritance,round.variant,...[round.molecular.mechanism,round.molecular.variantType].flatMap(f=>[f.title,f.body]),c.pattern,c.overview,c.connection,c.onset,c.significance.text,c.family.text,c.interpretation.text,...c.pearls.flatMap(p=>[p.title,p.text]),...c.features.flatMap(f=>[f.title,f.system,f.text,f.context,f.hpo??'',hpoTerms[f.hpo]??''])].join(' ').toLowerCase();
 }

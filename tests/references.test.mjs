@@ -4,6 +4,19 @@ import {roundReferences} from '../game/clinical-ui.mjs';
 import {allRounds} from '../game/rounds.mjs';
 import {mechanisms,spliceComparison} from '../game/mechanism.mjs';
 
+test('all molecular clues have direct evidence in the existing shared bibliography',()=>{
+ for(const round of allRounds){
+  const refs=roundReferences(round);
+  for(const key of['mechanism','variantType']){
+   const fact=round.molecular[key];
+   assert.ok(fact.title&&fact.body&&fact.preview,`${round.gene}: ${key} explanation`);
+   assert.ok(fact.sourceUrl.length>0,`${round.gene}: ${key} evidence`);
+   for(const url of fact.sourceUrl)assert.equal(refs.filter(ref=>ref.url===url).length,1,`${round.gene}: ${url}`);
+  }
+  assert.ok(!Object.values(round.molecular).some(fact=>/dominant.negative/i.test(fact.title??'')),'Do not confuse dominant inheritance with a dominant-negative mechanism');
+ }
+});
+
 test('round bibliography deduplicates URLs, preserves order, and excludes the condition identifier',()=>{
  const round={number:'07',omim:'163950',sources:[['Condition','https://omim.org/entry/163950'],['First reference','https://example.org/a'],['Repeated label','https://example.org/a'],['Second reference','https://example.org/b']]};
  const original=structuredClone(round.sources);
@@ -18,7 +31,7 @@ test('every clinical and illustration source resolves to one uniquely numbered r
  const allIds=new Set();
  for(const round of allRounds){
   const references=roundReferences(round),byUrl=new Map(references.map(ref=>[ref.url,ref]));
-  const requested=[round.clinical.patternSource,...round.clinical.connectionSources,...[round.clinical.significance,round.clinical.family,round.clinical.interpretation].flatMap(claim=>claim.sources),...round.clinical.features.map(feature=>feature.source),...round.clinical.pearls.flatMap(pearl=>pearl.sources),...(round.clinical.extraSources??[]),round.illustration.source,round.illustration.noteSource,...(mechanisms[round.number]?.sources??[])].filter(Boolean);
+  const requested=[round.clinical.patternSource,...round.clues.flatMap(clue=>clue.sourceUrl??[]),...round.clinical.connectionSources,...[round.clinical.significance,round.clinical.family,round.clinical.interpretation].flatMap(claim=>claim.sources),...round.clinical.features.map(feature=>feature.source),...round.clinical.pearls.flatMap(pearl=>pearl.sources),...(round.clinical.extraSources??[]),round.illustration.source,round.illustration.noteSource,...(mechanisms[round.number]?.sources??[])].filter(Boolean);
   if(spliceComparison.rounds.includes(round.number))requested.push(spliceComparison.source);
   for(const url of requested)assert.ok(byUrl.has(url),`${round.gene}: missing bibliography entry for ${url}`);
   assert.equal(byUrl.size,references.length,`${round.gene}: duplicated external URL`);

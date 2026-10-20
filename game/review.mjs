@@ -54,7 +54,7 @@ for(const round of rounds){
  }content.append(context);
  const interpretation=panel('Variant interpretation');const interpretationText=node('p',p.interpretation.text);interpretationText.append(referenceMarks(round,p.interpretation.sources,'Variant interpretation'));interpretation.append(interpretationText,scientificPrinciples(round));content.append(interpretation);
  const clues=panel('Progressive clues and image notes during play');const list=node('ol',null,'review-clues');
- for(const c of round.clues){const li=node('li');li.append(node('strong',`${c.at} pieces · ${c.label}: ${c.title}. `),document.createTextNode(c.body));if(c.sourceUrl)li.append(referenceMarks(round,c.sourceUrl,c.label));list.append(li);}clues.append(list);
+ for(const c of round.clues){const li=node('li');li.append(node('strong',`${c.at} pieces · ${c.label}: ${c.title}. `),document.createTextNode(c.body));if(c.sourceUrl)li.append(referenceMarks(round,c.sourceUrl,c.label));if(c.preview){const preview=node('p');preview.append(node('strong','Compact clue: '),document.createTextNode(c.preview));li.append(preview);}list.append(li);}clues.append(list);
  const playNotes=node('ol',null,'review-clues');round.illustration.landmarks.forEach((l,i)=>{
   const li=node('li');li.append(node('strong',l.playTitle),node('p',l.playText));
   if(l.playPreview!==l.playText){const preview=node('p');preview.append(node('strong','Compact clue: '),document.createTextNode(l.playPreview));li.append(preview);}

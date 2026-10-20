@@ -9,7 +9,7 @@ For each round, assess:
 - **Phenotype:** clinical pattern, age and course, variability, and HPO mappings.
 - **Teaching:** progressive clues, image notes (each appears when the piece containing it is placed, in anonymous wording until the round is complete; review both versions), and the completion card shown to players: mechanism, clinical pattern, onset and course, clinical significance, and family implications.
 - **Counseling and interpretation:** conditional recurrence, penetrance and expression, family variability, phase, uncertain variants, and testing limitations.
-- **Evidence:** whether each source supports the associated claim.
+- **Evidence:** whether each source supports the associated claim. Review the disease-mechanism clue at 5 pieces and variant-type clue at 10, including their compact phone previews. Check that variant class is not treated as proof of pathogenicity or functional effect, that frequency language is supported, and that association-specific uncertainties are retained.
 - **Cross-round teaching:** related-round links, the process map, and the printable field guide. The map groups illustrated processes rather than asserting exclusive localization or direct interaction. The field guide reproduces completed rounds' mechanisms, clinical patterns, onset and course, clinical significance, family implications, variant context, illustration qualifications, and selected references; it is not independently approved content.
 
 ## Recording sign-off

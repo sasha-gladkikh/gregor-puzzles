@@ -12,7 +12,7 @@ test('shared tab curves coincide when traversed in reverse',()=>{
  }
 });
 test('wrong slots and duplicate placements cannot advance clues',()=>{const s=newState();assert.equal(place(s,0,1),false);assert.equal(place(s,-1,-1),false);assert.equal(place(s,0,0),true);assert.equal(place(s,0,0),false);assert.equal(s.placed.length,1);assert.equal(revealed(s,2),false);});
-test('gene and condition unlock only at the last two milestones',()=>{const s=newState();for(let i=0;i<10;i++)place(s,i,i);assert.equal(revealed(s,round.clues[4].at),false);place(s,10,10);assert.equal(revealed(s,11),true);assert.equal(revealed(s,12),false);place(s,11,11);assert.equal(complete(s),true);});
+test('gene and condition unlock only at the last two milestones',()=>{const s=newState();for(let i=0;i<10;i++)place(s,i,i);assert.equal(revealed(s,round.clues.find(c=>c.label==='The gene').at),false);place(s,10,10);assert.equal(revealed(s,11),true);assert.equal(revealed(s,12),false);place(s,11,11);assert.equal(complete(s),true);});
 test('gene recognition is case-insensitive and tracked separately',()=>{const s=newState();assert.equal(guess(s,'WRONG',round.gene),false);assert.equal(s.placed.length,0);assert.equal(guess(s,' clcn1 ',round.gene),true);assert.equal(complete(s),true);assert.equal(s.solvedByGuess,true);});
 test('corrupt saved progress rejected',()=>{assert.ok(validSave(newState()));assert.ok(!validSave({...newState(),placed:[0,0]}));assert.ok(!validSave({...newState(),seconds:-1}));assert.ok(!validSave({...newState(),placed:[12]}));});
 test('shuffle retains every piece exactly once',()=>assert.deepEqual(shuffled(Array.from({length:SIZE},(_,i)=>i)).sort((a,b)=>a-b),Array.from({length:SIZE},(_,i)=>i)));
@@ -58,8 +58,8 @@ test('the collection contains ten distinct supplied gene-condition pairs',()=>{
  assert.deepEqual(allRounds.map(r=>[r.gene,r.omim]),supplied);
  assert.equal(new Set(allRounds.map(saveKey)).size,10);
  for(const r of allRounds){
-  assert.deepEqual(r.clues.map(c=>c.at),[2,4,6,8,11,12]);
-  assert.equal(r.clues[4].title,r.gene);assert.equal(r.clues[5].title,r.condition);
+  assert.deepEqual(r.clues.map(c=>c.at),[2,4,5,6,8,10,11,12]);
+  assert.equal(r.clues.find(c=>c.label==='The gene').title,r.gene);assert.equal(r.clues.find(c=>c.label==='The condition').title,r.condition);
   assert.ok(r.sources.some(([,url])=>url===`https://omim.org/entry/${r.omim}`));
   assert.equal(r.pieces.length,SIZE);assert.ok(r.clinical.features.length>=6);
   const bytes=readFileSync(new URL(r.artwork,new URL('../game/',import.meta.url)));
@@ -147,10 +147,10 @@ import {newPlayerKeys} from '../game/collection.mjs';
 import {allRounds,publishedRounds,searchText} from '../game/rounds.mjs';
 import {signoff,isApproved,checks,requireApproval} from '../game/signoff.mjs';
 import {mechanisms,spliceComparison} from '../game/mechanism.mjs';
-test('clues follow location, function, clinical pattern, inheritance, gene, and condition',()=>{
+test('clues separate function, disease mechanism, and variant type before the final identity reveals',()=>{
  for(const r of allRounds){
-  assert.deepEqual(r.clues.map(c=>c.label),['Location','Function','Clinical pattern','Inheritance','The gene','The condition']);
-  assert.equal(r.clues[2].title,r.clinical.playPatternTitle);
+  assert.deepEqual(r.clues.map(c=>c.label),['Location','Function','Disease mechanism','Clinical pattern','Inheritance','Variant type','The gene','The condition']);
+  assert.equal(r.clues.find(c=>c.label==='Clinical pattern').title,r.clinical.playPatternTitle);
  }
  for(const r of allRounds)for(const field of ['phenotypes','subtitle'])assert.equal(field in r,false,`${r.gene}.${field}`);
 });
@@ -265,7 +265,7 @@ test('automatic early clues and image notes do not name the gene, product, or co
  const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  for(const r of allRounds){
   const terms=[r.gene,...r.aliases,...r.products,r.condition,...conditions].map(t=>new RegExp(`(^|[^A-Za-z0-9])${escape(t)}(?![A-Za-z0-9])`,'i'));
-  const shown=[...r.illustration.landmarks.flatMap(l=>[l.playTitle,l.playText,l.playPreview]),r.description,...r.pieces,...r.clues.filter(c=>c.at<11).flatMap(c=>[c.title,c.body])];
+  const shown=[...r.illustration.landmarks.flatMap(l=>[l.playTitle,l.playText,l.playPreview]),r.description,...r.pieces,...r.clues.filter(c=>c.at<11).flatMap(c=>[c.title,c.body,c.preview??''])];
   for(const text of shown)for(const term of terms)assert.ok(!term.test(text),`${r.gene}: ${term} in “${text}”`);
   for(const l of r.illustration.landmarks)assert.ok(l.title&&l.text&&l.playTitle&&l.playText);
  }

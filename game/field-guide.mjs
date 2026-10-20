@@ -12,11 +12,19 @@ const node=(tag,text,className)=>{const el=document.createElement(tag);if(text)e
 const external=(label,url)=>{const a=node('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;};
 let lastProgress;
 function entry(round,progress){
- const profile=round.clinical,article=node('article',null,'guide-entry');article.id=`round-${round.number}`;
+ const profile=round.clinical,references=guideReferences(round),article=node('article',null,'guide-entry');article.id=`round-${round.number}`;
  const header=node('header',null,'guide-entry-header'),identity=node('div',null,'guide-identity');identity.append(node('span','GREGoR Puzzles'),node('span',`Round ${round.number} · ${round.topic}`));
  const h=node('h2',round.gene);header.append(identity,h,node('p',round.condition,'guide-condition'));
  const meta=node('div',null,'guide-meta');meta.append(node('span',round.inheritance),external(`OMIM ${round.omim}`,`https://omim.org/entry/${round.omim}`));
- const variant=node('p',null,'guide-variant');variant.append(node('strong','Variant context: '),document.createTextNode(round.variant));header.append(meta,variant);article.append(header);
+ header.append(meta);
+ for(const [label,fact]of[['Disease mechanism',round.molecular.mechanism],['Variant type',round.molecular.variantType]]){
+  const paragraph=node('p',null,'guide-variant');paragraph.append(node('strong',`${label}: `),document.createTextNode(fact.body));
+  for(const [index,ref]of references.entries())if(fact.sourceUrl.includes(ref.url)){
+   const mark=node('a',`[${index+1}]`);mark.href=`#guide-ref-${round.number}-${index+1}`;mark.setAttribute('aria-label',`Reference ${index+1}: ${label}`);paragraph.append(document.createTextNode(' '),mark);
+  }
+  header.append(paragraph);
+ }
+ article.append(header);
  const visual=node('figure',null,'guide-visual'),img=node('img');img.src=round.artwork;img.srcset=artworkSrcset(round);
  // Entries cap at 1076px; the illustration occupies 47.5% of their inner grid.
  img.sizes='(max-width:400px) calc(100vw - 66px), (max-width:600px) min(500px, calc(100vw - 82px)), (max-width:750px) min(500px, calc(100vw - 90px)), (max-width:800px) calc(47.5vw - 67.45px), (max-width:1132px) calc(47.5vw - 75.05px), 463px';
@@ -27,7 +35,7 @@ function entry(round,progress){
  const content=node('div',null,'guide-content');content.append(visual,text);article.append(content);
  article.append(implications);
  const memory=node('p',null,'guide-memory');memory.append(node('strong','Remember this'),document.createTextNode(profile.memory));article.append(memory);
- const refs=node('section',null,'guide-references');refs.append(node('h3','Selected references'));const list=node('ol');for(const ref of guideReferences(round)){const li=node('li');li.append(external(ref.label,ref.url));list.append(li);}refs.append(list);article.append(refs);
+ const refs=node('section',null,'guide-references');refs.append(node('h3','Selected references'));const list=node('ol');for(const [index,ref]of references.entries()){const li=node('li');li.id=`guide-ref-${round.number}-${index+1}`;li.append(external(ref.label,ref.url));list.append(li);}refs.append(list);article.append(refs);
  const related=relatedCompletedRounds(round.number,progress);
  if(related.length){
   const p=node('p',null,'guide-related');p.append(node('strong','Connect the rounds: '));

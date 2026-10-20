@@ -68,6 +68,7 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Verify sound starts on, muting persists after reload, and New player restores sound to on. Verify no sound occurs on page load.
 - Mute or restart during a piece flight or completion sound. No delayed placement or completion audio should follow. Confirm sounds align with piece contact when enabled.
 - Complete the collection and scroll to the completion banner: the logo assembles once, without moving the board.
+- Place 5 and then 10 pieces: Disease mechanism and Variant type should unlock in the clue list and appear beneath the board on a phone. Reload at each milestone and confirm the new clues persist. Gene and condition remain hidden until 11 and 12 pieces, unless explicitly requested through a gene hint or answer. Completed clue citations should open their bibliography entries.
 - VoiceOver: complete one round; pieces announce their position.
 - Airplane mode after loading: switch rounds and note what fails.
 - Connect the phone to a Mac and use Safari Web Inspector for console errors.

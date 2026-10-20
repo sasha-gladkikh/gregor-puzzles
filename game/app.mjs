@@ -446,10 +446,14 @@ function render(before=state.placed.length) {
     round.clues.forEach((clue,i)=>{
       const open=n>=clue.at;let li=$('clues').querySelector(`[data-clue-at="${clue.at}"]`);
       if(!li){li=node('li');li.dataset.clueAt=clue.at;$('clues').append(li);}
-      if(li.dataset.unlocked!==String(open)){
-        li.className=`clue ${open?'unlocked':'locked'} ${i>=4?'final':''}`;
+      if(li.dataset.unlocked!==String(open)||li.dataset.identified!==String(done)){
+        li.className=`clue ${open?'unlocked':'locked'} ${clue.at>=11?'final':''}`;
         li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;
+        // Reference titles can identify the answer; expose them only once the
+        // completed round's bibliography is available.
+        if(done&&clue.sourceUrl)li.querySelector('.clue-content p').append(referenceMarks(round,clue.sourceUrl,clue.label));
         li.dataset.unlocked=String(open);
+        li.dataset.identified=String(done);
       }
     });termLens.enhance($('clues'));termLens.enhance($('notesList'));lastCount=n;
   }
