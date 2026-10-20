@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {allRounds} from '../game/rounds.mjs';
 import {landmarkPiece} from '../game/engine.mjs';
-import {cluePreview,latestPlayClue} from '../game/play-learning.mjs';
+import {cluePreview,latestPlayClue,discoveryCounts} from '../game/play-learning.mjs';
 import {newState,place} from '../game/engine.mjs';
 import {restoreSession} from '../game/session.mjs';
 
@@ -89,4 +89,13 @@ test('the visible preview key follows the same milestone priority and survives r
       }
     }
   }
+});
+
+test('Clues counts available image notes before the first milestone and all discoveries at completion',()=>{
+ for(const round of allRounds){
+  assert.deepEqual(discoveryCounts(round,[]),{clues:0,notes:0,total:0});
+  const counts=discoveryCounts(round,[landmarkPiece(round.illustration.landmarks[0])]);
+  assert.equal(counts.clues,0);assert.ok(counts.notes>=1);assert.equal(counts.total,counts.notes);
+  assert.deepEqual(discoveryCounts(round,Array.from({length:12},(_,i)=>i)),{clues:round.clues.length,notes:3,total:round.clues.length+3});
+ }
 });

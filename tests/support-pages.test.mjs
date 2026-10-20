@@ -14,7 +14,7 @@ import {terminology} from '../game/teaching-data.mjs';
 // network, or shared saved progress. Browser QA covers layout separately.
 function page(filename,{url='https://example.test/',saved=new Map()}={}){
  let document;
- const handlers=new Map(),windowHandlers=new Map();
+ const handlers=new Map(),windowHandlers=new Map(),definitionCalls=[];
  class Element{
   constructor(tag){this.tagName=tag.toUpperCase();this.children=[];this.attributes={};this.dataset={};this.className='';this.value='';this.hidden=false;this.open=false;this.parentElement=null;}
   set textContent(value){this.replaceChildren(String(value));}get textContent(){return this.children.map(child=>typeof child==='string'?child:child.textContent).join('');}
@@ -71,10 +71,10 @@ function page(filename,{url='https://example.test/',saved=new Map()}={}){
  const scientificFigure=()=>{const visual=node('section'),figure=node('figure',null,'science-figure');visual.append(figure,node('div','Notes'));return visual;};
  const scientificMechanisms=()=>{const root=node('section');root.append(node('button','Select model'));return root;};
  const scientificReferences=round=>{const section=node('section');section.id='references';const ref=node('li','Reference');ref.id=`ref-${round.number}-1`;section.append(ref);return section;};
- const context={console,URLSearchParams,Event,document,window,location,history:{pushState(_,__,href){location.href=new URL(href,location).href;}},localStorage:{getItem:key=>saved.get(key)??null},requestAnimationFrame:fn=>fn(),node,allRounds,rounds:filename==='review.mjs'?allRounds:rounds,playable:rounds,findRound,searchText,...collection,...collectionData,...journeys,renderSite(){},scientificFigure,scientificMechanisms,scientificReferences,clinicalDetails:()=>node('section'),scientificFamily:()=>node('section'),scientificInterpretation:()=>node('section'),scientificPrinciples:()=>node('section'),citation:(_,text)=>node('a',text),referenceMarks,referenceList:()=>node('ol'),artworkSrcset:()=>'',artworkMarkers:()=>node('div'),artworkAnnotations:()=>node('div'),mechanismFigure:()=>null,spliceCompare:()=>null,illustrationWalkthrough:()=>({element:node('div'),pause(){},close(){}}),geneClueConnection,geneHintText,GENE_HINT_VERSION,terminology};
+ const context={console,URLSearchParams,Event,document,window,location,history:{pushState(_,__,href){location.href=new URL(href,location).href;}},localStorage:{getItem:key=>saved.get(key)??null},requestAnimationFrame:fn=>fn(),node,allRounds,rounds:filename==='review.mjs'?allRounds:rounds,playable:rounds,findRound,searchText,...collection,...collectionData,...journeys,renderSite(){},scientificFigure,scientificMechanisms,scientificReferences,clinicalDetails:()=>node('section'),scientificFamily:()=>node('section'),scientificInterpretation:()=>node('section'),scientificPrinciples:()=>node('section'),citation:(_,text)=>node('a',text),referenceMarks,referenceList:()=>node('ol'),artworkSrcset:()=>'',artworkMarkers:()=>node('div'),artworkAnnotations:()=>node('div'),mechanismFigure:()=>null,spliceCompare:()=>null,illustrationWalkthrough:()=>({element:node('div'),pause(){},close(){}}),createTermLens:()=>({close(){definitionCalls.push(['close']);},enhance(container){definitionCalls.push(['enhance',container]);}}),geneClueConnection,geneHintText,GENE_HINT_VERSION,terminology};
  const source=readFileSync(new URL(`../game/${filename}`,import.meta.url),'utf8').replace(/^import .*;\n/gm,'');
  vm.runInNewContext(source,context,{filename});
- return {document,location,saved,node,emit(type,event={}){for(const fn of windowHandlers.get(type)??[])fn(event);}};
+ return {document,location,saved,node,definitionCalls,emit(type,event={}){for(const fn of windowHandlers.get(type)??[])fn(event);}};
 }
 
 test('Science citation and fragment history retain notes, focus, and model state; round history opens the correct profile',()=>{
@@ -122,8 +122,9 @@ test('Science and the completed field guide retain the same molecular teaching, 
  const guide=page('field-guide.mjs',{saved});
  for(const round of allRounds){
   const science=page('science.mjs',{url:`https://example.test/science.html?level=${round.number}`}),facts=science.document.querySelector('.science-facts');
-  assert.deepEqual(facts.querySelectorAll('dt').map(item=>item.textContent),['Inheritance','Disease mechanism','Variant type']);
+  assert.deepEqual(facts.querySelectorAll('dt').map(item=>item.textContent),['Normal role','Disease mechanism','Variant pattern','Inheritance']);
   assert.ok(facts.textContent.includes(round.inheritance));
+  assert.ok(facts.textContent.includes(round.clinical.normalRole.text));
   for(const fact of [round.molecular.mechanism,round.molecular.variantType])assert.ok(facts.textContent.includes(fact.body),`${round.gene}: Science keeps the qualified molecular explanation`);
   const article=guide.document.getElementById(`round-${round.number}`);if(!article)continue;
   const molecular=article.querySelectorAll('.guide-variant');assert.equal(molecular.length,2);
@@ -133,6 +134,18 @@ test('Science and the completed field guide retain the same molecular teaching, 
    for(const mark of marks){const target=guide.document.getElementById(mark.href.slice(1));assert.ok(target,`${round.gene}: reference target exists`);assert.ok(fact.sourceUrl.includes(target.querySelector('a').href));}
   }
  }
+});
+
+test('Science definitions enhance the reading column, close before round replacement, and do not alter article identity on fragment history',()=>{
+ const p=page('science.mjs',{url:'https://example.test/science.html?level=01'});
+ assert.deepEqual(p.definitionCalls.map(([type])=>type),['close','enhance']);
+ const first=p.definitionCalls[1][1];assert.equal(first.className,'science-content');
+ p.location.hash='#references';p.emit('popstate');
+ assert.equal(p.definitionCalls.length,2,'fragment changes preserve the active reading column');
+ p.location.search='?level=02';p.location.hash='';p.emit('popstate');
+ assert.deepEqual(p.definitionCalls.map(([type])=>type),['close','enhance','close','enhance']);
+ assert.notEqual(p.definitionCalls[3][1],first);assert.equal(first.isConnected,false);
+ p.emit('beforeprint');assert.equal(p.definitionCalls.at(-1)[0],'close');
 });
 
 test('Editorial review exposes exact compact notes, every hint step, memory text, and each shared definition once',()=>{

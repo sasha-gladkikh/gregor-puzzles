@@ -1,4 +1,6 @@
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
+import {scientificCheckNote} from './science-ui.mjs';
+import {recordedTime,runningTime} from './time.mjs';
 import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,place,guess,complete,shuffled,normalizeGene,recognizeGene,revealGeneHint,geneHintText,geneHintStatus,geneClueConnection,landmarkPiece} from './engine.mjs';
 import {rounds,allRounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink,newPlayerKeys} from './collection.mjs';
@@ -16,7 +18,7 @@ import {createFigureView} from './figure-view.mjs';
 import {artworkSource} from './artwork-source.mjs';
 import {getJourney,nextJourneyStep,journeyRoundHref} from './journeys.mjs';
 import {initShareCard} from './share-card.mjs';
-import {latestPlayClue,latestClueKey} from './play-learning.mjs';
+import {latestPlayClue,latestClueKey,discoveryCounts} from './play-learning.mjs';
 import {createTermLens,renderTeachingConnection} from './teaching-ui.mjs';
 import {nextOpenSlot,nextTrayPiece,horizontalRevealDelta} from './board-navigation.mjs';
 import {createRoundSaveGuard,createRoundActionQueue,createDialogCommit} from './round-save.mjs';
@@ -383,7 +385,7 @@ function updateMode() {
   $('calm').setAttribute('aria-pressed',String(!timed)); $('timed').setAttribute('aria-pressed',String(timed));
   $('calm').disabled=modeLocked(state); $('timed').disabled=modeLocked(state); $('restart').hidden=!state.started;
   $('timingNote').textContent=modeLocked(state)?'Restart to change mode.':'Choose a mode before placing your first piece. Hints and picture views do not start the timer.';
-  $('clock').hidden=!timed||state.timingUnavailable||complete(state); $('clock').textContent=formatTime(elapsedSeconds(state));
+  $('clock').hidden=!timed||state.timingUnavailable||complete(state); $('clock').textContent=runningTime(elapsedSeconds(state));
 }
 function renderPlayerResult(){
   const target=$('playerResult');if(!target)return;
@@ -395,9 +397,9 @@ function renderPlayerResult(){
 window.addEventListener('gregor-player-change',renderPlayerResult);
 function renderResults() {
   const plural=(n,word)=>`${n} ${word}${n===1?'':'s'}`;
-  const mode=timed?(state.timingUnavailable?'Timed · time unavailable':`Timed · ${formatTime(elapsedSeconds(state))}`):'Untimed';
+  const mode=timed?(state.timingUnavailable?'Timed · time unavailable':`Timed · ${recordedTime(elapsedSeconds(state))}`):'Untimed';
   const route=state.solvedByGuess?(state.namedAt!==null?`Identified this round at ${state.namedAt} of ${SIZE} pieces`:'Gene recognition'):state.usedRoutes.includes('legacy')?'Restored progress':'Image puzzle';
-  $('roundResults').textContent=[mode,route,plural(state.hints,'hint'),plural(state.peeks,'picture view')].join(' · ');
+  $('roundResults').textContent=[mode,route,state.hints?plural(state.hints,'gene hint'):null,state.peeks?plural(state.peeks,'picture view'):null].filter(Boolean).join(' · ');
   renderPlayerResult();
 }
 function render(before=state.placed.length) {
@@ -462,6 +464,9 @@ function render(before=state.placed.length) {
   updateGeneHint();
   $('hint').disabled=done; $('peek').disabled=done;
   $('hint').hidden=done;$('peek').hidden=done;$('focusButton').hidden=false;$('enlargeButton').hidden=!done;$('discoveriesButton').hidden=done;
+  const discoveries=discoveryCounts(round,state.placed);
+  $('discoveriesButton').textContent=`Clues · ${discoveries.total}`;
+  $('discoveriesButton').setAttribute('aria-label',`Clues: ${discoveries.clues} milestone clues and ${discoveries.notes} image notes available`);
   $('geneBankButton').hidden=done;
   if(done){$('inlineGeneHint').hidden=true;$('hint').setAttribute('aria-expanded','false');}
   $('artworkPlayback').hidden=!done;
@@ -486,8 +491,7 @@ function render(before=state.placed.length) {
   }
   positionCompletion();updateMode();updateSelection();updateTrayHint();
 }
-function formatTime(s) {return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
-setInterval(()=>{if(timed)$('clock').textContent=formatTime(elapsedSeconds(state));},1000);
+setInterval(()=>{if(timed)$('clock').textContent=runningTime(elapsedSeconds(state));},1000);
 $('calm').onclick=()=>runRoundAction(()=>{timed=changeTimingMode(state,timed,false);render();save();});
 $('timed').onclick=()=>runRoundAction(()=>{timed=changeTimingMode(state,timed,true);render();save();});
 $('peek').onclick=()=>runRoundAction(()=>{if(!start('image'))return;peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);strip(peek?'Picture shown.':'Picture hidden.');save();});
@@ -643,11 +647,11 @@ $('revealLines').replaceChildren(...completionSections.map(([label,text,sources]
  row.append(title,body);return row;
 }));
 termLens.enhance($('revealLines'));
-$('referencesBody').append(referenceList(round,{heading:''}));
+$('referencesBody').append(referenceList(round,{heading:''}),node('p',scientificCheckNote(round),'source-note'));
 $('profileLink').href=`./science.html?level=${round.number}`;
 $('figureDialogTitle').textContent=round.gene;$('figureDialogCondition').textContent=round.condition;$('largeFigureCaption').textContent=round.illustration.note;
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
-$('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
+$('sourceNote').textContent='Conceptual artwork generated with AI; not a patient image or atomic structure.';
 const shareCard=initShareCard($('shareIllustration'),{
   getData:()=>roundComplete(state)?{round:{...round,artwork},completed:collectionProgress(key=>{try{return localStorage.getItem(key);}catch{return null;}},{id:round.id,state}).filter(item=>item.done).length,total:rounds.length}:null,
   onOpen:()=>{completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();artworkAnimation?.pause();discoveryGuide.clear();}

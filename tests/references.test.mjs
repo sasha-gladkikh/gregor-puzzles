@@ -31,7 +31,7 @@ test('every clinical and illustration source resolves to one uniquely numbered r
  const allIds=new Set();
  for(const round of allRounds){
   const references=roundReferences(round),byUrl=new Map(references.map(ref=>[ref.url,ref]));
-  const requested=[round.clinical.patternSource,...round.clues.flatMap(clue=>clue.sourceUrl??[]),...round.clinical.connectionSources,...[round.clinical.significance,round.clinical.family,round.clinical.interpretation].flatMap(claim=>claim.sources),...round.clinical.features.map(feature=>feature.source),...round.clinical.pearls.flatMap(pearl=>pearl.sources),...(round.clinical.extraSources??[]),round.illustration.source,round.illustration.noteSource,...(mechanisms[round.number]?.sources??[])].filter(Boolean);
+  const requested=[round.clinical.patternSource,...(round.clinical.overviewSources??[]),...round.clinical.normalRole.sources,...round.clues.flatMap(clue=>clue.sourceUrl??[]),...round.clinical.connectionSources,...[round.clinical.significance,round.clinical.family,round.clinical.interpretation].flatMap(claim=>claim.sources),...round.clinical.features.map(feature=>feature.source),...round.clinical.pearls.flatMap(pearl=>pearl.sources),...(round.clinical.extraSources??[]),round.illustration.source,round.illustration.noteSource,...(mechanisms[round.number]?.sources??[])].filter(Boolean);
   if(spliceComparison.rounds.includes(round.number))requested.push(spliceComparison.source);
   for(const url of requested)assert.ok(byUrl.has(url),`${round.gene}: missing bibliography entry for ${url}`);
   assert.equal(byUrl.size,references.length,`${round.gene}: duplicated external URL`);
@@ -45,7 +45,7 @@ test('clinical takeaways have direct evidence and mechanism citations retain var
  for(const round of allRounds){
   const c=round.clinical;
   assert.ok(c.connectionSources.length>0,`${round.gene}: mechanism evidence`);
-  for(const field of ['significance','family','interpretation']){assert.ok(c[field].text,`${round.gene}: ${field}`);assert.ok(c[field].sources.length>0,`${round.gene}: ${field} evidence`);}
+  for(const field of ['normalRole','significance','family','interpretation']){assert.ok(c[field].text,`${round.gene}: ${field}`);assert.ok(c[field].sources.length>0,`${round.gene}: ${field} evidence`);}
   for(const f of c.features)assert.ok(['characteristic','variable','course'].includes(f.group),`${round.gene}: ${f.title} group`);
  }
  const ca=allRounds.find(r=>r.gene==='CACNA1A');

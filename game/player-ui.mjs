@@ -1,6 +1,7 @@
 import * as defaultPlayerStore from './player.mjs';
 import {SUGGESTION_ENDPOINT} from './suggestions.mjs';
 import {homeProgress} from './home-state.mjs';
+import {recordedTime} from './time.mjs';
 
 const namePattern=/^[\p{L}\p{N} .'’_-]{2,32}$/u;
 const nonnegative=value=>Number.isFinite(value)&&value>=0;
@@ -18,11 +19,7 @@ export function playerDateTime(value,{locale,timeZone}={}){
  return valid?new Intl.DateTimeFormat(locale,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',...(timeZone?{timeZone}:{})}).format(new Date(valid)):null;
 }
 
-export function playerTime(seconds){
- if(!nonnegative(seconds))return '—';
- const total=Math.round(seconds*1000),minutes=Math.floor(total/60000),remaining=total%60000;
- return `${minutes}:${String(Math.floor(remaining/1000)).padStart(2,'0')}.${String(remaining%1000).padStart(3,'0')}`;
-}
+export const playerTime=recordedTime;
 
 function reportedResult(value,allowed){
  if(!value||!allowed.size||value.roundsCompleted!==allowed.size||!Number.isFinite(value.totalSeconds)||value.totalSeconds<allowed.size||value.totalSeconds>604800||!Array.isArray(value.estimatedTimes)||value.estimatedTimes.length!==allowed.size)return null;
@@ -132,7 +129,7 @@ function allocationEntries(entries){
   const item=node('li',undefined,'leaderboard-allocation');
   item.append(node('strong',entry.displayName),node('span',shortPlayerTime(entry.seconds),'leaderboard-allocation-time'));list.append(item);
  }
- section.append(list);
+ section.append(node('h4','Round time breakdown'),list);
  return section;
 }
 const assistance=attempt=>[

@@ -12,7 +12,8 @@ const vocabularySources={
  missense:'https://www.genome.gov/genetics-glossary/Missense-Mutation',
  frameshift:'https://www.genome.gov/genetics-glossary/Frameshift-Mutation',
  transcriptDecay:'https://pubmed.ncbi.nlm.nih.gov/34216550/',
- noncoding:'https://www.genome.gov/genetics-glossary/Non-Coding-DNA'
+ noncoding:'https://www.genome.gov/genetics-glossary/Non-Coding-DNA',
+ dee:'https://www.ilae.org/guidelines/guidelines-and-reports/ilae-classification-of-the-epilepsies'
 };
 export const terminology=[
   {id:'loss-of-function',term:'loss of function',aliases:['loss-of-function'],definition:'Reduced or absent activity of a gene product. This describes its functional effect, not whether the condition is inherited dominantly or recessively.',sources:[vocabularySources.function]},
@@ -26,6 +27,7 @@ export const terminology=[
   {id:'gene-conversion',term:'gene conversion',aliases:['gene-conversion'],definition:'Transfer of sequence information from one DNA region to a similar region without a reciprocal exchange. It can copy changes from a pseudogene into a gene.',sources:[vocabularySources.conversion]},
   {id:'noncoding',term:'noncoding',aliases:['non-coding'],definition:'Describes sequence that does not encode protein. Such sequence can regulate genes or produce functional RNA; noncoding does not mean unimportant.',sources:[vocabularySources.noncoding]},
   {id:'repeat-expansion',term:'repeat expansion',aliases:['repeat expansions','repeat-expansion'],definition:'An increase in the number of copies of a short, repeated DNA sequence. Its effect depends on the sequence, size, and location of the expansion.',sources:[vocabularySources.variants]},
+  {id:'developmental-and-epileptic-encephalopathy',term:'developmental and epileptic encephalopathy',aliases:['DEE'],definition:'Both the underlying disorder and epileptic activity contribute to developmental impairment. Their individual contributions can be difficult to separate.',sources:[vocabularySources.dee]},
   {id:'nucleoside',term:'nucleoside',aliases:['nucleosides'],definition:'A small molecule made of a sugar and a base, released when DNA or RNA is broken down.'},
   {id:'lysosome',term:'lysosome',aliases:['lysosomes','lysosomal'],definition:'A membrane-bound cell compartment that breaks down material so its smaller components can be reused.'},
   {id:'cochlea',term:'cochlea',aliases:['cochlear'],definition:'The hearing organ in the inner ear; its cells help convert sound into signals for the nervous system.'},

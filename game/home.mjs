@@ -1,7 +1,7 @@
 import {renderSite} from './site.mjs';
 import {initSuggestionForm} from './suggestions.mjs';
 import {catalogue} from './home-data.mjs';
-import {legacyPlayURL,homeProgress,homeDestination} from './home-state.mjs';
+import {legacyPlayURL,homeProgress,homeDestination,homePlayURL} from './home-state.mjs';
 import {initHomeDemo} from './home-demo.mjs';
 import {initPlayerUI} from './player-ui.mjs';
 import {createRoundCarousel} from './round-carousel.mjs';
@@ -28,7 +28,7 @@ function initHome(){
    link.replaceChildren(document.createTextNode(destination.label),arrow);
   $('homeBrowse').hidden=destination.href==='./collection.html';
   $('homeProgress').textContent=destination.detail;
-  $('playTab').href=`./play.html?level=${catalogue[0].number}`;
+  $('playTab').href=homePlayURL(items);
   demo?.setDestination(destination);
   $('discoveryCount').textContent=`${items.filter(item=>item.done).length} of ${items.length} complete`;
   carousel.update(items);

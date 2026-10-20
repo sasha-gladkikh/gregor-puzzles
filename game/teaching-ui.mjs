@@ -52,6 +52,21 @@ export function createTermLens(){
   let panel=null,origin=null;
   let sequence=0;
   const events=new AbortController();
+  function closeAtReadingPosition(){
+    // Scrolling or resizing can remove a focused definition. Keep keyboard users
+    // at its trigger, but never take focus back from another control.
+    close(Boolean(panel?.contains(document.activeElement)));
+  }
+  function continueReading(){
+    const scope=origin?.closest('dialog[open]')??document;
+    const controls=[...scope.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex]')]
+      .filter(control=>control.tabIndex>=0&&!control.disabled&&!control.closest('[inert]')&&control.getClientRects().length&&!panel.contains(control));
+    const position=controls.indexOf(origin),next=position<0?null:controls[position+1];
+    const trigger=origin;close();
+    // The definition is portalled out of the reading column to avoid clipping.
+    // Resume the column's tab order instead of continuing at the document end.
+    if(next&&next!==trigger)next.focus();else if(trigger?.isConnected)trigger.focus({preventScroll:true});
+  }
   function close(returnFocus=false){
     panel?.remove();panel=null;
     origin?.setAttribute('aria-expanded','false');
@@ -61,7 +76,7 @@ export function createTermLens(){
     origin=null;
   }
   function open(button,entry){
-    if(origin===button){close();return;}
+    if(origin===button){close(true);return;}
     close();origin=button;button.setAttribute('aria-expanded','true');
     panel=document.createElement('aside');panel.className='term-lens';
     panel.id=`term-lens-${++sequence}`;panel.tabIndex=-1;
@@ -72,21 +87,27 @@ export function createTermLens(){
     button.setAttribute('aria-controls',panel.id);button.setAttribute('aria-describedby',text.id);
     const dismiss=document.createElement('button');dismiss.type='button';dismiss.textContent='×';
     dismiss.setAttribute('aria-label','Close definition');dismiss.addEventListener('click',()=>close(true));
+    panel.addEventListener('keydown',event=>{
+      if(event.key!=='Tab')return;
+      if(event.shiftKey){event.preventDefault();close(true);}
+      else if(event.target===dismiss){event.preventDefault();continueReading();}
+    });
     panel.append(heading,dismiss,text);(button.closest('dialog')??document.body).append(panel);
     const rect=button.getBoundingClientRect(),box=panel.getBoundingClientRect();
     panel.style.left=`${Math.max(12,Math.min(rect.left,innerWidth-box.width-12))}px`;
     panel.style.top=`${Math.max(12,Math.min(rect.bottom+10,innerHeight-box.height-12))}px`;
     panel.focus({preventScroll:true});
   }
-  document.addEventListener('click',event=>{if(panel&&!panel.contains(event.target)&&!origin?.contains(event.target))close();},{signal:events.signal});
+  document.addEventListener('click',event=>{if(panel&&!panel.contains(event.target)&&!origin?.contains(event.target))closeAtReadingPosition();},{signal:events.signal});
+  document.addEventListener('focusin',event=>{if(panel&&!panel.contains(event.target)&&event.target!==origin)close();},{signal:events.signal});
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&panel){event.preventDefault();event.stopPropagation();close(true);}},{capture:true,signal:events.signal});
-  window.addEventListener('scroll',()=>close(),{capture:true,passive:true,signal:events.signal});
-  window.addEventListener('resize',()=>close(),{signal:events.signal});
+  window.addEventListener('scroll',closeAtReadingPosition,{capture:true,passive:true,signal:events.signal});
+  window.addEventListener('resize',closeAtReadingPosition,{signal:events.signal});
   return {
     enhance(container){
       if(!container)return;
       const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT),texts=[];
-      while(walker.nextNode())if(!walker.currentNode.parentElement.closest('button,a,script,style,textarea,input,h1,h2,h3,h4,summary,[data-no-terms]'))texts.push(walker.currentNode);
+      while(walker.nextNode())if(!walker.currentNode.parentElement.closest('button,a,script,style,textarea,input,h1,h2,h3,h4,h5,h6,summary,.term-lens,.reference-marks,.reference-list,.science-hpo,.figure-print-notes,[data-no-terms]'))texts.push(walker.currentNode);
       const seen=new Set([...container.querySelectorAll('[data-term-id]')].map(button=>button.dataset.termId));
       for(const text of texts){
         const segments=termSegments(text.textContent);

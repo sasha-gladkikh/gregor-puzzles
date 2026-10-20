@@ -44,12 +44,12 @@ class Element{
   append(...children){for(const child of children){child.parent=this;this.children.push(child);}}
   remove(){if(this.parent)this.parent.children=this.parent.children.filter(child=>child!==this);}
 }
-function setup(guided=false){
+function setup(guided=false,options={}){
   const original=globalThis.document;
   globalThis.document={createElement:tag=>new Element(tag),createElementNS:(_ns,tag)=>new Element(tag)};
   const parent=new Element('svg'),round=allRounds[2];
   const originalArtwork=new Element('g');parent.append(originalArtwork);
-  const guide=createArtworkGuide(round,{parent,guided});
+  const guide=createArtworkGuide(round,{parent,guided,...options});
   const focus=parent.children[1],caption=guide.caption;
   return {guide,parent,focus,caption,originalArtwork,round,restore(){globalThis.document=original;}};
 }
@@ -110,17 +110,24 @@ test('selecting a structure pauses on that note, and resuming continues there in
   }finally{state.restore();}
 });
 
-test('holding a caption preserves reading position while the shared artwork clock keeps running',()=>{
-  const state=setup(true);let now=0,id=0;const frames=new Map();
-  const clock=createArtworkClock({duration:18000,loop:true,now:()=>now,request:callback=>{frames.set(++id,callback);return id;},cancel:key=>frames.delete(key),onFrame:(_progress,elapsed)=>state.guide.draw(elapsed)});
+test('caption playback uses the shared clock and reflects external pauses without losing reading position',()=>{
+  let clock;
+  const state=setup(true,{onPlayback:playing=>playing?clock.play():clock.pause()});let now=0,id=0;const frames=new Map();
+  const draw=()=>state.guide.draw(clock.elapsed,{playing:clock.playing});
+  clock=createArtworkClock({duration:18000,loop:true,now:()=>now,request:callback=>{frames.set(++id,callback);return id;},cancel:key=>frames.delete(key),onFrame:draw,onState:draw});
   const advance=ms=>{now+=ms;const pending=[...frames.values()];frames.clear();pending.forEach(callback=>callback());};
   try{
     const step=artworkGuideSteps(state.round)[0],hold=state.caption.children[0].children[2];
-    clock.play();advance(step.at+step.duration*.5);hold.onclick();
-    assert.equal(hold.textContent,'Resume guide');assert.equal(hold.attrs['aria-pressed'],'true');
-    advance(60000);assert.equal(state.caption.dataset.phase,'static-0');assert.equal(clock.playing,true);assert.equal(frames.size,1);
-    hold.onclick();assert.equal(state.caption.dataset.phase,'0');assert.equal(hold.textContent,'Pause guide');
+    clock.play();advance(step.at+step.duration*.5);
+    assert.equal(hold.textContent,'Pause animation');
+    clock.pause();assert.equal(hold.textContent,'Resume animation');
+    const elapsed=clock.elapsed;
+    advance(60000);assert.equal(state.caption.dataset.phase,'0');assert.equal(clock.playing,false);assert.equal(frames.size,0);assert.equal(clock.elapsed,elapsed);
+    hold.onclick();assert.equal(state.caption.dataset.phase,'0');assert.equal(hold.textContent,'Pause animation');assert.equal(clock.playing,true);
     advance(step.duration*.51);assert.equal(state.caption.dataset.phase,'1','resume keeps the already-read portion of the note');
+    hold.onclick();assert.equal(clock.playing,false);assert.equal(hold.textContent,'Resume animation');
+    state.guide.select(2);assert.equal(hold.textContent,'Continue notes');
+    hold.onclick();assert.equal(clock.playing,true);assert.equal(state.caption.dataset.phase,'2');
   }finally{clock.dispose();state.guide.dispose();state.restore();}
 });
 

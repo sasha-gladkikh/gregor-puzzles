@@ -299,30 +299,24 @@ test('the completion frame rises smoothly without scaling the image or replaying
     assert.ok(frame.y<=0&&frame.y>=-5.8);
     assert.ok(Math.abs(frame.rotateX)<=.55&&Math.abs(frame.rotateY)<=.7);
     assert.ok(frame.trace>=lastTrace);lastTrace=frame.trace;
-    if(elapsed>=3000){assert.equal(frame.halo,0);assert.equal(frame.glintOpacity,0);assert.equal(frame.trace,1);}
+    if(elapsed>=1500){assert.equal(frame.halo,0);assert.equal(frame.glintOpacity,0);assert.equal(frame.trace,1);assert.equal(frame.y,-3);assert.equal(frame.rotateX,0);assert.equal(frame.rotateY,0);}
     assert.equal('scale' in frame,false);
   }
-  assert.ok(sampleArtworkStage(1500).halo>.1);
-  assert.ok(sampleArtworkStage(1500).glintOpacity>.5&&sampleArtworkStage(1500).glintOpacity<.65);
+  assert.ok(sampleArtworkStage(750).halo>.1);
+  assert.ok(sampleArtworkStage(790).glintOpacity>.5&&sampleArtworkStage(790).glintOpacity<.55);
 });
 
-test('frame levitation stays continuous at both its introduction and later cycle boundaries',()=>{
-  for(const center of [0,280,1900,2480,2780,3000,7800,15600]){
+test('the arrival settles continuously, then leaves markers fixed while biological motion continues',()=>{
+  for(const center of [0,100,180,1100,1400,1500,7800,15600]){
     const before=sampleArtworkStage(Math.max(0,center-.01)),after=sampleArtworkStage(center+.01);
-    for(const name of ['y','trace','halo','glintOpacity','sweepOpacity'])assert.ok(Math.abs(before[name]-after[name])<.001,`${center}/${name}: visual discontinuity`);
+    for(const name of ['y','trace','halo','glintOpacity'])assert.ok(Math.abs(before[name]-after[name])<.001,`${center}/${name}: visual discontinuity`);
   }
 });
 
-test('the presentation light crosses the illustration once at restrained opacity, then leaves it unobstructed',()=>{
-  assert.equal(sampleArtworkStage(0).sweepOpacity,0);assert.equal(sampleArtworkStage(280).sweepOpacity,0);
-  let previous=-Infinity;
-  for(let elapsed=280;elapsed<=2480;elapsed+=20){
-    const frame=sampleArtworkStage(elapsed);
-    assert.ok(frame.sweepX>=previous);previous=frame.sweepX;
-    assert.ok(frame.sweepOpacity>=0&&frame.sweepOpacity<=.12);
-  }
-  assert.ok(sampleArtworkStage(1380).sweepOpacity>.11);
-  for(const elapsed of [2480,3000,7800,15600,120000])assert.equal(sampleArtworkStage(elapsed).sweepOpacity,0);
+test('the perimeter accent finishes before biological motion begins and never replays',()=>{
+  const settled=sampleArtworkStage(1700);
+  assert.equal(settled.glintOpacity,0);assert.equal(settled.halo,0);
+  for(const elapsed of [1700,3000,7800,15600,120000])assert.deepEqual(sampleArtworkStage(elapsed,{x:1,y:-1}),settled);
 });
 
 function stageDocument(){
@@ -332,6 +326,8 @@ function stageDocument(){
       this.classList={add:(...names)=>names.forEach(name=>this.classes.add(name)),remove:(...names)=>names.forEach(name=>this.classes.delete(name)),toggle:(name,value)=>value?this.classes.add(name):this.classes.delete(name)};
     }
     setAttribute(name,value){this.attributeWrites++;this.attrs.set(name,String(value));}
+    getAttribute(name){return this.attrs.get(name)??null;}
+    querySelectorAll(selector){const nodes=this.children.flatMap(child=>[child,...child.querySelectorAll(selector)]);return selector==='image[data-artwork-src]'?nodes.filter(child=>child.tag==='image'&&child.attrs.has('data-artwork-src')):[];}
     removeAttribute(name){this.attributeWrites++;this.attrs.delete(name);}
     append(...nodes){for(const node of nodes){node.parent=this;this.children.push(node);}}
     replaceChildren(...nodes){this.children=[];this.append(...nodes);}
@@ -357,9 +353,9 @@ test('all ten completed illustrations keep their readable guide under reduced mo
     assert.equal(await animation.ready,false);
     assert.equal(animation.element.hidden,true);assert.equal(animation.controls.hidden,false);
     assert.equal(animation.controls.children[0].hidden,true,'motion toggle is hidden');
-    assert.equal(animation.controls.children[2].attrs.get('aria-label'),'Read image notes');
-    assert.equal(animation.controls.children[2].children[0].textContent,'Read image notes');
-    assert.equal(animation.controls.children[2].children[1].textContent,'Read notes');
+    assert.equal(animation.controls.children[2].attrs.get('aria-label'),'Image notes');
+    assert.equal(animation.controls.children[2].children[0].textContent,'Image notes');
+    assert.equal(animation.controls.children[2].children[1].textContent,'Image notes');
     assert.equal(animation.caption.hidden,false);
     animation.focusLandmark(1);assert.equal(animation.caption.dataset.phase,'static-1');assert.equal(animation.element.dataset.guideIndex,'1');
     animation.caption.children[3].children[1].onclick();
@@ -382,6 +378,39 @@ test('manual caption navigation cancels delayed completion playback even outside
   assert.equal(takeAutoplay(),false,'the pending completion timer cannot override Next');
   assert.equal(animation.element.dataset.state,'loading');
   animation.dispose();
+});
+
+test('the actual illustration and caption controls share pause state, while opening notes never starts playback',async context=>{
+  const keys=['document','matchMedia','IntersectionObserver','Image','requestAnimationFrame','cancelAnimationFrame','performance'];
+  const saved=new Map(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+  context.after(()=>{for(const [key,descriptor] of saved)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];});
+  const {document,board}=stageDocument();globalThis.document=document;
+  let now=0,id=0;const frames=new Map();
+  globalThis.performance={now:()=>now};
+  globalThis.requestAnimationFrame=callback=>{frames.set(++id,callback);return id;};
+  globalThis.cancelAnimationFrame=id=>frames.delete(id);
+  globalThis.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
+  globalThis.IntersectionObserver=class{
+    constructor(callback){this.callback=callback;}
+    observe(target){this.callback([{target,isIntersecting:true,intersectionRatio:1}]);}
+    disconnect(){}
+  };
+  globalThis.Image=class{set src(value){this.source=value;queueMicrotask(()=>this.onload?.());}decode(){return Promise.resolve();}};
+  const animation=animatedArtwork(allRounds[0],{board,guided:true});
+  try{
+    assert.equal(await animation.ready,true);
+    const [toggle,,notes]=animation.controls.children,captionToggle=animation.caption.children[0].children[2];
+    assert.equal(toggle.attrs.get('aria-label'),'Animate image');
+    animation.play();assert.equal(captionToggle.textContent,'Pause animation');assert.equal(frames.size,1);
+    now=3000;const pending=[...frames.values()];frames.clear();pending.forEach(callback=>callback());
+    animation.pause();assert.equal(captionToggle.textContent,'Resume animation');assert.equal(frames.size,0);
+    assert.equal(toggle.attrs.get('aria-label'),'Resume animation');
+    notes.listeners.get('click')();assert.equal(frames.size,0);assert.equal(captionToggle.textContent,'Continue notes');
+    captionToggle.onclick();assert.equal(frames.size,1);assert.equal(captionToggle.textContent,'Pause animation');
+    toggle.listeners.get('click')();assert.equal(frames.size,0);assert.equal(captionToggle.textContent,'Resume animation');
+    captionToggle.onclick();assert.equal(frames.size,1);assert.equal(toggle.attrs.get('aria-label'),'Pause animation');
+  }finally{animation.dispose();}
+  assert.equal(frames.size,0);
 });
 
 test('cleanup retains the original footprint when a replacement cutout has a tighter boundary',context=>{
@@ -445,13 +474,14 @@ test('stage waits for playback, shares the pause clock, and completely restores 
   const stage=createArtworkStage(board,'qa-stage'),rim=frame.children.at(-1);
   assert.equal(rim.attrs.has('hidden'),true);stage.draw(1800,{x:1,y:1});assert.equal(frame.styles.size,1);
   const {clock,frames,advance}=setup({loop:true,onFrame:(_position,elapsed)=>stage.draw(elapsed,{x:.8,y:-.4}),onState:()=>stage.playing(clock.playing)});
-  stage.activate();clock.play();advance(2200);
+  stage.activate();clock.play();advance(700);
   assert.equal(rim.attrs.has('hidden'),false);assert.equal(frame.classes.has('artwork-stage-playing'),true);
   assert.notEqual(frame.styles.get('--artwork-stage-y'),'0.000px');
   clock.pause();const paused=[...frame.styles];advance(60000);
   assert.deepEqual([...frame.styles],paused);assert.equal(frames.size,0);assert.equal(frame.classes.has('artwork-stage-playing'),false);
   assert.equal(frame.classes.has('artwork-stage-active'),true);
-  clock.play();advance(800);assert.equal(clock.elapsed,3000);assert.equal(frame.styles.get('--artwork-stage-halo'),'0.000');
+  clock.play();advance(800);assert.equal(clock.elapsed,1500);assert.equal(frame.styles.get('--artwork-stage-halo'),'0.000');
+  assert.equal(frame.classes.has('artwork-stage-playing'),false,'the settled frame releases its compositor hint');
   clock.reset();stage.reset();
   assert.equal(rim.attrs.has('hidden'),true);assert.deepEqual([...frame.styles],[['margin-top','11px']]);assert.deepEqual([...frame.classes],['board-frame']);
   clock.dispose();stage.dispose();assert.deepEqual(frame.children,[board]);
@@ -465,20 +495,21 @@ test('disposing a playing stage removes its border and every owned presentation 
   stage.draw(4000,{x:1,y:-1});assert.equal(frame.styles.size,0);
 });
 
-test('settled light effects stop DOM updates and reset can replay the complete arrival',context=>{
+test('the settled frame stops all decorative DOM updates and reset can replay its arrival',context=>{
   const previous=globalThis.document,{document,board,frame}=stageDocument();
   globalThis.document=document;context.after(()=>{if(previous===undefined)delete globalThis.document;else globalThis.document=previous;});
-  const stage=createArtworkStage(board,'settled-stage'),sheen=board.children[0];
+  const stage=createArtworkStage(board,'settled-stage'),rim=frame.children.at(-1);
   const writes=element=>element.attributeWrites+element.children.reduce((sum,child)=>sum+writes(child),0);
-  stage.activate();stage.draw(1380,{x:0,y:0});
-  assert.equal(sheen.attrs.has('hidden'),false);assert.ok(Number(sheen.attrs.get('opacity'))>.11);
-  stage.draw(3000,{x:0,y:0});assert.equal(sheen.attrs.has('hidden'),true);
+  stage.activate();stage.draw(750,{x:0,y:0});
+  assert.equal(rim.attrs.has('hidden'),false);assert.ok(Number(rim.children.at(-1).attrs.get('opacity'))>.5);
+  assert.equal(board.children.length,0,'completion adds no light sweep across scientific structures');
+  stage.draw(1500,{x:0,y:0});
   const settledWrites=writes(frame),previousY=frame.styles.get('--artwork-stage-y');
-  for(let time=3016;time<9000;time+=16)stage.draw(time,{x:0,y:0});
+  for(let time=1516;time<9000;time+=16)stage.draw(time,{x:1,y:-1});
   assert.equal(writes(frame),settledWrites,'Settled decorative SVG does not mutate every frame');
-  assert.notEqual(frame.styles.get('--artwork-stage-y'),previousY,'Frame continues floating');
-  stage.reset();assert.equal(sheen.attrs.has('hidden'),true);
-  stage.activate();stage.draw(1380,{x:0,y:0});assert.equal(sheen.attrs.has('hidden'),false);
+  assert.equal(frame.styles.get('--artwork-stage-y'),previousY,'Marker positions remain steady while the illustration moves');
+  stage.reset();assert.equal(rim.attrs.has('hidden'),true);
+  stage.activate();stage.draw(750,{x:0,y:0});assert.ok(Number(rim.children.at(-1).attrs.get('opacity'))>.5);
   stage.dispose();assert.equal(board.children.length,0);
 });
 
@@ -593,15 +624,15 @@ test('all ten clean background plates retain 4:3 framing within native raster ro
 
 test('phone playback labels remain concise while every state retains its full accessible action',()=>{
  for(const [state,compact,accessible] of [
-  [{},'Preparing','Preparing illustration'],
-  [{assetsReady:true},'Play','Play illustration'],
-  [{assetsReady:true,playing:true},'Pause','Pause illustration'],
-  [{assetsReady:true,elapsed:5000},'Resume','Resume illustration'],
-  [{failed:true},'Retry','Retry illustration']
+  [{},'Preparing image','Preparing image'],
+  [{assetsReady:true},'Animate image','Animate image'],
+  [{assetsReady:true,playing:true},'Pause image','Pause animation'],
+  [{assetsReady:true,elapsed:5000},'Resume image','Resume animation'],
+  [{failed:true},'Retry image','Retry animation']
  ]){
   const labels=artworkControlLabels(state);assert.equal(labels.compact,compact);assert.equal(labels.playback,accessible);
  }
- assert.deepEqual(artworkControlLabels({assetsReady:true,guided:true}),{playback:'Play illustration',compact:'Play',guide:'Replay guide',guideCompact:'Replay guide'});
- assert.equal(artworkControlLabels({reduced:true}).guide,'Read image notes');
- assert.equal(artworkControlLabels({reduced:true}).guideCompact,'Read notes');
+ assert.deepEqual(artworkControlLabels({assetsReady:true,guided:true}),{playback:'Animate image',compact:'Animate image',guide:'Image notes',guideCompact:'Image notes'});
+ assert.equal(artworkControlLabels({reduced:true}).guide,'Image notes');
+ assert.equal(artworkControlLabels({reduced:true}).guideCompact,'Image notes');
 });

@@ -434,7 +434,28 @@ body:has(#game){overflow-anchor:none}
 @media(min-resolution:3dppx){#figureDialog .figure-stage{max-width:482px}}
 
 @media(max-width:600px){
- #game.round-complete .figure-tools{flex-wrap:nowrap;justify-content:flex-start}
+ #game.round-complete .figure-tools{flex-wrap:wrap;justify-content:flex-start}
  #game.round-complete #artworkPlayback{flex:none}
  #game.round-complete #enlargeButton{flex:none;justify-content:center}
+}
+
+/* Keep continuing the game distinct from reading and sharing. */
+#game .completion-summary .completion-actions{display:grid;gap:6px;width:100%}
+#game .completion-next,#game .completion-more{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#game .completion-next .primary{flex:1;justify-content:center;text-align:center}
+#game .completion-next #replayPuzzle{flex:none;border-color:var(--line)}
+#game .completion-more{gap:0 5px}
+#game .completion-summary .completion-more .tool{font-size:12px;padding:8px;min-height:44px}
+@media(max-width:600px){
+ #game .play-collection{grid-template-columns:44px minmax(0,1fr);gap:0 8px;margin-bottom:5px}
+ #game .play-collection .library-button{grid-column:1;grid-row:1;justify-content:center;align-self:center;min-width:44px;min-height:44px;padding:0;border:1px solid var(--line);background:white}
+ #game .play-collection .library-button>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+ #game .play-collection .library-grid-icon{display:block;width:22px;height:22px;flex:none}
+ #game .play-collection .discovery-strip{grid-column:2;grid-row:1;margin:0 -4px;padding-block:4px 6px}
+ #game .play-collection .collection-progress{grid-column:2;grid-row:2;line-height:1.2;font-size:11px;min-height:13px}
+ #game .completion-summary .completion-next .primary{flex-basis:auto}
+ #game .completion-next{gap:6px}
+ #game .completion-summary .completion-next a{padding-inline:10px}
+ #game .piece-bank{margin-top:9px}
+ #game .tray-heading{margin-bottom:5px}
 }

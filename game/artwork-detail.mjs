@@ -87,6 +87,12 @@ export function detailFocusWeight(point,focus){
   return 1-.72*clamp(focus.opacity??1)*(1-proximity);
 }
 
+// The first causal pass is the most prominent. Subsequent passes stay visible
+// at a quieter intensity so the illustration supports reading its notes.
+export function detailReadingWeight(elapsed,period){
+  return 1-.55*smooth((elapsed-period-600)/3000);
+}
+
 // These are moving reflections and emphasis along the illustration's existing
 // contours and arrows, not extra molecules or experimentally measured events.
 export function sampleDetailTrack(track,elapsed,period){
@@ -136,7 +142,7 @@ export function createArtworkDetails(number,{parent,sprites=[]}){
       for(const entry of tracks){
         const frame=sampleDetailTrack(entry.track,elapsed,scene.period);
         if(frame.opacity===0&&entry.last===0)continue;
-        const emphasis=entry.track.type==='route'?1:detailFocusWeight(entry.center,focus);
+        const emphasis=detailReadingWeight(elapsed,scene.period)*(entry.track.type==='route'?1:detailFocusWeight(entry.center,focus));
         entry.group.setAttribute('opacity',(frame.opacity*emphasis*(entry.track.intensity??1)).toFixed(3));entry.last=frame.opacity;
         if(frame.opacity===0)continue;
         for(const path of entry.paths)path.setAttribute('stroke-dashoffset',frame.offset.toFixed(5));

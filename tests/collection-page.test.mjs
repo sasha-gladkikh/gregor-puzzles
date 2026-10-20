@@ -30,7 +30,8 @@ test('related links never expose unpublished rounds and process groups cover the
 test('field guide preserves clinical course, significance, and family context for every completed round',()=>{
  for(const round of allRounds){
   const sections=guideClinicalSections(round);
-  assert.deepEqual(sections.map(section=>section.label),['Mechanism','Clinical pattern','Onset and course','Clinical significance','Family implications']);
+  assert.deepEqual(sections.map(section=>section.label),['Normal role','Clinical pattern','Onset and course','Clinical significance','Family implications']);
+  assert.equal(sections[0].text,round.clinical.normalRole.text);
   assert.ok(sections.every(section=>typeof section.text==='string'&&section.text.trim()),`${round.gene}: no empty clinical takeaway`);
  }
  const sbds=guideClinicalSections(allRounds.find(round=>round.gene==='SBDS'));
@@ -45,7 +46,7 @@ test('field-guide references cover explicit mechanism, clinical, family, and ill
   const refs=guideReferences(round),urls=refs.map(ref=>ref.url);
   assert.equal(new Set(urls).size,urls.length);
   assert.equal(urls.includes(`https://omim.org/entry/${round.omim}`),false,'OMIM is linked once in the guide header');
-  for(const url of [round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...round.clinical.connectionSources,...round.molecular.mechanism.sourceUrl,...round.molecular.variantType.sourceUrl,...round.clinical.significance.sources,...round.clinical.family.sources].filter(Boolean))assert.ok(urls.includes(url),`${round.gene}: ${url}`);
+  for(const url of [round.illustration.source,round.illustration.noteSource,round.clinical.patternSource,...round.clinical.normalRole.sources,...round.molecular.mechanism.sourceUrl,...round.molecular.variantType.sourceUrl,...round.clinical.significance.sources,...round.clinical.family.sources].filter(Boolean))assert.ok(urls.includes(url),`${round.gene}: ${url}`);
   assert.ok(refs.every(ref=>ref.label&&ref.label!=='Supporting reference'&&ref.url.startsWith('https://')),`${round.gene}: references need descriptive registry labels`);
  }
  const cacna=allRounds.find(round=>round.gene==='CACNA1A');

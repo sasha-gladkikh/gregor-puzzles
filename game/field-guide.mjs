@@ -20,7 +20,7 @@ function entry(round,progress){
  for(const [label,fact]of[['Disease mechanism',round.molecular.mechanism],['Variant type',round.molecular.variantType]]){
   const paragraph=node('p',null,'guide-variant');paragraph.append(node('strong',`${label}: `),document.createTextNode(fact.body));
   for(const [index,ref]of references.entries())if(fact.sourceUrl.includes(ref.url)){
-   const mark=node('a',`[${index+1}]`);mark.href=`#guide-ref-${round.number}-${index+1}`;mark.setAttribute('aria-label',`Reference ${index+1}: ${label}`);paragraph.append(document.createTextNode(' '),mark);
+   const mark=node('a',`[${index+1}]`);mark.href=`#guide-ref-${round.number}-${index+1}`;mark.setAttribute('aria-label',`Reference ${index+1}: ${label}`);paragraph.append(document.createTextNode('\u00a0'),mark);
   }
   header.append(paragraph);
  }

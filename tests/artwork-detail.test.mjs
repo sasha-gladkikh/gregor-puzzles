@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {artworkDetails,artworkSequences,sampleDetailTrack,createArtworkDetails,detailFocusWeight} from '../game/artwork-detail.mjs';
+import {artworkDetails,artworkSequences,sampleDetailTrack,createArtworkDetails,detailFocusWeight,detailReadingWeight} from '../game/artwork-detail.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -126,6 +126,20 @@ test('guide focus leaves its structure fully visible and gradually quiets unrela
   assert.equal(detailFocusWeight([780,30],{...focus,opacity:0}),1);
   assert.equal(detailFocusWeight([780,30],null),1);
   assert.equal(detailFocusWeight(null,focus),1);
+});
+
+test('the first biological sequence remains prominent, then later reflections settle for reading',()=>{
+  for(const scene of Object.values(artworkDetails)){
+    const boundary=scene.period+600;
+    for(const elapsed of [0,scene.period,boundary])assert.equal(detailReadingWeight(elapsed,scene.period),1);
+    let previous=1;
+    for(let elapsed=boundary;elapsed<=boundary+3000;elapsed+=10){
+      const weight=detailReadingWeight(elapsed,scene.period);
+      assert.ok(weight<=previous&&weight>=.45-1e-12);previous=weight;
+    }
+    assert.ok(Math.abs(detailReadingWeight(boundary+3000,scene.period)-.45)<1e-12);
+    assert.equal(detailReadingWeight(3600000,scene.period),detailReadingWeight(boundary+3000,scene.period));
+  }
 });
 
 test('causal scenes share an ordered cadence with their original-pixel actions',()=>{

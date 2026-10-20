@@ -27,3 +27,9 @@ export function homeDestination(items) {
     detail:continuing?`${next.round.topic} · ${next.pieces} of 12 pieces placed.`:done?`${done} of ${items.length} rounds complete · Progress saved in this browser.`:`${items.length} rounds · 12 pieces each · No account required`,
   };
 }
+
+// The navigation always opens a puzzle, while the completed hero may open Collection.
+export function homePlayURL(items) {
+ const next=nextHomeRound(items);
+ return next?`./play.html?level=${next.round.number}`:'./collection.html';
+}

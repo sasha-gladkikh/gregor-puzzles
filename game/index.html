@@ -26,7 +26,7 @@
     <section class="home-hero" aria-labelledby="homeTitle">
       <div class="hero-copy">
         <h1 id="homeTitle">Piece together<br>the <span>biology.</span></h1>
-        <p class="hero-description">Build the image. Reveal the clues. Discover the genetics.</p>
+        <p class="hero-description">Solve illustrated puzzles connecting rare disease genes, molecular mechanisms, and clinical features.</p>
         <div class="hero-actions">
           <a id="homePlay" class="home-primary" href="./play.html?level=01">Start a puzzle <span aria-hidden="true">→</span></a>
           <a id="homeBrowse" class="home-text-link" href="./collection.html">Browse all <span id="roundCount">10</span> rounds <span aria-hidden="true">→</span></a>
@@ -68,7 +68,7 @@
                   <legend class="sr-only">Your puzzle suggestion</legend>
                   <p id="suggestionIdentityHelp" class="field-help identity-help">Add a gene or condition, or both.</p>
                   <div class="suggestion-pair"><label for="suggestGene">Gene<input id="suggestGene" name="gene" placeholder="Gene symbol" maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="suggestionIdentityHelp"></label><label for="suggestCondition">Condition<input id="suggestCondition" name="condition" placeholder="Condition name" maxlength="160" autocomplete="off" aria-describedby="suggestionIdentityHelp"></label></div>
-                  <label for="suggestPhenotypes">Clinical features<textarea id="suggestPhenotypes" name="phenotypes" placeholder="What signs or symptoms help explain the connection?" rows="3" maxlength="2000" required aria-describedby="suggestionClinicalHelp"></textarea></label><p id="suggestionClinicalHelp" class="field-help clinical-help">Use plain language, or include Human Phenotype Ontology (HPO) terms.</p>
+                  <label for="suggestPhenotypes">Clinical features <span class="field-required">required</span><textarea id="suggestPhenotypes" name="phenotypes" placeholder="What signs or symptoms help explain the connection?" rows="3" maxlength="2000" required aria-describedby="suggestionClinicalHelp"></textarea></label><p id="suggestionClinicalHelp" class="field-help clinical-help">Use plain language, or include Human Phenotype Ontology (HPO) terms.</p>
                   <label for="suggestReference">Reference <span class="field-optional">optional</span><input id="suggestReference" name="reference" type="url" placeholder="Publication or OMIM link" maxlength="500" autocomplete="off"></label>
                   <details class="suggestion-contact-disclosure"><summary>Add contact details <span class="field-optional">optional</span></summary><div class="suggestion-pair suggestion-contact"><label for="suggestName">Name<input id="suggestName" name="name" maxlength="100" autocomplete="name"></label><label for="suggestEmail">Email<input id="suggestEmail" name="email" type="email" maxlength="254" autocomplete="email" aria-describedby="suggestionPrivacy"></label></div></details>
                   <div class="suggestion-trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>

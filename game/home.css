@@ -312,7 +312,7 @@
 
 .suggestion-card input::placeholder,
 .suggestion-card textarea::placeholder {
-  color: #6a7b93;
+  color: #52657f;
   opacity: 1;
   font-size: 15px;
   font-weight: 400;
@@ -323,7 +323,7 @@
   border-color: #0043fd;
 }
 
-.field-optional {
+.field-optional, .field-required {
   margin-left: 4px;
   color: #66778f;
   font-size: 13px;
@@ -552,3 +552,5 @@
 .discovery-heading h2{margin:0;font-size:24px;line-height:1.25;letter-spacing:-.025em;font-weight:650}
 .discovery-heading p{margin:0;color:#617089;font-size:13px;line-height:1.5;white-space:nowrap}
 @media(max-width:760px){.home-discoveries{padding-top:26px}.discovery-heading h2{font-size:22px}.discovery-heading p{font-size:12px}}
+
+.suggestion-card .clinical-help { margin-bottom: 14px; }

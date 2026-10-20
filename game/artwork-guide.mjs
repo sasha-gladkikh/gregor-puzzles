@@ -40,13 +40,13 @@ function svgNode(tag,attrs={}){
   return element;
 }
 
-export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},onFocus=()=>{}}={}){
+export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},onPlayback=()=>{},onFocus=()=>{}}={}){
   const steps=artworkGuideSteps(round);
   const caption=node('section','artwork-guide-caption');caption.hidden=!guided;
   caption.setAttribute('aria-label','Illustration guide');
-  const heading=node('div','artwork-guide-heading'),label=node('span','artwork-guide-label','Follow the image');
+  const heading=node('div','artwork-guide-heading'),label=node('span','artwork-guide-label','Image notes');
   const count=node('span','artwork-guide-count');count.setAttribute('aria-hidden','true');
-  const hold=node('button','artwork-guide-hold','Pause guide');hold.type='button';hold.setAttribute('aria-pressed','false');
+  const hold=node('button','artwork-guide-hold','Resume animation');hold.type='button';
   heading.append(label,count,hold);
   const copy=node('div','artwork-guide-copy');copy.setAttribute('aria-live','polite');copy.setAttribute('aria-atomic','true');
   const current=node('div','artwork-guide-content');
@@ -70,7 +70,7 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
   const ring=svgNode('ellipse',{cx:0,cy:0,rx:67,ry:54,fill:'#4488ee','fill-opacity':.035,stroke:'#326dde','stroke-width':1.6,'vector-effect':'non-scaling-stroke'});
   focus.append(halo,ring);parent?.append(focus);
   let enabled=Boolean(guided),origin=0,lastKey=null,disposed=false,lastOpacity=null,lastPosition=null,lastProgress=null;
-  let manualIndex=null,heldAge=0,lastElapsed=0,reduced=false,currentIndex=0,currentFocus=null;
+  let manualIndex=null,lastElapsed=0,reduced=false,playing=false,currentIndex=0,currentFocus=null;
   const setOpacity=value=>{if(value!==lastOpacity){focus.setAttribute('opacity',value);lastOpacity=value;}};
   const hideFocus=()=>setOpacity('0');
   const api={
@@ -78,19 +78,19 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
     get enabled(){return enabled;},
     get focus(){return currentFocus;},
     get index(){return enabled&&currentIndex<steps.length?currentIndex:-1;},
-    restart(elapsed=0){if(disposed)return;enabled=true;origin=Math.max(0,elapsed);manualIndex=null;heldAge=0;lastKey=null;},
+    restart(elapsed=0){if(disposed)return;enabled=true;origin=Math.max(0,elapsed);manualIndex=null;lastKey=null;},
     resume(elapsed=0){
-      if(manualIndex!==null){origin=Math.max(0,elapsed)-steps[manualIndex].at-heldAge;manualIndex=null;heldAge=0;lastKey=null;}
+      if(manualIndex!==null){origin=Math.max(0,elapsed)-steps[manualIndex].at;manualIndex=null;lastKey=null;}
     },
     select(index){
       if(disposed||!steps.length)return;
-      enabled=true;manualIndex=Math.max(0,Math.min(steps.length-1,index));heldAge=0;lastKey=null;
-      api.draw(lastElapsed,{reduced});
+      enabled=true;manualIndex=Math.max(0,Math.min(steps.length-1,index));lastKey=null;
+      api.draw(lastElapsed,{reduced,playing});
     },
     cancel(){enabled=false;caption.hidden=true;hideFocus();lastKey=null;currentFocus=null;onFocus(-1);},
-    draw(elapsed,{reduced:nextReduced=false}={}){
+    draw(elapsed,{reduced:nextReduced=false,playing:nextPlaying=playing}={}){
       if(disposed)return;
-      lastElapsed=elapsed;reduced=nextReduced;
+      lastElapsed=elapsed;reduced=nextReduced;playing=nextPlaying;
       if(caption.hidden===enabled)caption.hidden=!enabled;
       if(!enabled){hideFocus();currentFocus=null;return;}
       const manual=reduced||manualIndex!==null;
@@ -98,13 +98,12 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
       currentIndex=state.done?steps.length:state.index;
       currentFocus=state.done?null:{...steps[state.index],opacity:state.opacity};
       hold.hidden=reduced||state.done;
-      hold.textContent=manual?'Resume guide':'Pause guide';
-      hold.setAttribute('aria-pressed',String(manual));
+      hold.textContent=manual?'Continue notes':playing?'Pause animation':elapsed>0?'Resume animation':'Animate image';
       const key=state.done?'done':`${manual?'static-':''}${state.index}`;
       if(key!==lastKey){
         lastKey=key;caption.dataset.phase=key;
         onFocus(state.done?-1:state.index);
-        label.textContent=state.done?'In the image':manual?'Image notes':'Follow the image';
+        label.textContent=state.done?'In the image':'Image notes';
         count.textContent=state.done?'':`${state.index+1} / ${steps.length}`;
         title.textContent=state.done?round.illustration.takeaway:`${state.index+1}. ${steps[state.index].title}`;
         body.textContent=state.done?'':steps[state.index].text;
@@ -125,10 +124,10 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
   };
   const navigate=index=>{if(disposed)return;onNavigate(index);api.select(index);};
   hold.onclick=()=>{
-    if(disposed||reduced)return;
+    if(disposed||reduced||currentIndex>=steps.length)return;
     onNavigate(currentIndex);
-    if(manualIndex===null){const age=Math.max(0,lastElapsed-origin-steps[currentIndex].at);api.select(currentIndex);heldAge=age;}
-    else {api.resume(lastElapsed);api.draw(lastElapsed,{reduced});}
+    if(manualIndex!==null){api.resume(lastElapsed);onPlayback(true);api.draw(lastElapsed,{reduced,playing});}
+    else onPlayback(!playing);
   };
   previous.onclick=()=>navigate(currentIndex===steps.length?0:currentIndex-1);
   next.onclick=()=>navigate(currentIndex+1);

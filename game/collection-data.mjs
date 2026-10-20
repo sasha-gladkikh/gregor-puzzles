@@ -22,7 +22,7 @@ export const splicingPairComplete=progress=>['05','08'].every(number=>progress.s
 export function guideClinicalSections(round){
  const profile=round.clinical;
  return [
-  {label:'Mechanism',text:profile.connection},
+  {label:'Normal role',text:profile.normalRole.text},
   {label:'Clinical pattern',text:profile.pattern},
   {label:'Onset and course',text:profile.onset},
   {label:'Clinical significance',text:profile.significance.text},
@@ -34,7 +34,7 @@ export function guideReferences(round){
  const profile=round.clinical;
  // The condition's OMIM link is already shown once in the guide header.
  const omim=`https://omim.org/entry/${round.omim}`;
- const urls=[...profile.connectionSources,...round.molecular.mechanism.sourceUrl,...round.molecular.variantType.sourceUrl,profile.patternSource,...profile.significance.sources,...profile.family.sources,round.illustration.source,round.illustration.noteSource].filter(url=>url&&url!==omim);
+ const urls=[...profile.normalRole.sources,...round.molecular.mechanism.sourceUrl,...round.molecular.variantType.sourceUrl,profile.patternSource,...profile.significance.sources,...profile.family.sources,round.illustration.source,round.illustration.noteSource].filter(url=>url&&url!==omim);
  return [...new Set(urls)].map(url=>({url,label:round.sources.find(([,value])=>value===url)?.[0]??'Supporting reference'}));
 }
 

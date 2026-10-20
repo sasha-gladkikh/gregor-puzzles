@@ -100,6 +100,8 @@ const entries=[
 // Unambiguous product names are accepted and mapped back to the gene at completion.
 const products={CLCN1:['ClC-1'],GJB2:['Cx26','connexin 26'],SLC29A3:['ENT3'],'RNU4-2':['U4','U4 snRNA'],CACNA1A:['CaV2.1'],PTPN11:['SHP-2'],RNU4ATAC:['U4atac'],STING1:['STING'],FGF14:['FHF4']};
 const referenceNames={
+ 'https://www.ilae.org/guidelines/guidelines-and-reports/ilae-classification-of-the-epilepsies':'Scheffer et al. · ILAE epilepsy classification (2017)',
+ 'https://pubmed.ncbi.nlm.nih.gov/40510867/':'Holling et al. · ReNU syndrome bone phenotype (2025)',
  'https://pmc.ncbi.nlm.nih.gov/articles/PMC6019066/':'Park & MacKinnon · human ClC-1 channel structure (2018)',
  'https://pubmed.ncbi.nlm.nih.gov/26479198/':'Weis et al. · eIF6 release from the ribosome (2015)',
  'https://www.nature.com/articles/s41467-024-50785-0':'Zhan et al. · human spliceosome activation (2024)',
@@ -136,7 +138,7 @@ export const allRounds=entries.map((r,index)=>{
  const sources=new Map([[`https://omim.org/entry/${r.omim}`,`OMIM · condition #${r.omim}`],...r.sources.map(([label,url])=>[url,label])]);
  if(!sources.has(illustration.source))sources.set(illustration.source,referenceNames[illustration.source]??'Illustration · mechanistic reference');
  if(illustration.noteSource&&!sources.has(illustration.noteSource))sources.set(illustration.noteSource,referenceNames[illustration.noteSource]??'Spliceosome · assembly and activation');
- const urls=[clinical.patternSource,...clinical.connectionSources,...[clinical.significance,clinical.family,clinical.interpretation].flatMap(claim=>claim.sources),...clinical.features.map(f=>f.source),...clinical.pearls.flatMap(p=>p.sources),...(clinical.extraSources??[])];
+ const urls=[clinical.patternSource,...(clinical.overviewSources??[]),...clinical.normalRole.sources,...clinical.connectionSources,...[clinical.significance,clinical.family,clinical.interpretation].flatMap(claim=>claim.sources),...clinical.features.map(f=>f.source),...clinical.pearls.flatMap(p=>p.sources),...(clinical.extraSources??[])];
  for(const url of urls) if(!sources.has(url)) sources.set(url,referenceNames[url]??(url.includes('ncbi.nlm.nih.gov/books')?'GeneReviews · clinical and molecular reference':url.includes('medlineplus')?'MedlinePlus Genetics · clinical reference':'Primary research · clinical and molecular evidence'));
  for(const [label,url] of interpretationSources)if(!sources.has(url))sources.set(url,label);
  for(const url of [...molecular.mechanism.sourceUrl,...molecular.variantType.sourceUrl])if(!sources.has(url))sources.set(url,molecularSources.find(([,source])=>source===url)?.[0]??referenceNames[url]??'Molecular mechanism and variant evidence');

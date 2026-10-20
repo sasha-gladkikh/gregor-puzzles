@@ -31,3 +31,9 @@ export function latestClueKey(round,placed){
   const note=notes.at(-1);
   return clue&&(!note||clue.at>=note.at)?`clue:${clue.at}`:note?`landmark:${note.index}`:'';
 }
+
+export function discoveryCounts(round,placed){
+ const clues=round.clues.filter(clue=>clue.at<=placed.length).length;
+ const notes=round.illustration.landmarks.filter(note=>placed.includes(landmarkPiece(note))).length;
+ return {clues,notes,total:clues+notes};
+}

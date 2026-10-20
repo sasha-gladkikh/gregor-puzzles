@@ -40,7 +40,7 @@ export function scientificFigure(round){
 
 export function clinicalDetails(round){
  const section=node('section',null,'science-section clinical-details');section.id='clinical-pattern';
- const p=round.clinical,heading=node('h3','Clinical features');heading.append(referenceMarks(round,p.patternSource,'Clinical overview and onset'));
+ const p=round.clinical,heading=node('h3','Clinical features');heading.append(referenceMarks(round,[p.patternSource,...(p.overviewSources??[])],'Clinical overview and onset'));
  section.append(heading,node('p',p.overview,'science-lead'));
  const onset=node('p',null,'science-onset');onset.append(node('strong','Onset and course. '),document.createTextNode(p.onset));section.append(onset);
  const significance=node('aside',null,'science-significance'),significanceHeading=node('h4','Clinical significance');significanceHeading.append(referenceMarks(round,p.significance.sources,'Clinical significance'));significance.append(significanceHeading,node('p',p.significance.text));section.append(significance);
@@ -124,10 +124,17 @@ export function scientificPrinciples(round){
  details.append(referenceMarks(round,sources,'Principles of variant interpretation'));return details;
 }
 
+export function scientificCheckNote(round){
+ const checks=[`Clinical profile and HPO terminology checked ${round.checked}`];
+ if(round.molecular?.checked)checks.push(`Mechanism and variant teaching checked ${round.molecular.checked}`);
+ if(round.clinical?.updatesChecked)checks.push(`Selected clinical additions checked ${round.clinical.updatesChecked}`);
+ return `${checks.join('. ')}.`;
+}
+
 export function scientificReferences(round){
  const section=node('section',null,'science-section');section.id='references';section.append(referenceList(round));
  const support=node('p',null,'science-community');support.append(document.createTextNode('Community resource: '),citation(round.community[1],round.community[0]));
- section.append(support,node('p',round.sourceNote,'science-context'),node('p',`Literature and HPO terminology checked ${round.checked}.`,'science-context'));return section;
+ section.append(support,node('p',round.sourceNote,'science-context'),node('p',scientificCheckNote(round),'science-context'));return section;
 }
 
 export function scientificMechanisms(round){

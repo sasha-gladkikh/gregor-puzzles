@@ -13,3 +13,4 @@ button.term-help:focus-visible,button.connection-term:focus-visible{outline:2px 
 .board.concept-focused .artwork-guide-overlay{opacity:0!important}
 @media(prefers-reduced-motion:reduce){.concept-focus-ring{transition:none}}
 @media(forced-colors:active){.term-lens{border-color:CanvasText;background:Canvas;color:CanvasText}.concept-focus-ring{border-color:Highlight;box-shadow:none;background:none}}
+@media print{.term-lens{display:none!important}button.term-help,button.connection-term{display:inline!important;color:inherit!important;text-decoration:none!important;background:none!important;outline:none!important}}

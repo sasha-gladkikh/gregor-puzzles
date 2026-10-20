@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {legacyPlayURL,nextHomeRound} from '../game/home-state.mjs';
+import {legacyPlayURL,nextHomeRound,homePlayURL} from '../game/home-state.mjs';
 test('home keeps old direct round links, search options, and fragment intact',()=>{
  assert.equal(legacyPlayURL(''),null);assert.equal(legacyPlayURL('?utm_source=poster','#leaderboard'),null);
  assert.equal(legacyPlayURL('?level=08&mode=timed','#figure'),'./play.html?level=08&mode=timed#figure');
@@ -55,4 +55,14 @@ test('a replay remains resumable after all rounds have been earned',async()=>{
  assert.equal(homeDestination(progress).label,'Continue replay · 02');
  assert.equal(homeDestination(progress).href,'./play.html?level=02');
  assert.match(homeDestination(progress).detail,/3 of 12 pieces placed. Completion saved/);
+});
+
+test('header Play follows interrupted rounds and replays even when the collection is earned',()=>{
+ const items=[{round:{number:'01'},done:true,pieces:12},{round:{number:'08'},done:true,replaying:true,pieces:1}];
+ assert.equal(homePlayURL(items),'./play.html?level=08');
+ items[1].replaying=false;items[1].pieces=12;
+ assert.equal(homePlayURL(items),'./play.html?level=01');
+ items[1].done=false;items[1].pieces=4;
+ assert.equal(homePlayURL(items),'./play.html?level=08');
+ assert.equal(homePlayURL([]),'./collection.html');
 });

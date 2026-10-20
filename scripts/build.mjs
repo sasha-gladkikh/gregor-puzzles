@@ -7,7 +7,7 @@ import {prepareHomeHTML} from './homepage.mjs';
 const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
-  'index.html', 'home.mjs', 'home.css', 'home-state.mjs', 'home-demo.mjs', 'home-demo.css', 'journeys.mjs', 'puzzle-geometry.mjs', 'suggestions.mjs', 'community.mjs', 'player.mjs', 'player-ui.mjs', 'player.css', 'play.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
+  'index.html', 'home.mjs', 'home.css', 'home-state.mjs', 'home-demo.mjs', 'home-demo.css', 'journeys.mjs', 'puzzle-geometry.mjs', 'suggestions.mjs', 'community.mjs', 'player.mjs', 'player-ui.mjs', 'time.mjs', 'player.css', 'play.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
   'rounds.mjs', 'molecular-clues.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs', 'round-save.mjs', 'round-carousel.mjs', 'round-carousel.css',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {allRounds} from '../game/rounds.mjs';
 import {hpoTerms} from '../game/hpo-terms.mjs';
 import {roundReferences} from '../game/clinical-ui.mjs';
-import {clinicalDetails,hasExactHpoTitle,groupedClinicalFeatures,scientificFamily,scientificInterpretation,scientificReferences} from '../game/science-ui.mjs';
+import {clinicalDetails,hasExactHpoTitle,groupedClinicalFeatures,scientificFamily,scientificInterpretation,scientificReferences,scientificCheckNote} from '../game/science-ui.mjs';
 import {interpretationPrinciples} from '../game/interpretation.mjs';
 
 // Small DOM adapter lets the content projections be exercised without a browser.
@@ -19,6 +19,13 @@ class Element{
 }
 const walk=element=>[element,...element.children.filter(child=>child instanceof Element).flatMap(walk)];
 const document={createElement:tag=>new Element(tag),createTextNode:text=>String(text)};
+
+test('source dates distinguish baseline terminology, mechanism teaching, and selected clinical additions',()=>{
+ const baseline={checked:'15 October 2026',molecular:{checked:'20 October 2026'},clinical:{}};
+ assert.equal(scientificCheckNote(baseline),'Clinical profile and HPO terminology checked 15 October 2026. Mechanism and variant teaching checked 20 October 2026.');
+ assert.equal(scientificCheckNote({...baseline,clinical:{updatesChecked:'21 October 2026'}}),'Clinical profile and HPO terminology checked 15 October 2026. Mechanism and variant teaching checked 20 October 2026. Selected clinical additions checked 21 October 2026.');
+ assert.equal(scientificCheckNote({checked:'15 October 2026'}),'Clinical profile and HPO terminology checked 15 October 2026.');
+});
 
 test('clinical feature groups preserve every finding exactly once, with explicit teaching emphasis',()=>{
  for(const round of allRounds){

@@ -23,7 +23,7 @@ function roundCard({round,done,replaying,pieces},first){
  if(done)meta.append(node('span','Complete','collection-card-status'));
  const title=node('h2',round.gene);body.append(meta,title,node('p',round.condition,'collection-card-description'));
  const action=node('div',null,'collection-card-action');
- action.append(node('span',replaying?`Continue replay · ${pieces} / 12`:done?'View round':pieces?`Continue · ${pieces} / 12`:first?'Start here':'Start round'));
+ action.append(node('span',replaying?`Continue replay · ${pieces} / 12`:done?'Review round':pieces?`Continue · ${pieces} / 12`:first?'Start here':'Start round'));
  const arrow=node('span','→');arrow.setAttribute('aria-hidden','true');action.append(arrow);
  body.append(action);link.append(figure,body);card.append(link);return card;
 }

@@ -40,12 +40,12 @@ for(const round of rounds){
  const transcript=node('div',null,'review-image-transcript');for(const [i,landmark]of round.illustration.landmarks.entries())transcript.append(node('h4',`${i+1}. ${landmark.title}`),node('p',landmark.text));visual.append(transcript);
  const extras=[mechanismFigure(round),spliceCompare(round,()=>true)].filter(Boolean);if(extras.length){const diagrams=panel('Mechanism figures');diagrams.append(...extras);visual.append(diagrams);}
  const content=node('div',null,'review-content');
- const objective=node('section',null,'review-objective');objective.append(node('h3','Teaching objective'),node('p',p.objective),node('p',p.overview,'clinical-overview'));content.append(objective);
+ const objective=node('section',null,'review-objective'),overview=node('p',p.overview,'clinical-overview');overview.append(referenceMarks(round,[p.patternSource,...(p.overviewSources??[])],'Clinical overview'));objective.append(node('h3','Teaching objective'),node('p',p.objective),overview);content.append(objective);
  const reveal=panel('Completion card wording',true);
  const connection=node('p',geneClueConnection(round));connection.append(referenceMarks(round,p.connectionSources,'How the picture connects'));
  reveal.append(node('h4','How the picture connects'),connection);content.append(reveal);
  const context=panel('Clinical context wording');
- const completionParts=[['How it connects',p.connection,p.connectionSources],['Clinical pattern',p.pattern,[p.patternSource]],['Onset and course',p.onset,[p.patternSource]],['Clinical significance',p.significance.text,p.significance.sources],['Family implications',p.family.text,p.family.sources],['Remember',p.memory,[p.patternSource,...p.connectionSources]]];
+ const completionParts=[['Normal role',p.normalRole.text,p.normalRole.sources],['How it connects',p.connection,p.connectionSources],['Clinical pattern',p.pattern,[p.patternSource]],['Onset and course',p.onset,[p.patternSource]],['Clinical significance',p.significance.text,p.significance.sources],['Family implications',p.family.text,p.family.sources],['Remember',p.memory,[p.patternSource,...p.connectionSources]]];
  const sourceKeys=completionParts.map(([, ,urls])=>[...new Set(urls)].sort().join('|'));
  for(const [i,[label,text,urls]]of completionParts.entries()){
   const paragraph=node('p',text);
