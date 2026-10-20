@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {summarizeAttempts,publicPlayers,rankPlayers,allocatedRoundTimes,playerTime,playerDateTime} from '../game/player-ui.mjs';
+import {summarizeAttempts,publicPlayers,rankPlayers,allocatedRoundTimes,leaderboardAttemptCount,playerTime,playerDateTime} from '../game/player-ui.mjs';
 
 const catalogue=Array.from({length:10},(_,index)=>({number:String(index+1).padStart(2,'0')}));
 const attempt=(roundNumber,overrides={})=>({roundNumber,status:'completed',mode:'timed',route:'image',eligible:true,seconds:60,...overrides});
@@ -88,6 +88,17 @@ test('a reported complete total ranks alongside faster and slower measured total
  assert.equal(sasha.totalBestSeconds,563);assert.equal(sasha.totalSource,'reported');assert.equal(sasha.roundsCompleted,10);
  assert.equal(sasha.attempts,0);assert.equal(sasha.timedRounds,0);assert.deepEqual(sasha.best,[]);assert.equal(sasha.latestAt,null);
  assert.equal(sasha.reportedResult.submittedAt,'2026-10-19T23:59:00.000Z');
+ assert.equal(leaderboardAttemptCount(sasha),10);
+});
+
+test('displayed attempts combine the reported run with tracked replays without creating history',()=>{
+ const players=publicList([
+  player('Reported',{attempts:2,reportedResult:report()}),
+  player('Tracked',{attempts:12}),
+  player('Invalid',{attempts:3,reportedResult:report({roundsCompleted:9})})
+ ]);
+ assert.deepEqual(players.map(leaderboardAttemptCount),[12,12,3]);
+ assert.deepEqual(players.map(entry=>entry.attempts),[2,12,3]);
 });
 
 test('allocated splits preserve each duration and yield to measured round results',()=>{

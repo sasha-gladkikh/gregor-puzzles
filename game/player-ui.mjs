@@ -38,6 +38,10 @@ function reportedResult(value,allowed){
 const shortPlayerTime=seconds=>playerTime(seconds).replace(/\.000$/,'');
 const rankedTotal=(player,roundCount)=>player.roundsCompleted===roundCount&&(player.timedRounds===roundCount||player.reportedResult?.roundsCompleted===roundCount)&&nonnegative(player.totalBestSeconds)?millis(player.totalBestSeconds):Infinity;
 
+export function leaderboardAttemptCount(player){
+ return player.attempts+(player.reportedResult?.roundsCompleted??0);
+}
+
 export function allocatedRoundTimes(players,selection){
  if(selection==='overall')return [];
  return players.flatMap(player=>{
@@ -294,7 +298,7 @@ export function initPlayerUI(catalogue){
    if(selection.value==='overall'){
     const rounds=node('td',undefined,'player-round-count');rounds.append(node('strong',`${player.roundsCompleted}/${catalogue.length}`),node('small',`${player.roundsPlayed} played`));
     const total=node('td',undefined,'score-time');total.append(node('span',player.totalSource==='reported'?shortPlayerTime(player.totalBestSeconds):playerTime(player.totalBestSeconds)),node('small',player.totalSource==='reported'?`${catalogue.length} rounds`:`${player.timedRounds}/${catalogue.length} timed`));
-    const attempts=node('td',player.reportedResult&&!player.attempts?'—':String(player.attempts),'player-attempt-count');if(player.reportedResult&&!player.attempts)attempts.setAttribute('aria-label','No recorded attempts');
+    const attempts=node('td',String(leaderboardAttemptCount(player)),'player-attempt-count');
     row.append(rounds,attempts,total);
    }else{
     const best=player.best.find(entry=>entry.roundNumber===selection.value),time=node('td',undefined,'score-time');time.append(node('span',playerTime(best.seconds)));
