@@ -6,7 +6,7 @@ const clamp=value=>Math.max(0,Math.min(1,value));
 const smooth=value=>{const t=clamp(value);return t*t*(3-2*t);};
 
 export function artworkGuideSteps(round){
-  let at=650;
+  let at=1100;
   return round.illustration.landmarks.map((point,index)=>{
     // Allow reading time rather than racing every caption at a fixed rate.
     const words=`${point.title} ${point.text}`.trim().split(/\s+/).length;
@@ -37,7 +37,7 @@ function svgNode(tag,attrs={}){
   return element;
 }
 
-export function createArtworkGuide(round,{parent,guided=false}={}){
+export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},onFocus=()=>{}}={}){
   const steps=artworkGuideSteps(round);
   const caption=node('section','artwork-guide-caption');caption.hidden=!guided;
   caption.setAttribute('aria-label','Illustration guide');
@@ -55,32 +55,54 @@ export function createArtworkGuide(round,{parent,guided=false}={}){
     copy.append(measure);return measure;
   });
   const track=node('div','artwork-guide-progress');track.setAttribute('aria-hidden','true');
-  const fill=node('span');track.append(fill);caption.append(heading,copy,track);
+  const fill=node('span');track.append(fill);
+  const navigation=node('div','artwork-guide-navigation');navigation.setAttribute('role','group');navigation.setAttribute('aria-label','Image notes');
+  const previous=node('button','tool','← Previous'),next=node('button','tool','Next →');
+  previous.type=next.type='button';
+  navigation.append(previous,next);caption.append(heading,copy,track,navigation);
   const focus=svgNode('g',{'data-artwork-guide-focus':'','aria-hidden':'true',opacity:0});
   const halo=svgNode('ellipse',{cx:0,cy:0,rx:67,ry:54,fill:'none',stroke:'#fff','stroke-width':5,'vector-effect':'non-scaling-stroke'});
   const ring=svgNode('ellipse',{cx:0,cy:0,rx:67,ry:54,fill:'#4488ee','fill-opacity':.035,stroke:'#326dde','stroke-width':1.6,'vector-effect':'non-scaling-stroke'});
   focus.append(halo,ring);parent?.append(focus);
   let enabled=Boolean(guided),origin=0,lastKey=null,disposed=false,lastOpacity=null,lastPosition=null,lastProgress=null;
+  let manualIndex=null,lastElapsed=0,reduced=false,currentIndex=0,currentFocus=null;
   const setOpacity=value=>{if(value!==lastOpacity){focus.setAttribute('opacity',value);lastOpacity=value;}};
   const hideFocus=()=>setOpacity('0');
-  return {
+  const api={
     caption,
     get enabled(){return enabled;},
-    restart(elapsed=0){if(disposed)return;enabled=true;origin=Math.max(0,elapsed);lastKey=null;},
-    cancel(){enabled=false;caption.hidden=true;hideFocus();lastKey=null;},
-    draw(elapsed,{reduced=false}={}){
+    get focus(){return currentFocus;},
+    get index(){return enabled&&currentIndex<steps.length?currentIndex:-1;},
+    restart(elapsed=0){if(disposed)return;enabled=true;origin=Math.max(0,elapsed);manualIndex=null;lastKey=null;},
+    resume(elapsed=0){
+      if(manualIndex!==null){origin=Math.max(0,elapsed)-steps[manualIndex].at;manualIndex=null;lastKey=null;}
+    },
+    select(index){
+      if(disposed||!steps.length)return;
+      enabled=true;manualIndex=Math.max(0,Math.min(steps.length-1,index));lastKey=null;
+      api.draw(lastElapsed,{reduced});
+    },
+    cancel(){enabled=false;caption.hidden=true;hideFocus();lastKey=null;currentFocus=null;onFocus(-1);},
+    draw(elapsed,{reduced:nextReduced=false}={}){
       if(disposed)return;
+      lastElapsed=elapsed;reduced=nextReduced;
       if(caption.hidden===enabled)caption.hidden=!enabled;
-      if(!enabled){hideFocus();return;}
-      const state=reduced?{index:-1,done:true,progress:1,opacity:0}:sampleArtworkGuide(steps,elapsed-origin);
-      const key=reduced?'static':state.done?'done':String(state.index);
+      if(!enabled){hideFocus();currentFocus=null;return;}
+      const manual=reduced||manualIndex!==null;
+      const state=manual?{index:manualIndex??0,done:!steps.length,progress:0,opacity:.85}:sampleArtworkGuide(steps,elapsed-origin);
+      currentIndex=state.done?steps.length:state.index;
+      currentFocus=state.done?null:{...steps[state.index],opacity:state.opacity};
+      const key=state.done?'done':`${manual?'static-':''}${state.index}`;
       if(key!==lastKey){
         lastKey=key;caption.dataset.phase=key;
-        label.textContent=state.done?'In the image':'Follow the image';
+        onFocus(state.done?-1:state.index);
+        label.textContent=state.done?'In the image':manual?'Image notes':'Follow the image';
         count.textContent=state.done?'':`${state.index+1} / ${steps.length}`;
         title.textContent=state.done?round.illustration.takeaway:`${state.index+1}. ${steps[state.index].title}`;
         body.textContent=state.done?'':steps[state.index].text;
-        body.hidden=state.done;track.hidden=state.done;
+        body.hidden=state.done;track.hidden=state.done||manual;
+        previous.disabled=currentIndex===0;next.disabled=currentIndex>=steps.length-1;
+        previous.textContent=state.done?'Review image notes':'← Previous';
         for(const measure of measurements)measure.hidden=state.done;
       }
       const progress=state.progress.toFixed(4);
@@ -93,4 +115,8 @@ export function createArtworkGuide(round,{parent,guided=false}={}){
     },
     dispose(){disposed=true;enabled=false;focus.remove();caption.remove();}
   };
+  const navigate=index=>{if(disposed)return;onNavigate(index);api.select(index);};
+  previous.onclick=()=>navigate(currentIndex===steps.length?0:currentIndex-1);
+  next.onclick=()=>navigate(currentIndex+1);
+  return api;
 }

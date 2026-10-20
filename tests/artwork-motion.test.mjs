@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkEntrance,sampleArtworkStage,createArtworkStage,createArtworkRemovalPatch,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork} from '../game/artwork-motion.mjs';
+import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkEntrance,sampleArtworkStage,createArtworkStage,createArtworkRemovalPatch,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork,animatedArtwork} from '../game/artwork-motion.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -258,7 +258,7 @@ test('the completion frame rises smoothly without scaling the image or replaying
     assert.equal('scale' in frame,false);
   }
   assert.ok(sampleArtworkStage(1500).halo>.1);
-  assert.ok(sampleArtworkStage(1500).glintOpacity>.7);
+  assert.ok(sampleArtworkStage(1500).glintOpacity>.5&&sampleArtworkStage(1500).glintOpacity<.65);
 });
 
 test('frame levitation stays continuous at both its introduction and later cycle boundaries',()=>{
@@ -274,26 +274,52 @@ test('the presentation light crosses the illustration once at restrained opacity
   for(let elapsed=280;elapsed<=2480;elapsed+=20){
     const frame=sampleArtworkStage(elapsed);
     assert.ok(frame.sweepX>=previous);previous=frame.sweepX;
-    assert.ok(frame.sweepOpacity>=0&&frame.sweepOpacity<=.24);
+    assert.ok(frame.sweepOpacity>=0&&frame.sweepOpacity<=.12);
   }
-  assert.ok(sampleArtworkStage(1380).sweepOpacity>.23);
+  assert.ok(sampleArtworkStage(1380).sweepOpacity>.11);
   for(const elapsed of [2480,3000,7800,15600,120000])assert.equal(sampleArtworkStage(elapsed).sweepOpacity,0);
 });
 
 function stageDocument(){
   class Element{
-    constructor(tag){this.tag=tag;this.children=[];this.attrs=new Map();this.styles=new Map();this.classes=new Set();this.parent=null;this.attributeWrites=0;
+    constructor(tag){this.tag=tag;this.children=[];this.attrs=new Map();this.styles=new Map();this.classes=new Set();this.parent=null;this.attributeWrites=0;this.dataset={};this.listeners=new Map();
       this.style={setProperty:(name,value)=>this.styles.set(name,value),removeProperty:name=>this.styles.delete(name)};
       this.classList={add:(...names)=>names.forEach(name=>this.classes.add(name)),remove:(...names)=>names.forEach(name=>this.classes.delete(name)),toggle:(name,value)=>value?this.classes.add(name):this.classes.delete(name)};
     }
     setAttribute(name,value){this.attributeWrites++;this.attrs.set(name,String(value));}
     removeAttribute(name){this.attributeWrites++;this.attrs.delete(name);}
     append(...nodes){for(const node of nodes){node.parent=this;this.children.push(node);}}
+    replaceChildren(...nodes){this.children=[];this.append(...nodes);}
+    addEventListener(name,callback){this.listeners.set(name,callback);}
+    removeEventListener(name){this.listeners.delete(name);}
     remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
   }
   const frame=new Element('div'),board=new Element('div');frame.append(board);board.closest=()=>frame;
-  return {document:{createElementNS:(_ns,tag)=>new Element(tag)},board,frame};
+  return {document:{createElementNS:(_ns,tag)=>new Element(tag),createElement:tag=>new Element(tag),addEventListener(){},removeEventListener(){}},board,frame};
 }
+
+test('all ten completed illustrations keep their readable guide under reduced motion without loading or animating assets',async context=>{
+  const keys=['document','matchMedia','IntersectionObserver','Image','requestAnimationFrame'];
+  const saved=new Map(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+  context.after(()=>{for(const [key,descriptor] of saved)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];});
+  globalThis.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
+  globalThis.IntersectionObserver=class{observe(){}disconnect(){}};
+  globalThis.Image=class{constructor(){assert.fail('reduced motion must not request animation images');}};
+  globalThis.requestAnimationFrame=()=>assert.fail('a static guide must not start a clock');
+  for(const round of allRounds){
+    const {document,board,frame}=stageDocument();globalThis.document=document;
+    const animation=animatedArtwork(round,{board,guided:true});
+    assert.equal(await animation.ready,false);
+    assert.equal(animation.element.hidden,true);assert.equal(animation.controls.hidden,false);
+    assert.equal(animation.controls.children[0].hidden,true,'motion toggle is hidden');
+    assert.equal(animation.controls.children[2].textContent,'Read image notes');
+    assert.equal(animation.caption.hidden,false);
+    animation.focusLandmark(1);assert.equal(animation.caption.dataset.phase,'static-1');assert.equal(animation.element.dataset.guideIndex,'1');
+    animation.caption.children[3].children[1].onclick();
+    assert.equal(animation.caption.dataset.phase,'static-2');assert.equal(animation.element.dataset.guideIndex,'2');
+    animation.dispose();assert.deepEqual(frame.children,[board]);assert.equal(board.children.length,0);
+  }
+});
 
 test('cleanup retains the original footprint when a replacement cutout has a tighter boundary',context=>{
   const previous=globalThis.document,{document}=stageDocument();
@@ -382,7 +408,7 @@ test('settled light effects stop DOM updates and reset can replay the complete a
   const stage=createArtworkStage(board,'settled-stage'),sheen=board.children[0];
   const writes=element=>element.attributeWrites+element.children.reduce((sum,child)=>sum+writes(child),0);
   stage.activate();stage.draw(1380,{x:0,y:0});
-  assert.equal(sheen.attrs.has('hidden'),false);assert.ok(Number(sheen.attrs.get('opacity'))>.23);
+  assert.equal(sheen.attrs.has('hidden'),false);assert.ok(Number(sheen.attrs.get('opacity'))>.11);
   stage.draw(3000,{x:0,y:0});assert.equal(sheen.attrs.has('hidden'),true);
   const settledWrites=writes(frame),previousY=frame.styles.get('--artwork-stage-y');
   for(let time=3016;time<9000;time+=16)stage.draw(time,{x:0,y:0});
@@ -486,11 +512,14 @@ test('edge-cut exon artwork covers the canvas boundary throughout its vertical m
 
 test('all ten clean background plates retain 4:3 framing within native raster rounding',async()=>{
   for(const [number,scene] of Object.entries(artworkMotionData)){
-    const path=new URL(scene.cleanPath??`./artwork/motion/${number}-clean.png`,new URL('../game/artwork-motion.mjs',import.meta.url));
+    const path=new URL(scene.cleanPath??`./artwork/motion/${number}-clean.webp`,new URL('../game/artwork-motion.mjs',import.meta.url));
     const bytes=await readFile(path);
     assert.ok(bytes.length>1000,`${number}: missing or empty clean plate`);
-    assert.deepEqual(bytes.subarray(0,8),Buffer.from([137,80,78,71,13,10,26,10]),`${number}: clean plate must be a valid PNG`);
-    const width=bytes.readUInt32BE(16),height=bytes.readUInt32BE(20);
+    assert.equal(bytes.toString('ascii',0,4),'RIFF',`${number}: valid WebP container`);
+    assert.equal(bytes.toString('ascii',8,12),'WEBP',`${number}: WebP file type`);
+    assert.equal(bytes.toString('ascii',12,16),'VP8L',`${number}: lossless image bitstream`);
+    assert.equal(bytes[20],0x2f,`${number}: valid lossless signature`);
+    const dimensions=bytes.readUInt32LE(21),width=(dimensions&0x3fff)+1,height=((dimensions>>>14)&0x3fff)+1;
     assert.ok(width>=800&&height>=600,`${number}: clean plate too small for the stage`);
     assert.ok(Math.abs((width/height)/(4/3)-1)<=.002,`${number}: framing exceeds 0.2% raster-rounding tolerance`);
   }

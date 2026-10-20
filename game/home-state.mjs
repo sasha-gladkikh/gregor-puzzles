@@ -22,7 +22,7 @@ export function homeDestination(items) {
   const continuing=next.pieces>0;
   return {
     href:`./play.html?level=${next.round.number}`,
-    label:continuing?`Continue round ${next.round.number}`:done?'Play your next puzzle':'Play your first puzzle',
+    label:continuing?`Continue round ${next.round.number}`:done?'Play your next puzzle':'Start a puzzle',
     detail:continuing?`${next.round.topic} · ${next.pieces} of 12 pieces placed.`:done?`${done} of ${items.length} rounds complete · Progress saved in this browser.`:`${items.length} rounds · 12 pieces each · No account required`,
   };
 }

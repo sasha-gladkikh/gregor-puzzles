@@ -10,7 +10,7 @@ export function geneBank(rounds,{onChoose=()=>{}}={}){
     .sort((a,b)=>a.localeCompare(b,'en',{numeric:true}));
   const events=new AbortController();
   const element=node('form',null,'gene-bank');
-  const intro=node('p','Choose a candidate, then check your answer. A correct answer completes this round.','gene-bank-intro');
+  const intro=node('p','Recognize a gene from the clues? Naming it completes the image. You can also keep assembling the puzzle.','gene-bank-intro');
   intro.id=`${id}-intro`;
   const hintPanel=node('section',null,'gene-bank-hint');
   hintPanel.hidden=true;hintPanel.tabIndex=-1;

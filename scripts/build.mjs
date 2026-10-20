@@ -13,7 +13,7 @@ const files = [
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork-source.mjs', 'artwork.css',
   'experience.mjs', 'experience.css', 'share-card.mjs', 'share-card.css',
-  'gene-bank.mjs', 'gene-bank.css', 'gene-hints.mjs', 'play-learning.mjs', 'discovery-motion.mjs', 'discovery-motion.css',
+  'gene-bank.mjs', 'gene-bank.css', 'gene-hints.mjs', 'play-learning.mjs', 'teaching-data.mjs', 'teaching-ui.mjs', 'teaching-ui.css', 'discovery-motion.mjs', 'discovery-motion.css',
   'artwork-motion.mjs', 'artwork-motion.css', 'artwork-motion-data.mjs', 'artwork-guide.mjs',
   'artwork-detail.mjs', 'artwork-detail-data.mjs', 'artwork-detail-membranes.mjs',
   'artwork-particle-contours.mjs', 'artwork-object-contours.mjs',

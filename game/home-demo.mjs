@@ -22,12 +22,13 @@ export function demoFits(x, y) {
   return Number.isFinite(x) && Number.isFinite(y) && Math.hypot(x - SLOT.x, y - SLOT.y) <= 74;
 }
 
-/** Use the same destination as the main Play action; never write round progress. */
+/** Preserve returning players' destination; distinguish a preview from a full round. */
 export function demoDestination(destination) {
-  const fallback = {href: './play.html?level=01', label: 'Play your first puzzle'};
+  const fallback = {href: './play.html?level=01', label: 'Play a full round'};
   if (typeof destination === 'string') destination = {href: destination};
   if (!destination || !/^\.\/(?:play|collection)\.html(?:[?#].*)?$/.test(destination.href ?? '')) return fallback;
-  return {href: destination.href, label: typeof destination.label === 'string' && destination.label.trim() ? destination.label.trim() : fallback.label};
+  const label = typeof destination.label === 'string' ? destination.label.trim() : '';
+  return {href: destination.href, label: label && label !== 'Start a puzzle' ? label : fallback.label};
 }
 
 // The inspection lens deliberately uses the reviewed, anonymous play wording.
@@ -124,8 +125,8 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     resetPiece();
     board.setAttribute('aria-label', BOARD_DESCRIPTION);
     setPhase('ready');
-    heading.textContent = 'Place the final piece';
-    count.textContent = '11 / 12';
+    heading.textContent = 'Try one piece';
+    count.textContent = 'Preview';
     illustration.style.opacity = '0';
     seams.style.opacity = '';
     highlight.style.opacity = '0';
@@ -137,7 +138,7 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     place.removeAttribute('aria-disabled');
     explore.hidden = true;
     replay.hidden = true;
-    status.textContent = 'Preview ready. Place the final piece.';
+    status.textContent = 'One-piece preview. Place the final piece to see how discoveries unfold.';
   }
 
   async function revealClue(run) {
@@ -163,7 +164,7 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     if (!state.alive || run !== state.run) return;
     marker.hidden = true;
     clue.style.opacity = '';
-    status.textContent = `Puzzle complete. ${CLUE}`;
+    status.textContent = `Preview complete. ${CLUE} Your round progress has not changed.`;
     if (state.visible && !document.hidden && !state.inspection) void sound.play('discovery');
     void animate(clue, [{opacity: .25, transform: 'translateY(4px)'}, {opacity: 1, transform: 'translateY(0)'}], {duration: 300, easing: 'ease-out'});
   }
@@ -213,7 +214,7 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     }
     board.setAttribute('aria-label', 'A completed puzzle showing a chloride channel in a muscle-cell membrane.');
     heading.textContent = 'A connection revealed';
-    count.textContent = '12 / 12';
+    count.textContent = 'Preview complete';
     place.hidden = true;
     explore.hidden = false;
     replay.hidden = false;
@@ -282,9 +283,9 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     host.classList.add('home-demo');
     host.replaceChildren();
     const bar = html('div', 'demo-bar');
-    heading = html('span', 'demo-instruction', 'Place the final piece');
+    heading = html('span', 'demo-instruction', 'Try one piece');
     heading.id = `${prefix}-instruction`;
-    count = html('span', 'demo-count', '11 / 12');
+    count = html('span', 'demo-count', 'Preview');
     count.setAttribute('aria-hidden', 'true');
     bar.append(heading, count);
     board = html('div', 'demo-board');

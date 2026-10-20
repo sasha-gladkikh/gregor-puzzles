@@ -2,11 +2,11 @@
 // gives a placed piece a quiet visual relationship with the newly revealed row.
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
 const keyOf=item=>item.kind==='landmark'?`landmark:${item.index}`:`clue:${item.at}:${item.label??item.title}`;
-const SEQUENCE_DURATION=1560,TRAVEL_DELAY=340,TRAVEL_DURATION=720;
+const SEQUENCE_DURATION=1160,TRAVEL_DELAY=100,TRAVEL_DURATION=620;
 const NS='http://www.w3.org/2000/svg';
 let instance=0;
 
-export function createDiscoveryQueue({onShow=()=>{},onEmpty=()=>{},duration=SEQUENCE_DURATION,schedule=setTimeout,cancel=clearTimeout,enabled=()=>true,batch=false}={}){
+export function createDiscoveryQueue({onShow=()=>{},onEmpty=()=>{},duration=SEQUENCE_DURATION,schedule=setTimeout,cancel=clearTimeout,enabled=()=>true,batch=false,coalesce=false}={}){
   const groups=[],seen=new Set();let timer=null,generation=0;
   function next(){
     if(!groups.length){onEmpty();return;}
@@ -28,7 +28,12 @@ export function createDiscoveryQueue({onShow=()=>{},onEmpty=()=>{},duration=SEQU
       if(!enabled())return;
       const empty=groups.length===0,fresh=[];
       for(const item of incoming){const key=keyOf(item);if(!seen.has(key)){seen.add(key);fresh.push(item);}}
-      if(fresh.length)groups.push(...(batch?[fresh]:fresh.map(item=>[item])));
+      // Keep the current handoff and the latest placement. The permanent list
+      // retains every clue; a player placing quickly should not queue old tours.
+      if(fresh.length){
+        if(coalesce&&groups.length>1)groups.splice(1);
+        groups.push(...(batch?[fresh]:fresh.map(item=>[item])));
+      }
       if(empty&&groups.length)next();
     },
     clear
@@ -79,7 +84,7 @@ export function discoveryGeometry({origin,destination,view,targetPoint}){
 }
 function svg(tag,attributes={}){const element=document.createElementNS(NS,tag);for(const [key,value] of Object.entries(attributes))element.setAttribute(key,String(value));return element;}
 
-export function discoveryMotion({board,target=()=>null,schedule=setTimeout,cancel=clearTimeout}){
+export function discoveryMotion({board,target=()=>null,isCurrent=()=>true,schedule=setTimeout,cancel=clearTimeout}){
   const effects=new Set(),animations=new Set(),checks=new Set(),media=matchMedia('(prefers-reduced-motion: reduce)');
   let disposed=false,effectGeneration=0;
   const enabled=()=>!disposed&&!media.matches&&!document.hidden&&!document.querySelector('dialog[open]');
@@ -100,13 +105,13 @@ export function discoveryMotion({board,target=()=>null,schedule=setTimeout,cance
       const destination=target(item);
       // A resolver may synchronously clear/dispose while the queue is showing.
       if(generation!==effectGeneration||!enabled())return;
-      if(!destination?.isConnected||destinations.has(destination))continue;
+      if(!destination?.isConnected||destinations.has(destination)||!isCurrent(item,destination))continue;
       destinations.add(destination);
       const badge=destination.querySelector('.clue-number,.strip-badge'),badgeRect=badge?.getBoundingClientRect();
       const targetPoint=badgeRect?.width?{x:badgeRect.left+badgeRect.width/2,y:badgeRect.top+badgeRect.height/2}:null;
       const bounds=destination.getBoundingClientRect();
       const geometry=discoveryGeometry({origin,destination:bounds,view,targetPoint});
-      if(geometry)connections.push({...geometry,destination,anchor:{left:bounds.left,top:bounds.top,width:bounds.width,height:bounds.height}});
+      if(geometry)connections.push({...geometry,item,destination,anchor:{left:bounds.left,top:bounds.top,width:bounds.width,height:bounds.height}});
     }
     if(!connections.length)return;
     // New clues can move an existing image-note row without scrolling. Check at
@@ -116,8 +121,8 @@ export function discoveryMotion({board,target=()=>null,schedule=setTimeout,cance
       const timer=schedule(()=>{
         checks.delete(timer);
         if(generation!==effectGeneration)return;
-        const stable=enabled()&&connections.every(({destination,anchor})=>{
-          if(!destination.isConnected)return false;
+        const stable=enabled()&&connections.every(({item,destination,anchor})=>{
+          if(!destination.isConnected||!isCurrent(item,destination))return false;
           const current=destination.getBoundingClientRect();
           return ['left','top','width','height'].every(key=>Math.abs(current[key]-anchor[key])<=2);
         });
@@ -136,7 +141,7 @@ export function discoveryMotion({board,target=()=>null,schedule=setTimeout,cance
     const source=svg('g',{class:'discovery-source'}),start=connections[0].start;
     source.append(svg('circle',{r:23,fill:`url(#${id}-glow)`}),svg('circle',{r:14,class:'discovery-source-ring'}),svg('circle',{r:2.4,class:'discovery-source-core'}));layer.append(source);
     const sourceTransform=scale=>`translate(${start.x}px,${start.y}px) scale(${scale})`;
-    animate(source,[{opacity:0,transform:sourceTransform(.78)},{opacity:1,transform:sourceTransform(1),offset:.32},{opacity:0,transform:sourceTransform(1.12)}],{delay:180,duration:510,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'});
+    animate(source,[{opacity:0,transform:sourceTransform(.78)},{opacity:1,transform:sourceTransform(1),offset:.32},{opacity:0,transform:sourceTransform(1.12)}],{duration:350,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'});
     connections.forEach((geometry,index)=>{
       const {path,length,samples,bounds}=geometry,stagger=Math.min(index*55,110),delay=TRAVEL_DELAY+stagger;
       const guide=svg('path',{d:path,class:'discovery-guide'});layer.append(guide);
@@ -152,7 +157,7 @@ export function discoveryMotion({board,target=()=>null,schedule=setTimeout,cance
       animate(landing,[{opacity:0},{opacity:1,offset:.28},{opacity:0}],{delay:delay+TRAVEL_DURATION-60,duration:440,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'});
     });
   }
-  const queue=createDiscoveryQueue({onShow:flight,onEmpty:removeEffects,enabled,batch:true,schedule,cancel});
+  const queue=createDiscoveryQueue({onShow:flight,onEmpty:removeEffects,enabled,batch:true,coalesce:true,schedule,cancel});
   const clear=()=>queue.clear();
   const visibility=()=>{if(document.hidden)clear();};
   const dialogChange=event=>{if(event.target?.matches?.('dialog')&&event.target.open)clear();};

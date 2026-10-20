@@ -21,10 +21,11 @@ test('drag snapping accepts the intended channel slot and rejects the loose-piec
 
 
 test('preview action preserves the main page destination and returning-player label', () => {
+  assert.deepEqual(demoDestination({href: './play.html?level=01', label: 'Start a puzzle'}), {href: './play.html?level=01', label: 'Play a full round'});
   assert.deepEqual(demoDestination({href: './play.html?level=07', label: 'Continue · 7 of 12 pieces'}), {href: './play.html?level=07', label: 'Continue · 7 of 12 pieces'});
   assert.deepEqual(demoDestination({href: './collection.html', label: 'Play another round'}), {href: './collection.html', label: 'Play another round'});
   for (const value of [null, {}, {href: 'javascript:alert(1)'}, {href: 'https://example.com/'}, {href: './about.html'}]) {
-    assert.deepEqual(demoDestination(value), {href: './play.html?level=01', label: 'Play your first puzzle'});
+    assert.deepEqual(demoDestination(value), {href: './play.html?level=01', label: 'Play a full round'});
   }
 });
 

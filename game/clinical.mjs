@@ -11,6 +11,9 @@ const MC=gr('NBK1355'),GJ=gr('NBK1272'),SL=med('condition/histiocytosis-lymphade
 const GJEXP='https://pmc.ncbi.nlm.nih.gov/articles/PMC7235630/',SLP='https://pubmed.ncbi.nlm.nih.gov/24172204/',SLH='https://pmc.ncbi.nlm.nih.gov/articles/PMC2561939/',CACOHORT='https://pmc.ncbi.nlm.nih.gov/articles/PMC9458680/',ROEYE='https://pmc.ncbi.nlm.nih.gov/articles/PMC10697969/',ROIMMUNE='https://pmc.ncbi.nlm.nih.gov/articles/PMC6230649/',STLUNG='https://pubmed.ncbi.nlm.nih.gov/33569478/';
 export const clinicalProfiles={
  CLCN1:{
+  playPatternTitle:'Muscle stiffness after rest',
+  playPattern:'Stiffness after rest can ease with repeated movement. Brief weakness and enlarged muscles may also occur.',
+  completionConnection:'CLCN1 makes the ClC-1 chloride channel in skeletal muscle. Reduced channel function can prolong muscle electrical activity and delay relaxation, producing the stiffness of recessive myotonia congenita.',
   objective:'Distinguish delayed muscle relaxation from weakness, and interpret inheritance at the variant–condition level.',
   overview:'Childhood muscle stiffness with a warm-up effect suggests a skeletal muscle channelopathy. Transient weakness after rest adds an important clue to the recessive form.',
   onset:'Usually childhood; later presentation is possible. Stiffness fluctuates with activity and rest.',
@@ -34,6 +37,9 @@ export const clinicalProfiles={
   pearls:[pearl('One gene, more than one inheritance pattern','CLCN1 has dominant and recessive associations. A single finding must be interpreted using the specific variant, zygosity, segregation, and phenotype.',med('gene/clcn1')),pearl('A useful differential','Myotonic dystrophy has a different molecular basis and may include systemic findings such as cataracts or cardiac conduction disease. Muscle stiffness alone does not distinguish these conditions.',MC)]
  },
  GJB2:{
+  playPatternTitle:'Hearing loss in both ears',
+  playPattern:'Inner-ear hearing loss can range from mild to profound and may change over time. Skin findings are not expected in this selected association.',
+  completionConnection:'GJB2 makes connexin 26, which forms gap junctions between neighboring inner-ear cells. These channels share ions and small molecules. Reduced function can cause hearing loss; this round focuses on the recessive nonsyndromic association.',
   objective:'Recognize the recessive nonsyndromic hearing profile and distinguish an informative negative finding from an exclusion rule.',
   overview:'This selected recessive association primarily affects hearing. It should be kept distinct from dominant or syndromic GJB2 conditions.',
   onset:'Often congenital or prelingual. Mild hearing loss may be recognized later; some genotypes show progression.',
@@ -56,6 +62,9 @@ export const clinicalProfiles={
   pearls:[pearl('Gene versus condition','Other GJB2 variants cause dominant or syndromic disorders. A gene-level search should not merge their skin findings into this recessive hearing profile.',med('gene/gjb2')),pearl('Testing context','Some DFNB1-region deletions affect regulatory elements needed for GJB2 expression. Finding one coding allele may justify reviewing the assay’s coverage and deletion analysis.',GJ)]
  },
  SLC29A3:{
+  playPatternTitle:'Skin, immune, and endocrine findings',
+  playPattern:'Darkened skin patches with increased hair growth can occur alongside enlarged lymph nodes, diabetes, or hearing loss. The combination varies.',
+  completionConnection:'SLC29A3 makes ENT3, a transporter that helps move nucleosides out of lysosomes. Reduced function is associated with a variable pattern of skin, immune, and endocrine findings. How altered transport produces every feature remains under study.',
   objective:'Recognize a variable histiocytosis spectrum and avoid treating its historical syndrome labels as mutually exclusive.',
   overview:'Pigmented, hairy skin lesions can accompany histiocytosis, lymphadenopathy, and endocrine or hearing findings. Different combinations were historically assigned separate syndrome names.',
   onset:'Presentation varies with the component features and can evolve over childhood and later life.',
@@ -81,6 +90,9 @@ export const clinicalProfiles={
   pearls:[pearl('Unifying historical diagnoses','H syndrome, PHID, Faisalabad histiocytosis, and familial Rosai-Dorfman disease overlap within the SLC29A3 spectrum.',SL),pearl('Mechanism has an evidence boundary','ENT3 supports intracellular nucleoside handling. How altered transport produces every clinical feature is not fully resolved; the diagram is not a proven linear pathway to all symptoms.',med('gene/slc29a3'))]
  },
  SBDS:{
+  playPatternTitle:'Pancreas and blood-cell production',
+  playPattern:'Reduced pancreatic digestive enzymes and low blood-cell counts may occur with growth and bone differences.',
+  completionConnection:'SBDS makes a factor that helps remove a blocker from the large ribosomal subunit so working ribosomes can form. Reduced function is associated with pancreatic dysfunction, low blood-cell counts, and skeletal findings in Shwachman-Diamond syndrome.',
   objective:'Connect pancreatic and marrow findings to ribosome maturation, then recognize the molecular testing complication from a homologous pseudogene.',
   overview:'Exocrine pancreatic dysfunction plus cytopenias is the central clinical connection. Growth and skeletal findings broaden the pattern; myeloid malignancy predisposition is an important part of the natural history.',
   onset:'Often recognized in infancy or childhood. Pancreatic manifestations can improve with age while hematologic risks persist.',
@@ -106,6 +118,9 @@ export const clinicalProfiles={
   pearls:[pearl('Natural history matters','Marrow failure and predisposition to myelodysplastic syndrome or acute myeloid leukemia are clinically important. They are risks, not inevitable outcomes.',med('condition/shwachman-diamond-syndrome')),pearl('Pseudogene-aware analysis','Gene conversion from the homologous pseudogene can introduce pathogenic sequence into SBDS. Mapping, allele assignment, and phase require attention during analysis.',SD)]
  },
  'RNU4-2':{
+  playPatternTitle:'Developmental delay from early life',
+  playPattern:'Developmental delay may occur with low muscle tone from birth, a smaller head size, feeding difficulties, and sometimes epilepsy.',
+  completionConnection:'RNU4-2 makes U4, a small RNA that helps the major spliceosome assemble. ReNU-associated variants alter this functional RNA and disturb RNA splicing, contributing to a neurodevelopmental condition with variable effects on development, feeding, and movement.',
   objective:'Recognize a neurodevelopmental phenotype associated with functional RNA and explain why coding-focused analysis can miss its cause.',
   overview:'Developmental disability with neonatal hypotonia, microcephaly, feeding difficulty, and variable epilepsy is a useful pattern. This round concerns the dominant ReNU association.',
   onset:'Usually infancy or childhood. Severity and associated neurologic, growth, and feeding findings vary.',
@@ -132,6 +147,9 @@ export const clinicalProfiles={
   pearls:[pearl('Mechanism beyond the coding genome','Dominant ReNU variants affect a constrained region of U4 RNA involved in major-spliceosome function. A normal protein consequence annotation does not imply a benign RNA effect.','https://www.nature.com/articles/s41586-024-07773-7'),pearl('Do not merge the recessive association','Biallelic RNU4-2 variants have a separately described recessive neurodevelopmental association. Its findings and mechanism should not be pooled indiscriminately with dominant ReNU.','https://www.nature.com/articles/s41588-026-02554-6')]
  },
  CACNA1A:{
+  playPatternTitle:'Developmental delay with epilepsy',
+  playPattern:'Developmental delay and epilepsy may occur with low muscle tone, coordination difficulties, or unusual eye movements.',
+  completionConnection:'CACNA1A makes the pore-forming part of the CaV2.1 calcium channel. Calcium entry into a nerve ending helps trigger release of chemical signals. Variants can disrupt this communication and cause developmental and epileptic encephalopathy; channel activity may increase or decrease.',
   objective:'Distinguish a gene’s broad phenotypic spectrum from a specific encephalopathy association and avoid inferring functional direction from the gene name.',
   overview:'Developmental impairment and epilepsy define the selected association. Hypotonia and cerebellar signs can add support, but their absence does not exclude a neurodevelopmental presentation.',
   onset:'Developmental and epileptic presentations often begin early. Seizure type, course, and cerebellar involvement vary.',
@@ -156,14 +174,17 @@ export const clinicalProfiles={
   pearls:[pearl('Variant-specific mechanism','Both increased and decreased channel function have been reported in severe developmental epileptic encephalopathies. Functional direction cannot be read from the gene symbol alone.',CA),pearl('Keep associations distinct','Episodic ataxia, familial hemiplegic migraine, and spinocerebellar ataxia 6 are other CACNA1A associations. Their defining findings or repeat mechanism should not be assigned to every DEE42 presentation.',med('gene/cacna1a'))]
  },
  PTPN11:{
+  playPatternTitle:'Heart valve and growth differences',
+  playPattern:'Narrowing at the pulmonary valve can occur with short stature, chest-shape differences, and a tendency to bruise or bleed.',
+  completionConnection:'PTPN11 makes SHP-2, a protein that regulates RAS/MAPK signaling. Noonan-associated variants can increase its activity, altering signals that guide growth and development. Heart, growth, and other findings vary among individuals.',
   objective:'Recognize a Noonan phenotype and interpret gene-specific cardiac associations without turning them into exclusion rules.',
   overview:'Short stature, pulmonary valve stenosis, chest shape differences, and bleeding tendency form a useful pattern. Several RAS/MAPK genes cause overlapping phenotypes.',
   onset:'Congenital findings may prompt recognition in infancy; growth, developmental, or bleeding features may become clearer later.',
   pattern:'Pulmonary valve stenosis with short stature, pectus changes, and a bleeding tendency.',patternSource:NO,
-  memory:'A RASopathy is a pathway diagnosis; the gene and allele refine the phenotype and mechanism.',
+  memory:'Altered growth signaling can connect heart and growth findings. The specific gene and variant refine the explanation.',
   patternTitle:'Pulmonary stenosis with short stature',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/9491886/','https://pubmed.ncbi.nlm.nih.gov/16358218/'],
   connection:'SHP-2 is a phosphatase that helps turn RAS/MAPK signaling up. At rest, one of its own domains blocks the active site; many Noonan-associated variants weaken that block and increase activity.',
-  connectionSources:['https://pubmed.ncbi.nlm.nih.gov/9491886/','https://pubmed.ncbi.nlm.nih.gov/16358218/'],
+  connectionSources:['https://pubmed.ncbi.nlm.nih.gov/9491886/','https://pubmed.ncbi.nlm.nih.gov/16358218/',NO],
   significance:evidence('Cardiac findings and bleeding tendency have clinical significance even when growth or learning differences are subtle. Facial features change with age; the same visible pattern is not expected throughout life.',NO),
   family:evidence('A parent heterozygous for the causal variant has a 50% transmission chance per pregnancy; clinical expression can differ within a family. De novo findings also occur, and parental germline mosaicism can leave a residual recurrence risk.',NO),
   interpretation:evidence('Noonan syndrome is genetically heterogeneous. Match the PTPN11 allele to its germline association and mechanism rather than transferring findings from multiple-lentigines syndromes or somatic cancer variants.',NO,med('gene/ptpn11')),
@@ -181,13 +202,16 @@ export const clinicalProfiles={
   pearls:[pearl('Cardiac enrichment is not a rule','Pulmonary stenosis is associated with PTPN11-related Noonan syndrome; hypertrophic cardiomyopathy is less frequent than in some other Noonan gene groups. Neither observation is an absolute rule.','https://pubmed.ncbi.nlm.nih.gov/24534818/'),pearl('Allelic context','PTPN11 also has other associations, including Noonan syndrome with multiple lentigines and hematologic disease. Do not transfer the same mechanistic explanation to every allele.',med('gene/ptpn11'))]
  },
  RNU4ATAC:{
+  playPatternTitle:'Skeleton, immunity, and vision',
+  playPattern:'Changes in the spine and ends of bones can occur with impaired antibody responses, retinal disease, and reduced growth.',
+  completionConnection:'RNU4ATAC makes U4atac, an RNA needed to assemble the minor spliceosome. This machinery removes a specialized class of introns from RNA messages. Impaired processing can affect several organ systems, including the skeleton, immunity, and vision in Roifman syndrome.',
   objective:'Connect skeletal, immune, and retinal findings to minor-spliceosome dysfunction while distinguishing Roifman syndrome within a broader allelic spectrum.',
   overview:'The combination of spondyloepiphyseal dysplasia, impaired antibody responses, and retinal dystrophy is more informative than developmental delay alone. Growth restriction adds context.',
   onset:'Growth and skeletal findings can be early; immune and retinal manifestations may become apparent at different ages.',
   pattern:'Spondyloepiphyseal dysplasia plus antibody deficiency and retinal dystrophy, with growth restriction.',patternSource:ROP,
   memory:'Skeleton, antibodies, retina: connect three systems to the minor spliceosome.',
   patternTitle:'Skeleton, antibodies, and retina',caveat:1,extraSources:['https://pubmed.ncbi.nlm.nih.gov/23074130/'],
-  connection:'U4atac does the U4 job in the minor spliceosome, which removes the rare minor-class introns. Biallelic variants impair that processing across many transcripts at once, consistent with findings in several organ systems.',
+  connection:'RNU4ATAC makes U4atac, a functional RNA that helps assemble the minor spliceosome. This machinery removes a specialized, less common class of introns from RNA messages. Biallelic variants impair that processing across multiple transcripts, consistent with findings in several organ systems.',
   connectionSources:[ROP,'https://pubmed.ncbi.nlm.nih.gov/23074130/'],
   significance:evidence('Impaired antibody responses can lead to recurrent infections. Retinal disease may affect night vision and progress over time; skeletal, immune, and visual findings need not become apparent together.',ROIMMUNE,ROEYE),
   family:evidence('When both parents carry a pathogenic RNU4ATAC variant, each pregnancy has a 25% chance of inheriting both variants. The gene spans overlapping conditions, so the genotype and phenotype both inform counseling.',RO),
@@ -205,6 +229,9 @@ export const clinicalProfiles={
   pearls:[pearl('The RNA is the functional product','RNU4ATAC encodes U4atac RNA in the minor spliceosome. Disrupted processing of minor introns can affect many downstream transcripts.',ROP),pearl('One gene, a spectrum of conditions','Roifman syndrome, MOPD I, and Lowry-Wood syndrome fall within RNU4atac-opathy. Historical labels describe patterns with overlap; this round specifically teaches Roifman syndrome.',RO)]
  },
  STING1:{
+  playPatternTitle:'Skin and lung inflammation',
+  playPattern:'Inflammatory sores on fingers, toes, ears, or nose can accompany fever and lung disease. The affected organs and severity vary.',
+  completionConnection:'STING1 makes STING, an immune-signaling protein that moves from the endoplasmic reticulum to the Golgi during activation. SAVI-associated variants can keep the signal active without its usual trigger, sustaining inflammation that may affect skin, blood vessels, and lungs.',
   objective:'Recognize an inflammatory skin–lung pattern and distinguish excessive innate immune signaling from a simple loss of immune function.',
   overview:'Early inflammatory disease involving acral skin and lungs is a useful pattern. Severity and organ involvement differ, and the selected relationship is a dominant gain-of-function association.',
   onset:'Often begins in infancy. Skin and pulmonary findings can develop differently across individuals.',
@@ -228,6 +255,9 @@ export const clinicalProfiles={
   pearls:[pearl('Interferonopathy is a mechanistic category','Excessive signaling through STING can increase type I interferon activity. This explains why an immune gene may cause autoinflammation rather than a simple absence of immune responses.',STP),pearl('A molecular signature is supporting evidence','An interferon-stimulated gene signature supports pathway activation but is not uniquely diagnostic of this condition. The variant and clinical context still matter.',STP),pearl('Interferon is not the whole story','SAVI is grouped with the type I interferonopathies, and patients show an interferon signature. In mouse models, however, vasculopathy developed without IRF3, and lung disease depended on T cells rather than type I interferon. Interferon is central but may not explain every feature.','https://pubmed.ncbi.nlm.nih.gov/28951494/','https://pubmed.ncbi.nlm.nih.gov/30772497/')]
  },
  FGF14:{
+  playPatternTitle:'Later-onset balance difficulties',
+  playPattern:'Unsteady walking in adulthood may be preceded or accompanied by episodes of imbalance, double vision, and involuntary downward eye movements.',
+  completionConnection:'FGF14 makes a protein that helps regulate neuronal electrical activity. In SCA27B, the disease-associated change is an expanded GAA repeat in intron 1, outside the protein-coding sequence. This can cause later-onset balance and coordination difficulties; the picture compares two fixed repeat lengths.',
   objective:'Recognize a late-onset episodic-to-progressive ataxia pattern and explain why a repeat expansion can escape standard exome analysis.',
   overview:'Gait ataxia, episodic symptoms, and downbeat nystagmus are a useful combination. The selected association is an intronic repeat expansion, distinct from other sequence variants in the same gene.',
   onset:'Typically adult onset, often in later adulthood. Episodic symptoms may precede persistent gait ataxia.',

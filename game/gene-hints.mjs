@@ -1,50 +1,49 @@
-// Intermediate hints explain how to connect the image to a gene family or
-// process. They reuse the location/function teaching content and references
-// already attached to each round; the final explanation is shown after naming.
-// The SLC expansion was verified against the round's NLM gene reference:
-// https://medlineplus.gov/genetics/gene/slc29a3/
+// Requested hints add reasoning steps rather than repeat the unlocked clues.
+// Both steps remain anonymous; only the separately requested symbol hint names
+// a prefix. Claims reuse the mechanism and clinical references in each round.
 export const geneHintConnections={
   CLCN1:{
-    hint:'Match the cargo to the tissue: chloride ions moving through skeletal-muscle membranes. Look for a chloride-channel gene.',
-    connection:'CLCN1 encodes ClC-1. The skeletal-muscle location and chloride-channel function point to the same protein.'
+    biology:'The blue structure has two separate pores. Teal chloride ions are its cargo, and the fibers beneath it identify skeletal muscle.',
+    hint:'Connect stiffness to delayed relaxation: reduced chloride flow can let muscle electrical activity persist. Look for a muscle chloride-channel gene.'
   },
   GJB2:{
-    hint:'This channel links two neighboring cells. Look for a gap-junction gene whose protein supports communication in the cochlea.',
-    connection:'GJB2 encodes connexin 26. Its gap-junction channels connect neighboring cochlear cells, linking the location and communication clues.'
+    biology:'The amber particles pass directly from one cell into its neighbor. This is a shared channel, not a signal released into the space between cells.',
+    hint:'A gap junction connects the cells’ interiors. The relevant gene makes a connexin used by cells in the cochlea, the hearing organ of the inner ear.'
   },
   SLC29A3:{
-    hint:'SLC stands for solute carrier. This carrier moves nucleosides across lysosomal membranes, linking cellular recycling to membrane transport.',
-    connection:'SLC29A3 encodes ENT3, a nucleoside transporter found in lysosomal membranes. SLC means solute carrier: the location and transported material explain the clues.'
+    biology:'The amber cargo is smaller than the RNA fragments inside the compartment. The key task is returning these small recycling products to the rest of the cell.',
+    hint:'SLC stands for solute carrier. Look for a carrier of nucleosides, building blocks released from DNA and RNA, across lysosomal membranes.'
   },
   SBDS:{
-    hint:'The key step is removing a blocking factor from the large ribosomal subunit. Look for a maturation factor that helps the two subunits join.',
-    connection:'SBDS helps release eIF6 from the large ribosomal subunit. That connects the maturation clue to the two subunits joining in the image.'
+    biology:'Read the picture in order: remove the amber blocker, then allow the large blue and small teal subunits to join into protein-making machinery.',
+    hint:'The relevant gene helps ribosomes mature. Pancreatic dysfunction together with low blood-cell counts provides the clinical connection.'
   },
   'RNU4-2':{
-    hint:'The gene product is RNA itself. Look for a small nuclear RNA that participates in the major spliceosome.',
-    connection:'RNU4-2 encodes a U4 small nuclear RNA. Its role in the major spliceosome explains both the nuclear location and functional-RNA clues.'
+    biology:'The amber loop is removed from an RNA message, while the navy and teal segments join. Folded RNAs inside the blue complex are part of the machinery doing this work.',
+    hint:'Look among the RNA genes. Its product helps assemble the major spliceosome, the system that processes most introns; the functional product is not a protein.'
   },
   CACNA1A:{
-    hint:'Follow the signal from calcium entering a nerve ending to transmitter release. Look for a calcium-channel gene involved in synaptic communication.',
-    connection:'CACNA1A encodes the pore-forming subunit of CaV2.1. Calcium entry through this channel helps trigger neurotransmitter release.'
+    biology:'Follow two different cargos: teal calcium enters the nerve ending, then amber chemical signals leave it. Calcium entry helps trigger the release step.',
+    hint:'Look for the calcium-channel gene that builds the channel’s pore. Both increased and decreased channel activity can disturb neuronal communication.'
   },
   PTPN11:{
-    hint:'This regulator acts in the RAS / MAPK pathway. Look for a protein tyrosine phosphatase that helps relay growth signals.',
-    connection:'PTPN11 encodes SHP-2, a protein tyrosine phosphatase. Its regulation of RAS / MAPK connects the intracellular signaling and growth clues.'
+    biology:'The arrows trace a relay from the cell surface toward the nucleus. They show the flow of information, not a cargo moving through a membrane.',
+    hint:'The two-lobed regulator is a protein tyrosine phosphatase in the RAS/MAPK pathway. Increased activity can alter signals that guide growth and development.'
   },
   RNU4ATAC:{
-    hint:'The gene product is a functional RNA in the specialized minor spliceosome. Look for the RNA gene involved in processing minor introns.',
-    connection:'RNU4ATAC encodes U4atac RNA. Its place in the minor spliceosome explains the specialized RNA-processing clues.'
+    biology:'An intron loop is removed and the flanking RNA segments join. A specialized splicing system performs this task for a less common class of introns.',
+    hint:'Among the RNA genes, look for the one used by the minor spliceosome. Skeleton, antibody, and retinal findings help distinguish this clinical association.'
   },
   STING1:{
-    hint:'Focus on an intracellular immune-signaling protein that promotes an interferon response. In this round, gain-of-function variants leave signaling overactive.',
-    connection:'STING1 encodes STING. Its interferon-signaling role connects the intracellular membranes to the immune-response clue.'
+    biology:'Follow the route from the endoplasmic reticulum to the Golgi, then toward a nuclear response. The picture links membrane trafficking to immune signaling.',
+    hint:'The relevant protein can activate without its usual trigger when a variant increases its activity. Persistent signaling connects inflammation in the skin and lungs.'
   },
   FGF14:{
-    hint:'This round follows an expansion inside an intron. Look for a neuronal-signaling gene associated with an intronic repeat expansion.',
-    connection:'FGF14 encodes an intracellular neuronal protein. This round links its signaling role to a GAA repeat expansion in intron 1.'
+    biology:'Compare the two fixed DNA tracks. Their flanks match, but one amber repeat is longer; the drawing compares sequences rather than showing a repeat growing.',
+    hint:'The change is a GAA repeat expansion in intron 1 of a neuronal-signaling gene. Its location outside the coding sequence helps explain why standard exome sequencing can miss it.'
   }
 };
 
-// Completion-only text: these explanations intentionally name the answer.
-export function geneClueConnection(round){return geneHintConnections[round.gene]?.connection??round.geneBody;}
+// Completion-only text intentionally names the answer. Image solving and gene
+// recognition share the same visible gene → function → clinical explanation.
+export function geneClueConnection(round){return round.clinical?.completionConnection??round.clinical?.connection??round.geneBody;}

@@ -44,11 +44,12 @@ export function clinicalDetails(round){
  section.append(heading,node('p',p.overview,'science-lead'));
  const onset=node('p',null,'science-onset');onset.append(node('strong','Onset and course. '),document.createTextNode(p.onset));section.append(onset);
  const significance=node('aside',null,'science-significance'),significanceHeading=node('h4','Clinical significance');significanceHeading.append(referenceMarks(round,p.significance.sources,'Clinical significance'));significance.append(significanceHeading,node('p',p.significance.text));section.append(significance);
- section.append(node('p','Selected clinical findings and modifiers. Frequency, severity, and support needs vary; formal diagnostic criteria are condition-specific.','science-context'));
+ section.append(node('p','These selected findings describe a clinical pattern, not a diagnostic checklist. Expression varies; interpret the combination with the variant and family context.','science-context'));
  const features=node('div',null,'science-features');
  for(const {id,label,description,items} of groupedClinicalFeatures(p.features)){
   const group=node('section',null,'science-feature-group');group.dataset.group=id;
-  group.append(node('h4',label),node('p',description,'science-context'));
+  group.append(node('h4',label));
+  if(description)group.append(node('p',description,'science-context'));
   // Group claims with a shared source instead of repeating a source control per finding.
   const systems=new Map();for(const feature of items){if(!systems.has(feature.system))systems.set(feature.system,[]);systems.get(feature.system).push(feature);}
   for(const [system,findings] of systems){
@@ -69,15 +70,17 @@ export function clinicalDetails(round){
    }subsection.append(list);group.append(subsection);
   }features.append(group);
  }
- section.append(features,node('p','HPO links define standardized terms. They are vocabulary mappings, not a claim of formal disease annotation. Clinical qualifiers explain when a term is broader than the finding described.','science-context'));
+ const terminology=node('details',null,'science-detail-panel');
+ terminology.append(node('summary','About HPO terms'),node('p','Human Phenotype Ontology (HPO) links define standardized clinical terms. A link maps the wording to a term; it does not establish a formal disease annotation. Qualifiers identify terms that are broader than the described finding.','science-context'));
+ section.append(features,terminology);
  return section;
 }
 
 export function groupedClinicalFeatures(features){
  const groups=[
-  {id:'characteristic',label:'Characteristic pattern',description:'Findings emphasized for recognition. Interpret the combination and variant context; this is not a diagnostic checklist.'},
+  {id:'characteristic',label:'Characteristic pattern',description:''},
   {id:'variable',label:'Additional and variable findings',description:'Associated findings that broaden the phenotype; this grouping does not imply rarity.'},
-  {id:'course',label:'Course and clinical context',description:'Timing, triggers, and other modifiers help interpret the presentation.'}
+  {id:'course',label:'Course and clinical context',description:''}
  ];
  return groups.map(group=>({...group,items:features.filter(feature=>{
   const id=feature.group??(feature.system==='Course'?'course':feature.key?'characteristic':'variable');return id===group.id;

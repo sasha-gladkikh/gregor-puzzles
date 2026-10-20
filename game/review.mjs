@@ -6,6 +6,7 @@ import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {illustrationWalkthrough} from './experience.mjs';
 import {renderSite} from './site.mjs';
 import {scientificPrinciples} from './science-ui.mjs';
+import {geneClueConnection} from './gene-hints.mjs';
 const returnRound=findRound(new URLSearchParams(location.search).get('level')??'01',rounds);
 renderSite({active:'review',roundNumber:returnRound.number,playControls:false});
 const cards=[],indexLinks=[];
@@ -33,13 +34,16 @@ for(const round of rounds){
  const content=node('div',null,'review-content');
  const objective=node('section',null,'review-objective');objective.append(node('h3','Teaching objective'),node('p',p.objective),node('p',p.overview,'clinical-overview'));content.append(objective);
  const reveal=panel('Completion card wording',true);
- const completionParts=[['Mechanism',p.connection,p.connectionSources],['Clinical pattern',p.pattern,[p.patternSource]],['Onset and course',p.onset,[p.patternSource]],['Clinical significance',p.significance.text,p.significance.sources],['Family implications',p.family.text,p.family.sources]];
+ const connection=node('p',geneClueConnection(round));connection.append(referenceMarks(round,p.connectionSources,'How the picture connects'));
+ reveal.append(node('h4','How the picture connects'),connection);content.append(reveal);
+ const context=panel('Clinical context wording');
+ const completionParts=[['How it connects',p.connection,p.connectionSources],['Clinical pattern',p.pattern,[p.patternSource]],['Onset and course',p.onset,[p.patternSource]],['Clinical significance',p.significance.text,p.significance.sources],['Family implications',p.family.text,p.family.sources]];
  const sourceKeys=completionParts.map(([, ,urls])=>[...new Set(urls)].sort().join('|'));
  for(const [i,[label,text,urls]]of completionParts.entries()){
   const paragraph=node('p',text);
   if(sourceKeys[i]!==sourceKeys[i+1]){let start=i;while(start>0&&sourceKeys[start-1]===sourceKeys[i])start--;paragraph.append(referenceMarks(round,urls,completionParts.slice(start,i+1).map(([title])=>title).join(', ')));}
-  reveal.append(node('h4',label),paragraph);
- }content.append(reveal);
+  context.append(node('h4',label),paragraph);
+ }content.append(context);
  const interpretation=panel('Variant interpretation');const interpretationText=node('p',p.interpretation.text);interpretationText.append(referenceMarks(round,p.interpretation.sources,'Variant interpretation'));interpretation.append(interpretationText,scientificPrinciples(round));content.append(interpretation);
  const clues=panel('Progressive clues and image notes during play');const list=node('ol',null,'review-clues');
  for(const c of round.clues){const li=node('li');li.append(node('strong',`${c.at} pieces · ${c.label}: ${c.title}. `),document.createTextNode(c.body));if(c.sourceUrl)li.append(referenceMarks(round,c.sourceUrl,c.label));list.append(li);}clues.append(list);

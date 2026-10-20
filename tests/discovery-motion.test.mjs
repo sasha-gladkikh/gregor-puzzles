@@ -71,6 +71,15 @@ test('clearing a batch cancels every queued discovery and ignores its stale call
   assert.deepEqual(batches,[[clue,note],[note]]);
 });
 
+test('coalescing rapid placements keeps the active handoff and only the latest pending discovery',()=>{
+  const {queue,shown,advance}=setup({coalesce:true,batch:true});
+  const middle={kind:'clue',at:4,label:'Function'},latest={kind:'clue',at:6,label:'Connection'};
+  queue.push([clue]);queue.push([note,middle]);queue.push([latest]);
+  assert.equal(queue.size,2);assert.deepEqual(shown,[clue]);
+  advance();assert.deepEqual(shown,[clue,latest]);advance();assert.equal(queue.size,0);
+  queue.push([note,middle]);assert.equal(queue.size,0,'repainting an older discovery does not replay its omitted decoration');
+});
+
 const rect=(left,top,width,height)=>({left,top,width,height,right:left+width,bottom:top+height});
 const near=(actual,expected,tolerance=.01)=>assert.ok(Math.abs(actual-expected)<tolerance,`${actual} differs from ${expected}`);
 
@@ -133,20 +142,31 @@ function motionHarness(run){
 test('a moved row cancels the stale connection before landing, and the next queued placement still plays',()=>motionHarness(({body,board,row,animations,timers,schedule,cancel,at})=>{
   const motion=discoveryMotion({board,target:()=>row,schedule,cancel});
   motion.show([clue]);motion.show([note]);
-  assert.equal(body.children.length,1);at(320);
-  row.bounds=rect(850,410,300,125);at(970);
+  assert.equal(body.children.length,1);at(80);
+  row.bounds=rect(850,410,300,125);at(630);
   assert.equal(body.children.length,0);assert.ok(animations.every(animation=>animation.canceled));
   assert.equal(timers.size,1,'only the queue advancement remains');
-  at(1560);assert.equal(body.children.length,1,'later discoveries still receive their connection');
+  at(1160);assert.equal(body.children.length,1,'later discoveries still receive their connection');
   motion.dispose();assert.equal(body.children.length,0);assert.equal(timers.size,0);
 }));
 
 test('clear cancels pending geometry checks as well as motion, and stale checks cannot remove a later flight',()=>motionHarness(({body,board,row,timers,schedule,cancel})=>{
   const motion=discoveryMotion({board,target:()=>row,schedule,cancel});motion.show([clue]);
-  const oldCheck=[...timers.values()].find(timer=>timer.delay===970).callback;
+  const oldCheck=[...timers.values()].find(timer=>timer.delay===630).callback;
   motion.clear();assert.equal(timers.size,0);assert.equal(body.children.length,0);
   motion.show([note]);oldCheck();assert.equal(body.children.length,1);
   motion.dispose();assert.equal(timers.size,0);
+}));
+
+test('a reused compact panel cannot receive an older clue even when its geometry is unchanged',()=>motionHarness(({body,board,row,schedule,cancel,at})=>{
+  let current=clue;
+  const motion=discoveryMotion({board,target:()=>row,isCurrent:item=>item.kind===current.kind&&item.at===current.at&&item.index===current.index,schedule,cancel});
+  motion.show([clue]);assert.equal(body.children.length,1);
+  current=note;at(630);assert.equal(body.children.length,0,'content identity is validated again before landing');
+  motion.show([note]);at(1160);assert.equal(body.children.length,1);
+  motion.clear();current=note;motion.show([clue]);
+  assert.equal(body.children.length,0,'stale queued content cannot start a new flight');
+  motion.dispose();
 }));
 
 test('synchronous cancellation inside the target resolver cannot recreate a decorative layer',()=>motionHarness(({body,board,row,timers,schedule,cancel})=>{

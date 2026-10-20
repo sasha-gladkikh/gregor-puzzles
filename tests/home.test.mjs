@@ -16,7 +16,7 @@ test('home resumes unfinished work before an untouched round without resetting p
 test('home destination distinguishes new, interrupted, next and completed visits',async()=>{
  const {homeDestination}=await import('../game/home-state.mjs');
  const items=[{round:{number:'01',topic:'Membrane transport'},done:false,pieces:0},{round:{number:'06',topic:'Synaptic communication'},done:false,pieces:0}];
- assert.equal(homeDestination(items).label,'Play your first puzzle');
+ assert.equal(homeDestination(items).label,'Start a puzzle');
  items[1].pieces=4;
  assert.deepEqual(homeDestination(items),{href:'./play.html?level=06',label:'Continue round 06',detail:'Synaptic communication · 4 of 12 pieces placed.'});
  items[1].done=true;items[1].pieces=12;

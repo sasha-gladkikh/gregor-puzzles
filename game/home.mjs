@@ -53,10 +53,9 @@ function initHome(){
  }
  progress();
  window.addEventListener('pageshow',progress);
- window.addEventListener('storage',progress);
+ window.addEventListener('storage',event=>{if(event.key===null||catalogue.some(round=>round.saveKey===event.key))progress();});
  const openSuggestion=()=>{if(location.hash==='#suggest')$('suggestionDisclosure').open=true;};
  openSuggestion();window.addEventListener('hashchange',openSuggestion);
- $('openSuggestion').addEventListener('click',()=>{$('suggestionDisclosure').open=true;$('suggestGene').focus();});
  document.querySelectorAll('a[href="#suggest"]').forEach(link=>link.addEventListener('click',()=>{$('suggestionDisclosure').open=true;}));
  initPlayerUI(catalogue);
  window.addEventListener('pagehide',event=>{if(!event.persisted){demo?.destroy();}});

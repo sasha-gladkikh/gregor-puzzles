@@ -1,6 +1,14 @@
 const NS='http://www.w3.org/2000/svg';
 export const PLACEMENT_DURATION=340;
 
+// The visible board is a grid, not a set of inscribed circles. Accept corners
+// and a small forgiveness zone without letting a distant neighboring slot snap.
+export function dropMatchesSlot(id,{x,y}={}, {COLS,ROWS,CW,CH,tolerance=.08}={}){
+  if(!Number.isInteger(id)||![x,y,COLS,ROWS,CW,CH,tolerance].every(Number.isFinite)||COLS<=0||ROWS<=0||CW<=0||CH<=0||id<0||id>=COLS*ROWS)return false;
+  const edge=Math.min(.2,Math.max(0,tolerance)),left=id%COLS*CW,top=Math.floor(id/COLS)*CH;
+  return x>=left-CW*edge&&x<=left+CW*(1+edge)&&y>=top-CH*edge&&y<=top+CH*(1+edge);
+}
+
 // SVG's default xMidYMid meet fitting can leave letterboxing in a tray button.
 // Follow the drawn piece, not the larger rectangular SVG viewport around it.
 export function fittedRect(rect,width,height){
@@ -56,7 +64,7 @@ export function createPieceMotion({board,makePiece,pathFor,COLS,W,H,CW,CH,pad,re
         {strokeDashoffset:100,opacity:0},
         {strokeDashoffset:78,opacity:.75,offset:.2},
         {strokeDashoffset:0,opacity:0}
-      ],{duration:460,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'});
+      ],{duration:300,easing:'cubic-bezier(.22,.61,.36,1)',fill:'both'});
       record.traceAnimation.finished.then(()=>remove(record),()=>remove(record,true));
     }catch{remove(record);}
   }

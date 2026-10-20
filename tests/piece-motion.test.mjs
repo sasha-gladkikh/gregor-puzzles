@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fittedRect,pieceFlightGeometry,pieceFlightFrames,createPieceMotion,PLACEMENT_DURATION} from '../game/piece-motion.mjs';
+import {fittedRect,pieceFlightGeometry,pieceFlightFrames,createPieceMotion,PLACEMENT_DURATION,dropMatchesSlot} from '../game/piece-motion.mjs';
 import {soundFeedback} from '../game/experience.mjs';
 
 const rect=(left,top,width,height)=>({left,top,width,height});
@@ -10,6 +10,14 @@ const events=()=>{
   const listeners=new Map();
   return {addEventListener(type,fn){if(!listeners.has(type))listeners.set(type,new Set());listeners.get(type).add(fn);},removeEventListener(type,fn){listeners.get(type)?.delete(fn);},dispatch(type,event={}){return Promise.all([...listeners.get(type)??[]].map(fn=>fn(event)));}};
 };
+
+test('drop acceptance includes the visible slot corners and modest edge tolerance without snapping from a neighboring center',()=>{
+  const grid={COLS:4,ROWS:3,CW:200,CH:200};
+  for(const [x,y] of [[201,201],[399,201],[201,399],[399,399],[190,300],[410,300]])assert.equal(dropMatchesSlot(5,{x,y},grid),true);
+  for(const [x,y] of [[100,300],[500,300],[300,100],[300,500],[NaN,300]])assert.equal(dropMatchesSlot(5,{x,y},grid),false);
+  assert.equal(dropMatchesSlot(12,{x:800,y:600},grid),false);
+  assert.equal(dropMatchesSlot(-1,{x:0,y:0},grid),false);
+});
 
 test('tray letterboxing is removed before the flight and the last frame meets the exact board coordinates',()=>{
   const geometry=pieceFlightGeometry(5,rect(100,300,90,66),rect(200,100,800,600),dimensions);
@@ -151,6 +159,18 @@ test('completion uses a quiet staggered resolution and foreground gesture is req
   assert.deepEqual(oscillators.map(voice=>voice.frequency.values[0].value),[392,493.88,587.33,783.99]);
   assert.ok(oscillators.every((voice,index)=>!index||voice.started>oscillators[index-1].started));
   assert.ok(gains.every(gain=>gain.gain.values.every(point=>point.value<=.015)));sound.stop();
+}));
+
+test('decorative movement cancellation preserves the completion chord and softly releases other sounding voices',()=>soundHarness(async({sound,contexts,oscillators,gains})=>{
+  await sound.play('complete');await sound.play('discovery');
+  const chord=oscillators.slice(0,4),others=oscillators.slice(4),endings=chord.map(voice=>voice.stopped);
+  contexts[0].currentTime=10.1;
+  sound.stop({preserveCompletion:true});
+  assert.deepEqual(chord.map(voice=>voice.stopped),endings,'scrolling does not truncate a completion resolution');
+  assert.ok(chord.every(voice=>!voice.disconnected));
+  assert.ok(others.every(voice=>Math.abs(voice.stopped-10.13)<1e-10));
+  assert.ok(gains.slice(4).every(gain=>gain.gain.values.at(-1).value===0));
+  sound.dispose();assert.ok(oscillators.every(voice=>voice.disconnected));
 }));
 
 

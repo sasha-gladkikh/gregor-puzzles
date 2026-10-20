@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {artworkDetails,sampleDetailTrack,createArtworkDetails} from '../game/artwork-detail.mjs';
+import {artworkDetails,sampleDetailTrack,createArtworkDetails,detailFocusWeight} from '../game/artwork-detail.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -116,4 +116,14 @@ test('detail rendering uses only the supplied artwork clock and follows its movi
 
 test('an unknown round has a safe inert detail renderer',()=>{
   const details=createArtworkDetails('unknown',{});assert.doesNotThrow(()=>{details.draw(1000);details.dispose();});
+});
+
+test('guide focus leaves its structure fully visible and gradually quiets unrelated decorative details',()=>{
+  const focus={x:50,y:50,opacity:1};
+  assert.equal(detailFocusWeight([400,300],focus),1);
+  const nearby=detailFocusWeight([450,330],focus),distant=detailFocusWeight([780,30],focus);
+  assert.ok(distant>=.28&&distant<nearby&&nearby<1);
+  assert.equal(detailFocusWeight([780,30],{...focus,opacity:0}),1);
+  assert.equal(detailFocusWeight([780,30],null),1);
+  assert.equal(detailFocusWeight(null,focus),1);
 });

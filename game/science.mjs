@@ -8,8 +8,10 @@ let current=findRound(params.get('level')??'01',allRounds);
 const mount=document.getElementById('scienceArticle'),index=document.getElementById('scienceIndex'),search=document.getElementById('scienceSearch'),chooser=document.getElementById('scienceChooser');
 const wideLayout=window.matchMedia('(min-width:1001px)');
 const entries=allRounds.map(round=>{
- const link=node('a',null,'science-round-link');link.href=`./science.html?level=${round.number}`;link.append(node('span',round.number),node('strong',round.gene));
- link.addEventListener('click',event=>{if(event.button||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();history.pushState({},'',link.href);showRound(round);chooser.open=false;mount.querySelector('h2').focus({preventScroll:true});});index.append(link);
+ const link=node('a',null,'science-round-link');link.href=`./science.html?level=${round.number}`;
+ const identity=node('span',null,'science-round-identity');identity.append(node('strong',round.gene),node('span',round.condition,'science-round-condition'));
+ link.append(node('span',round.number,'science-round-number'),identity);
+ link.addEventListener('click',event=>{if(event.button||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();history.pushState({},'',link.href);showRound(round);search.value='';filter();chooser.open=false;mount.querySelector('h2').focus({preventScroll:true});});index.append(link);
  return {round,link,search:searchText(round)};
 });
 function showRound(round){
@@ -23,7 +25,7 @@ function showRound(round){
  const facts=node('dl',null,'science-facts');for(const [label,value]of[['Inheritance',round.inheritance],['Variant context',round.variant]]){const pair=node('div');pair.append(node('dt',label),node('dd',value));facts.append(pair);}
  const actions=node('div',null,'science-actions');
  if(playable.includes(round)){const play=node('a','Play this round','primary');play.href=`./play.html?level=${round.number}`;actions.append(play);}
- const review=node('a','Editorial review →','science-review-link');review.href=`./review.html?level=${round.number}#round-${round.number}`;actions.append(review);head.append(actions);
+ head.append(actions);
  const sections=node('details',null,'science-section-nav');sections.open=wideLayout.matches;
  sections.append(node('summary','On this page'));
  const sectionLinks=node('nav',null,'science-section-links');sectionLinks.setAttribute('aria-label',`${round.gene} profile sections`);
@@ -43,7 +45,10 @@ function showRound(round){
  const reading=node('div',null,'science-reading');
  const extra=scientificMechanisms(round);
  if(extra.children.length){const models=node('details',null,'science-model-details');models.append(node('summary','Explore mechanism models'),extra);reading.append(models);}
- reading.append(clinicalDetails(round),scientificFamily(round),scientificInterpretation(round),scientificReferences(round));
+ const references=scientificReferences(round),review=node('a','For scientific reviewers →','science-review-link');
+ review.href=`./review.html?level=${round.number}#round-${round.number}`;
+ const reviewerNote=node('p',null,'science-reviewer-note');reviewerNote.append(review);references.append(reviewerNote);
+ reading.append(clinicalDetails(round),scientificFamily(round),scientificInterpretation(round),references);
  content.append(opening,reading);layout.append(sections,content);article.append(head,layout);mount.replaceChildren(article);
  document.title=`${round.gene} · Science · GREGoR Puzzles`;
  if(location.hash)requestAnimationFrame(revealHash);
@@ -59,11 +64,7 @@ function filter(){
  for(const item of entries)item.link.hidden=!matches.includes(item);
  document.getElementById('scienceCount').textContent=query?`${matches.length} of ${allRounds.length} rounds`:`${allRounds.length} rounds`;
  document.getElementById('scienceEmpty').hidden=matches.length>0;
- // Search selects the first matching profile so a phenotype match is visible immediately.
- // An empty search leaves the current profile available while the chooser explains the result.
- if(matches.length&&!matches.some(item=>item.round===current)){
-  const next=matches[0].round;history.replaceState({},'',`./science.html?level=${next.number}`);showRound(next);
- }
+ // Filtering never changes the article or URL. A profile opens only on selection.
 }
 search.addEventListener('input',filter);
 chooser.addEventListener('keydown',event=>{if(event.key==='Escape'){chooser.open=false;chooser.querySelector('summary').focus();}});

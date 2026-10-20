@@ -86,7 +86,14 @@
 }
 
 .board-loading {
+  display: flex;
+  align-items: center;
+  min-height: 104px;
   margin: 0;
+}
+
+.leaderboard-results {
+  min-height: 104px;
 }
 
 .board-updated,
@@ -257,19 +264,6 @@
   margin-top: 23px;
   padding-top: 21px;
   border-top: 1px solid #e2e9f2;
-}
-
-.suggestion-invitation {
-  margin: 20px 0 0;
-  padding-top: 17px;
-  border-top: 1px solid #e5ebf4;
-  color: #62738c;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.suggestion-disclosure[open] + .suggestion-invitation {
-  display: none;
 }
 
 .suggestion-fields {
@@ -543,12 +537,11 @@
   font-size: 15px;
 }
 @media(max-width:1100px){.home-main{padding:20px 28px 40px}.home-hero{gap:28px;padding:32px}.home-hero h1{font-size:48px}.hero-description{font-size:17px}.community-card{padding:23px}.home-page .site-footer{padding-inline:28px}}
-@media(max-width:760px){.home-main{padding:10px 18px 30px}.home-hero{grid-template-columns:1fr;padding:26px 20px 18px;gap:24px;border-radius:20px}.home-hero h1{font-size:48px;margin-bottom:17px}.hero-description{font-size:17px;max-width:30ch;margin-bottom:19px}.hero-actions{gap:2px 16px}.home-hero .home-primary{font-size:15px;min-height:50px}.home-hero .home-text-link{font-size:13px}.hero-progress{font-size:11px;margin-top:7px}.hero-figure{max-width:none}.hero-figure-caption{font-size:10px}.home-community{padding-top:34px}.home-section-heading{align-items:flex-start;flex-direction:column;gap:6px;margin-bottom:18px}.home-section-heading h2{font-size:28px}.home-section-heading>.home-text-link{min-height:36px}.community-grid{grid-template-columns:1fr;gap:20px}.community-card{padding:22px 18px}.card-heading h3,.suggestion-title{font-size:22px}.suggestion-pair{grid-template-columns:1fr;gap:0}.suggestion-content{margin-top:18px;padding-top:18px}.suggestion-invitation{margin-top:15px;padding-top:14px}.home-page .site-footer{padding:25px 18px 30px}}
+@media(max-width:760px){.home-main{padding:10px 18px 30px}.home-hero{grid-template-columns:1fr;padding:26px 20px 18px;gap:24px;border-radius:20px}.home-hero h1{font-size:48px;margin-bottom:17px}.hero-description{font-size:17px;max-width:30ch;margin-bottom:19px}.hero-actions{gap:2px 16px}.home-hero .home-primary{font-size:15px;min-height:50px}.home-hero .home-text-link{font-size:13px}.hero-progress{font-size:12px;margin-top:7px}.hero-figure{max-width:none}.hero-figure-caption{font-size:12px}.home-community{padding-top:34px}.home-section-heading{align-items:flex-start;flex-direction:column;gap:6px;margin-bottom:18px}.home-section-heading h2{font-size:28px}.home-section-heading>.home-text-link{min-height:36px}.community-grid{grid-template-columns:1fr;gap:20px}.community-card{padding:22px 18px}.card-heading h3,.suggestion-title{font-size:22px}.suggestion-pair{grid-template-columns:1fr;gap:0}.suggestion-content{margin-top:18px;padding-top:18px}.home-page .site-footer{padding:25px 18px 30px}}
 @media(max-width:360px){.home-main{padding-inline:12px}.home-hero{padding-inline:15px}.home-hero h1{font-size:42px}.hero-description{font-size:16px}.home-hero .home-primary{font-size:14px;padding-inline:16px}.community-card{padding-inline:15px}}
 @media(prefers-reduced-motion:reduce){.home-page :is(a,button){transition:none!important}}
 @media(forced-colors:active){.home-hero{background:Canvas;color:CanvasText}.home-hero :is(h1,h1>span,p,a){color:CanvasText}.home-page .home-primary{border:1px solid ButtonText;background:ButtonFace;color:ButtonText}}
 
-.suggestion-invitation .home-text-button{padding:0;min-height:44px;margin-right:8px;color:#0043fd}
 
 .home-credit{margin:28px 0 0;color:#617089;font-size:12px;line-height:1.6}
 .educator-link{justify-self:start;margin-left:4px}
@@ -561,7 +554,7 @@
 .discovery-strip>li{min-width:0;scroll-snap-align:start}
 .discovery-thumb{display:block;position:relative;aspect-ratio:4/3;overflow:hidden;border:1px solid #d9e3f0;border-radius:9px;background:#fff;transition:border-color .18s,transform .18s,box-shadow .18s}
 .discovery-thumb img{display:block;width:100%;height:100%;object-fit:contain}
-.discovery-thumb[data-state=new] img{filter:saturate(.35);opacity:.55}
+.discovery-thumb[data-state=new] img{filter:none;opacity:1}
 .discovery-thumb[data-state=started]{border-color:#88a9f2}
 .discovery-thumb[data-state=complete]{border-color:#8cb9b2}
 .discovery-thumb-number{position:absolute;top:5px;left:5px;display:grid;place-items:center;min-width:22px;height:22px;padding:0 3px;border:1px solid #dce4ef;border-radius:5px;background:#fffffff2;color:#1b416c;font-size:10px;font-weight:700;line-height:1}

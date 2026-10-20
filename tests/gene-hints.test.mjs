@@ -39,7 +39,7 @@ test('hint controls stop offering another step after completion, including a par
  const round=allRounds[0],state=newState();
  assert.equal(geneHintStatus(state).nextLabel,'Get a gene hint');
  revealGeneHint(state,round);
- assert.equal(geneHintStatus(state).nextLabel,'Connect the biology');
+ assert.equal(geneHintStatus(state).nextLabel,'Next biology hint');
  const text=geneHintText(state,round);
  guess(state,round.gene,round.gene);
  assert.equal(geneHintStatus(state).hasNext,false);
@@ -60,7 +60,8 @@ test('all ten answer explanations connect a named gene to the observed biologica
  for(const round of allRounds){
   const connection=geneClueConnection(round);
   assert.ok(connection.includes(round.gene),round.gene);
-  assert.ok(connection.length>70&&connection.length<240,`${round.gene}: concise biological explanation`);
+  assert.equal(connection,round.clinical.completionConnection);
+  assert.ok(connection.split(/\s+/).length<=55,`${round.gene}: concise biological explanation`);
  }
- assert.match(geneClueConnection(allRounds.find(round=>round.gene==='SLC29A3')),/ENT3.*nucleoside.*lysosomal/);
+ assert.match(geneClueConnection(allRounds.find(round=>round.gene==='SLC29A3')),/ENT3.*nucleoside.*lysosomes/);
 });

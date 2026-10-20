@@ -137,7 +137,7 @@ function allocationEntries(entries){
 }
 const assistance=attempt=>[
  attempt.hints?`${attempt.hints} hint${attempt.hints===1?'':'s'}`:null,
- attempt.peeks?`${attempt.peeks} reference view${attempt.peeks===1?'':'s'}`:null,
+ attempt.peeks?`${attempt.peeks} picture view${attempt.peeks===1?'':'s'}`:null,
  attempt.geneHintsSeen?`${attempt.geneHintsSeen} gene clue${attempt.geneHintsSeen===1?'':'s'}`:null
 ].filter(Boolean).join(' · ');
 
@@ -146,7 +146,7 @@ export function initPlayerUI(catalogue){
  const host=$('playerProfile');
  if(!host||!catalogue.length)return;
  const invitation=node('div',undefined,'player-invitation');
- const join=button('Join the challenge','home-primary player-join-open');join.setAttribute('aria-expanded','false');join.setAttribute('aria-controls','playerJoinForm');
+ const join=button('Join leaderboard','home-primary player-join-open');join.setAttribute('aria-expanded','false');join.setAttribute('aria-controls','playerJoinForm');
  const intro=node('p',undefined,'player-intro');invitation.append(join,intro);
  const account=node('details',undefined,'player-account');
  const accountLabel=node('summary',undefined,'player-account-summary');
@@ -164,7 +164,7 @@ export function initPlayerUI(catalogue){
  fields.append(input);
  const help=node('p','2–32 characters. No email address needed.','player-name-help');help.id='playerNameHelp';
  const cancel=button('Cancel');
- const privacy=node('p','Your display name, progress, times and activity dates will be public. Your detailed attempts are saved privately for the GREGoR Puzzles team. Joining is optional.','player-privacy');privacy.id='playerPrivacy';
+ const privacy=node('p','Joining shares your display name, progress, best times and activity dates publicly. Your existing and future attempts from this browser are saved privately for the GREGoR Puzzles team. Your player identity stays in this browser; the same name on another device creates a separate record. Joining is optional.','player-privacy');privacy.id='playerPrivacy';
  const formActions=node('div',undefined,'player-form-actions');formActions.append(submit,cancel);
  form.append(label,fields,help,privacy,formActions);
  const status=node('p',undefined,'player-status');status.setAttribute('role','status');
@@ -198,7 +198,7 @@ export function initPlayerUI(catalogue){
    const state=attempt.status==='completed'?'Complete':attempt.status==='restarted'?'Restarted':'In progress';
    heading.append(roundLink,node('span',state,`attempt-state attempt-${attempt.status}`));
    const detail=[];
-   if(attempt.mode==='practice')detail.push('Practice · Untimed');
+   if(attempt.mode==='practice')detail.push('Untimed');
    else detail.push(`Timed${nonnegative(attempt.seconds)?` · ${playerTime(attempt.seconds)}`:''}`);
    if(attempt.status!=='completed')detail.push(`${attempt.pieces} of 12 pieces`);
    if(attempt.route==='gene'&&attempt.status==='completed')detail.push('Completed with gene answer');
@@ -224,7 +224,7 @@ export function initPlayerUI(catalogue){
   const player=getPlayer(),state=getPlayerStatus(),attempts=getAttempts(),summary=summarizeAttempts(attempts,catalogue);
   const joined=Boolean(player?.joined);
   invitation.hidden=joined||joining||Boolean(player?.pendingName);
-  intro.textContent=attempts.length?`${attempts.length} attempt${attempts.length===1?'':'s'} saved on this device. Add your name to keep your record online.`:'Choose a name. Keep your progress. No account required.';
+  intro.textContent='Add a nickname to share your results. No account required.';
   join.disabled=busy||!state.available||Boolean(state.leavePending);
   form.hidden=!(editing||joining||(!joined&&player?.pendingName));
   join.setAttribute('aria-expanded',String(!form.hidden));
@@ -293,7 +293,7 @@ export function initPlayerUI(catalogue){
 
  const selection=$('leaderboardRound');
  selection.replaceChildren(new Option('Overall progress','overall'),...catalogue.map(round=>new Option(`${round.number} · ${round.topic}`,round.number)));
- let players=[],boardState='loading',boardLimit=3,loading=false,refreshQueued=false;
+ let players=[],boardState='loading',boardLimit=3,loading=false,refreshQueued=false,hasBoardData=false;
  function updateTimedDestination(){
   const read=key=>{try{return localStorage.getItem(key);}catch{return null;}};
   const round=nextTimedRound(catalogue,homeProgress(catalogue,read),getAttempts(),selection.value);
@@ -302,11 +302,13 @@ export function initPlayerUI(catalogue){
  }
  function renderBoard(){
   const result=$('leaderboardResults');result.replaceChildren();
+  result.setAttribute('aria-busy',String(loading));
   updateTimedDestination();
   $('refreshLeaderboard').disabled=loading;
-  if(boardState==='loading'){result.append(node('p','Loading the leaderboard…','board-loading'));return;}
+  $('refreshLeaderboard').textContent=loading?'Refreshing…':'Refresh standings';
+  if(boardState==='loading'){result.append(node('p','Loading standings…','board-loading'));return;}
   if(boardState==='error'){
-   const empty=node('div',undefined,'leaderboard-empty');empty.append(node('h4','The leaderboard is taking a break.'),node('p','Your attempts are still saved on this device. Try refreshing the standings.'));
+   const empty=node('div',undefined,'leaderboard-empty');empty.append(node('h4','Standings are unavailable right now.'),node('p','Your saved attempts stay on this device. Try again when connected.'));
    const again=button('Try again');again.addEventListener('click',loadBoard);empty.append(again);result.append(empty);return;
   }
   const ranked=rankPlayers(players,selection.value,catalogue.length);
@@ -314,7 +316,7 @@ export function initPlayerUI(catalogue){
   if(!ranked.length){
    if(allocations.length){result.append(allocationEntries(allocations));return;}
    const empty=node('div',undefined,'leaderboard-empty');
-   empty.append(node('h4',selection.value==='overall'?'Start something worth sharing.':'Set the first time.'),node('p',selection.value==='overall'?'Join the challenge, then play a round. Your progress will appear here.':'Finish this round in timed mode to add your best time.'));
+   empty.append(node('h4',selection.value==='overall'?'Be the first to play.':'Set the first time.'),node('p',selection.value==='overall'?'Join the leaderboard, then complete a round to appear here.':'Finish this round in timed mode to add your best time.'));
    result.append(empty);return;
   }
   const table=node('table',undefined,'leaderboard-table player-table');table.setAttribute('aria-label',selection.value==='overall'?'Overall player standings':`Round ${selection.value} best times`);
@@ -334,8 +336,9 @@ export function initPlayerUI(catalogue){
    }
    row.append(node('td',String(player.rank),'player-rank'),playerCell);
    if(selection.value==='overall'){
-    const rounds=node('td',undefined,'player-round-count');rounds.append(node('strong',`${player.roundsCompleted}/${catalogue.length}`),node('small',`${player.roundsPlayed} played`));
-    const total=node('td',undefined,'score-time');total.append(node('span',player.totalSource==='reported'?shortPlayerTime(player.totalBestSeconds):playerTime(player.totalBestSeconds)),node('small',player.totalSource==='reported'?`${catalogue.length} rounds`:`${player.timedRounds}/${catalogue.length} timed`));
+    const rounds=node('td',undefined,'player-round-count');rounds.append(node('strong',`${player.roundsCompleted}/${catalogue.length}`));
+    const total=node('td',undefined,'score-time');total.append(node('span',player.totalSource==='reported'?shortPlayerTime(player.totalBestSeconds):playerTime(player.totalBestSeconds)));
+    if(player.totalBestSeconds===null)total.append(node('small',`${player.timedRounds}/${catalogue.length} timed`));
     const attempts=node('td',String(leaderboardAttemptCount(player)),'player-attempt-count');
     row.append(rounds,attempts,total);
    }else{
@@ -355,15 +358,19 @@ export function initPlayerUI(catalogue){
  }
  async function loadBoard(){
   if(loading){refreshQueued=true;return;}
-  loading=true;boardLoaded=true;boardState='loading';renderBoard();
+  loading=true;boardLoaded=true;if(!hasBoardData)boardState='loading';renderBoard();
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),45000);
   try{
    const url=new URL(SUGGESTION_ENDPOINT);url.searchParams.set('action','leaderboard');
    const response=await fetch(url,{cache:'no-store',signal:controller.signal});if(!response.ok)throw new Error('Unavailable');
-   const data=await response.json();players=publicPlayers(data,catalogue);boardState='ready';
+   const data=await response.json();players=publicPlayers(data,catalogue);boardState='ready';hasBoardData=true;
    const date=new Date(data.updatedAt);$('leaderboardUpdated').hidden=!Number.isFinite(date.getTime());
    if(Number.isFinite(date.getTime()))$('leaderboardUpdated').textContent=`Updated ${new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(date)}`;
-  }catch{boardState='error';$('leaderboardUpdated').hidden=true;}
+  }catch{
+   boardState=hasBoardData?'ready':'error';
+   $('leaderboardUpdated').hidden=!hasBoardData;
+   if(hasBoardData)$('leaderboardUpdated').textContent='Showing the last loaded standings. Refresh to try again.';
+  }
   finally{clearTimeout(timeout);loading=false;renderBoard();if(refreshQueued){refreshQueued=false;void loadBoard();}}
  }
  selection.addEventListener('change',()=>{boardLimit=3;renderBoard();});

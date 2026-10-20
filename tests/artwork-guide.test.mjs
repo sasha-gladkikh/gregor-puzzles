@@ -78,15 +78,33 @@ test('pausing the artwork clock freezes the caption and focus, then resumes the 
   }finally{clock.dispose();state.guide.dispose();state.restore();}
 });
 
-test('reduced motion shows a static takeaway without an animated or stalled caption sequence',()=>{
+test('reduced motion retains every full image note with manual navigation and a static highlight',()=>{
   const state=setup(true);
   try{
     state.guide.draw(0,{reduced:true});
-    assert.equal(state.caption.hidden,false);assert.equal(state.caption.dataset.phase,'static');
-    assert.equal(state.caption.children[1].children[0].children[0].textContent,state.round.illustration.takeaway);
-    assert.equal(state.caption.children[1].children[0].children[1].hidden,true);
-    assert.equal(state.caption.children[2].hidden,true);assert.equal(state.focus.attrs.opacity,'0');
-    state.guide.draw(7000,{reduced:true});assert.equal(state.caption.dataset.phase,'static');
+    assert.equal(state.caption.hidden,false);assert.equal(state.caption.dataset.phase,'static-0');
+    assert.equal(state.caption.children[1].children[0].children[0].textContent,`1. ${state.round.illustration.landmarks[0].title}`);
+    assert.equal(state.caption.children[1].children[0].children[1].hidden,false);
+    assert.equal(state.caption.children[2].hidden,true);assert.equal(state.focus.attrs.opacity,'0.850');
+    state.guide.draw(7000,{reduced:true});assert.equal(state.caption.dataset.phase,'static-0');
+    const [previous,next]=state.caption.children[3].children;
+    assert.equal(previous.disabled,true);assert.equal(next.disabled,false);
+    for(const index of [1,2]){
+      next.onclick();assert.equal(state.caption.dataset.phase,`static-${index}`);
+      assert.equal(state.caption.children[1].children[0].children[1].textContent,state.round.illustration.landmarks[index].text);
+    }
+    assert.equal(next.disabled,true);previous.onclick();assert.equal(state.caption.dataset.phase,'static-1');
+  }finally{state.restore();}
+});
+
+test('selecting a structure pauses on that note, and resuming continues there instead of rewinding',()=>{
+  const state=setup(true);
+  try{
+    state.guide.draw(2500);state.guide.select(2);
+    assert.equal(state.guide.index,2);assert.equal(state.caption.dataset.phase,'static-2');
+    state.guide.draw(5000);assert.equal(state.caption.dataset.phase,'static-2');
+    state.guide.resume(5000);state.guide.draw(5500);
+    assert.equal(state.caption.dataset.phase,'2');assert.equal(state.guide.focus.title,state.round.illustration.landmarks[2].title);
   }finally{state.restore();}
 });
 

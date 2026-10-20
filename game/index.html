@@ -27,7 +27,7 @@
         <h1 id="homeTitle">Piece together<br>the <span>biology.</span></h1>
         <p class="hero-description">Build the image. Reveal the clues. Discover the genetics.</p>
         <div class="hero-actions">
-          <a id="homePlay" class="home-primary" href="./play.html?level=01">Play your first puzzle <span aria-hidden="true">→</span></a>
+          <a id="homePlay" class="home-primary" href="./play.html?level=01">Start a puzzle <span aria-hidden="true">→</span></a>
           <a id="homeBrowse" class="home-text-link" href="./collection.html">Browse all <span id="roundCount">10</span> rounds <span aria-hidden="true">→</span></a>
         </div>
         <p id="homeProgress" class="hero-progress">10 rounds · 12 pieces each · No account required</p>
@@ -51,16 +51,16 @@
         <section id="leaderboard" class="community-card leaderboard-card player-board" aria-labelledby="leaderboardTitle">
           <div class="card-heading"><div><h3 id="leaderboardTitle">Leaderboard</h3></div></div>
           <div class="leaderboard-filter"><label for="leaderboardRound">View</label><select id="leaderboardRound"><option value="overall">Overall progress</option></select></div>
-          <div id="leaderboardResults" class="leaderboard-results" aria-live="polite"><p class="board-loading">Loading the leaderboard…</p></div>
+          <div id="leaderboardResults" class="leaderboard-results" aria-live="polite" aria-busy="true"><p class="board-loading">Loading standings…</p></div>
           <p id="leaderboardUpdated" class="board-updated" hidden></p>
           <div id="playerProfile" class="player-profile" aria-label="Your player profile"></div>
           <div class="leaderboard-bottom"><a id="timedPlay" class="home-secondary" href="./play.html?level=01&amp;mode=timed">Play a timed round <span aria-hidden="true">→</span></a><button id="refreshLeaderboard" class="home-text-button" type="button">Refresh standings</button></div>
-          <details class="board-rules"><summary>How the leaderboard works</summary><p>Overall standings count distinct rounds completed. Replaying a round adds an attempt, not another completed round. Players with the same partial progress share a rank. Once every round has a qualifying timed result, the total of their best times breaks ties. Full-set totals reported by players and entered by the project team can also enter the overall standings. The attempt count includes one play per round in a manually entered run, plus recorded plays.</p><p>Round standings use your fastest eligible image-puzzle time. Hints and reference views are allowed and shown. Allocated round breakdowns appear separately from timed rankings. Gene-answer completions and untimed practice count toward progress, but not speed rankings. Times are recorded by the browser or reported by players and are not independently verified; they measure puzzle speed, not genetics knowledge.</p><p>Join with a display name to save your attempts for the GREGoR Puzzles team and appear publicly. No account required. Use the same browser to keep one player record; matching names on different devices are separate players.</p></details>
+          <details class="board-rules"><summary>How the leaderboard works</summary><p>Overall standings count distinct rounds completed. Replaying a round adds an attempt, not another completed round. Players with the same partial progress share a rank. Once every round has a qualifying timed result, the total of their best times breaks ties. Full-set totals reported by players and entered by the project team can also enter the overall standings. The attempt count includes one play per round in a manually entered run, plus recorded plays.</p><p>Round standings use your fastest eligible image-puzzle time. Hints and picture views are allowed and shown. Allocated round breakdowns appear separately from timed rankings. Gene-answer completions and untimed rounds count toward progress, but not speed rankings. Times are recorded by the browser or reported by players and are not independently verified; they measure puzzle speed, not genetics knowledge.</p><p>Join with a display name to save your attempts for the GREGoR Puzzles team and appear publicly. No account required. Use the same browser to keep one player record; matching names on different devices are separate players.</p></details>
         </section>
         <div class="community-contribute">
         <section id="suggest" class="community-card suggestion-card" aria-labelledby="suggestTitle">
           <details id="suggestionDisclosure" class="suggestion-disclosure">
-            <summary><span><span id="suggestTitle" class="suggestion-title">What should we build next?</span><span class="suggestion-description">Suggest a gene, a condition, and the clinical features that connect them.</span></span><span class="disclosure-icon" aria-hidden="true">+</span></summary>
+            <summary><span><span id="suggestTitle" class="suggestion-title">Suggest a puzzle</span><span class="suggestion-description">Suggest a gene or condition for a future puzzle.</span></span><span class="disclosure-icon" aria-hidden="true">+</span></summary>
             <div class="suggestion-content">
               <form id="suggestionForm" method="post" aria-describedby="suggestionPrivacy">
                 <fieldset id="suggestionFields" class="suggestion-fields" disabled>
@@ -80,7 +80,6 @@
               <div id="suggestionSuccess" class="suggestion-success" tabindex="-1" role="status" hidden><span class="suggestion-check" aria-hidden="true">✓</span><h4>Thank you for the idea.</h4><p>Your suggestion has been saved for the GREGoR Puzzles team.</p><button id="suggestionAnother" class="home-secondary" type="button">Suggest another puzzle</button></div>
             </div>
           </details>
-          <p class="suggestion-invitation"><button id="openSuggestion" type="button" class="home-text-button">Suggest a puzzle <span aria-hidden="true">→</span></button> No account required.</p>
         </section>
         <a class="home-text-link educator-link" href="./about.html#collaborate">For educators <span aria-hidden="true">→</span></a>
         </div>

@@ -11,12 +11,13 @@ import {relatedRoundLinks} from './collection-data.mjs';
 import {geneBank} from './gene-bank.mjs';
 import {animatedArtwork,preloadArtwork,createCompletionPlaybackGate} from './artwork-motion.mjs';
 import {discoveryMotion} from './discovery-motion.mjs';
-import {createPieceMotion} from './piece-motion.mjs';
+import {createPieceMotion,dropMatchesSlot} from './piece-motion.mjs';
 import {createFigureView} from './figure-view.mjs';
 import {artworkSource} from './artwork-source.mjs';
 import {getJourney,nextJourneyStep,journeyRoundHref} from './journeys.mjs';
 import {initShareCard} from './share-card.mjs';
-import {latestPlayClue} from './play-learning.mjs';
+import {latestPlayClue,latestClueKey} from './play-learning.mjs';
+import {createTermLens,renderTeachingConnection} from './teaching-ui.mjs';
 import {nextOpenSlot} from './board-navigation.mjs';
 import {eligibleScore} from './community.mjs';
 import {getPlayer,getPlayerStatus,getAttempt,hasAttempt,startAttempt,updateAttempt,finishAttempt,syncPlayer,newPlayer} from './player.mjs';
@@ -30,6 +31,7 @@ const journey=requestedJourney?.rounds.some(item=>item.number===round.number)?re
 const $ = id => document.getElementById(id);
 renderSite({active:'play',roundNumber:round.number,playControls:true});
 const sound=soundFeedback($('soundButton'));
+const termLens=createTermLens();
 const PIECE_PAD=44;
 const NS = 'http://www.w3.org/2000/svg', KEY = saveKey(round);
 const position = id => `row ${Math.floor(id/COLS)+1}, column ${id%COLS+1}`;
@@ -55,6 +57,8 @@ let activeSlot=0;
 let lastCount = -1, extrasShown = false;
 let artworkAnimation=null,lastCollectionCount=null,artworkPrepared=false;
 let feedbackEpoch=0,roundGeneration=0;
+let completionTimer=null,conceptTimer=null;
+let inlineHintOpener=null;
 const completionPlayback=createCompletionPlaybackGate();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();}});
 let cancelCollectionCelebration=()=>{};
@@ -64,22 +68,34 @@ function positionCompletion(){
   const summary=$('completionSummary');
   panel.classList.toggle('has-completion',sidebar);
   panel.setAttribute('aria-label',complete(state)?'Round summary':'Clues');
-  if(sidebar){if(summary.parentElement!==panel)panel.prepend(summary);}
+  if(sidebar){if(summary.parentElement!==panel){panel.prepend(summary);panel.scrollTop=0;}}
   else if(summary.parentElement!==$('imagePuzzle'))$('figureTools').after(summary);
   if(complete(state)){
     if($('clueDetails').parentElement!==$('clueRecap'))$('clueRecap').append($('clueDetails'));
   }else if($('clueDetails').parentElement!==panel)$('learningHeading').after($('clueDetails'));
   if(artworkAnimation&&!$('figureDialog').open){
-    if(sidebar)$('completionActions').before(artworkAnimation.caption);
-    else $('artworkPlayback').append(artworkAnimation.caption);
+    $('completionActions').before(artworkAnimation.caption);
   }
 }
 walkthroughLayout.addEventListener('change',positionCompletion);
 const board = $('puzzle');
-const pieceMotion=createPieceMotion({board,makePiece:artworkPiece,pathFor,COLS,W,H,CW,CH,pad:PIECE_PAD,reduceMotion:reducedMotion,onCancel:()=>sound.stop()});
+const pieceMotion=createPieceMotion({board,makePiece:artworkPiece,pathFor,COLS,W,H,CW,CH,pad:PIECE_PAD,reduceMotion:reducedMotion,onCancel:()=>sound.stop({preserveCompletion:true})});
 const bank=geneBank(rounds,{onChoose:value=>checkGene(value,true)});
 $('geneBankBody').append(bank.element);
-const discoveryGuide=discoveryMotion({board:$('board'),target:discoveryTarget});
+const discoveryGuide=discoveryMotion({board:$('board'),target:discoveryTarget,isCurrent:(item,target)=>
+  target!==$('latestClue')||target.dataset.discoveryKey===(item.kind==='landmark'?`landmark:${item.index}`:`clue:${item.at}`)});
+const conceptRing=node('span',null,'concept-focus-ring');
+conceptRing.setAttribute('aria-hidden','true');$('board').append(conceptRing);
+function highlightConnection(index,selected=false){
+  clearTimeout(conceptTimer);
+  if(index===null){conceptRing.classList.remove('is-visible');$('board').classList.remove('concept-focused');return;}
+  const point=round.illustration.landmarks[index];
+  if(!point)return;
+  if(selected){completionPlayback.cancel();artworkAnimation?.focusLandmark(index);conceptRing.classList.remove('is-visible');$('board').classList.remove('concept-focused');return;}
+  Object.assign(conceptRing.style,{left:`${point.x}%`,top:`${point.y}%`});
+  conceptRing.classList.add('is-visible');$('board').classList.add('concept-focused');
+  conceptTimer=setTimeout(()=>highlightConnection(null),5000);
+}
 function discoveryTarget(item){
   // Resolve the current row after rendering; fast placements can replace it.
   if(walkthroughLayout.matches&&!$('game').classList.contains('focus-view')){
@@ -103,11 +119,17 @@ const save = () => {
 };
 function strip(message,items=[]) {
   const fresh=items.length>0;
-  $('placementFeedback').textContent=fresh?`${state.placed.length} of ${SIZE} placed. New clue.`:message;
+  const feedback=fresh?`${state.placed.length} of ${SIZE} placed. New clue.`:message;
+  $('status').dataset.needsAttention=String(/^(Try another|First select|Move closer)/.test(message));
+  if($('placementFeedback').textContent!==feedback)$('placementFeedback').textContent=feedback;
   const latest=latestPlayClue(round,state.placed);
   $('latestClue').hidden=!latest;
   $('startReassurance').hidden=Boolean(latest);
-  if(latest){$('latestClueTitle').textContent=latest.title;$('latestClueText').textContent=latest.text;}
+  $('latestClue').dataset.discoveryKey=latestClueKey(round,state.placed);
+  if(latest&&($('latestClueText').dataset.copy!==latest.text||$('latestClueTitle').textContent!==latest.title)){
+    $('latestClueTitle').textContent=latest.title;$('latestClueText').textContent=latest.text;
+    $('latestClueText').dataset.copy=latest.text;termLens.enhance($('latestClueText'));
+  }
   if(fresh)$('discoveriesButton').classList.add('has-new');
 }
 function openDiscoveries(noteIndex=null) {
@@ -123,6 +145,7 @@ function openDiscoveries(noteIndex=null) {
   const otherNotes=found.filter(index=>index!==noteIndex);
   if(otherNotes.length){body.append(node('h3','Image notes','discovery-group-title'));otherNotes.forEach(addNote);}
   if(!unlocked.length&&!found.length)body.append(node('p','Place pieces to reveal clues. The first milestone clue appears at two pieces.'));
+  termLens.enhance(body);
   $('discoveriesButton').classList.remove('has-new');openDialog('discoveriesDialog');
 }
 function start(useRoute='image',accepted=false,before=state.placed.length){
@@ -178,6 +201,10 @@ function buildTray() {
     b.addEventListener('pointerdown',e=>startDrag(e,id,b)); tray.append(b);
   });
 }
+function updateTrayHint(){
+  const tray=$('tray');$('trayScrollHint').hidden=tray.scrollWidth<=tray.clientWidth+1;
+}
+window.addEventListener('resize',updateTrayHint);
 function select(id,fromKeyboard=false) {
   if(complete(state))return;
   start(); ({selected,hinted}=choosePiece(selected,id)); updateSelection();
@@ -221,6 +248,7 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   $('board').classList.toggle('finishing',finishing&&!reducedMotion());
   $('completion').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   $('identityCard').classList.toggle('reveal-pending',finishing&&!reducedMotion());
+  $('completionSummary').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   render(before); save();
   const epoch=feedbackEpoch,generation=roundGeneration,progress=state.placed.length/SIZE;
   const settled=id===null?Promise.resolve({cancelled:false}):pieceMotion.place(id,from);
@@ -234,17 +262,26 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
       settled.then(result=>{
         if(generation!==roundGeneration)return;
         $('board').classList.remove('finishing');
-        for(const panel of [$('identityCard'),$('completion')]){panel.classList.remove('reveal-pending');panel.classList.add('reveal-arriving');}
+        for(const panel of [$('completionSummary'),$('identityCard'),$('completion')]){panel.classList.remove('reveal-pending');panel.classList.add('reveal-arriving');}
         // Always reveal the information. A later interaction can cancel autoplay.
-        if(takeAutoplay()&&!result.cancelled&&epoch===feedbackEpoch&&!document.hidden&&!document.querySelector('dialog[open]')){
-          $('revealTitle').focus({preventScroll:true});artworkAnimation?.play();
-        }
+        // Completion focus is independent of decorative motion cancellation.
+        const active=document.activeElement;
+        if(!document.querySelector('dialog[open]')&&(active===document.body||active?.closest('#tray,#puzzle,#guessForm,#geneBankDialog')))
+          $('revealTitle').focus({preventScroll:true});
+        $('board').classList.add('completion-settled');
+        clearTimeout(completionTimer);
+        completionTimer=setTimeout(()=>{
+          if(generation===roundGeneration&&takeAutoplay()&&!result.cancelled&&epoch===feedbackEpoch&&!document.hidden&&!document.querySelector('dialog[open]'))artworkAnimation?.play();
+        },reducedMotion()?0:850);
       });
     }
   } else {
     strip(`${state.placed.length} of ${SIZE} placed.`,found);
     const point=id===null?{x:50,y:50}:{x:(id%COLS+.5)/COLS*100,y:(Math.floor(id/COLS)+.5)/ROWS*100};
-    discoveryGuide.show(found.map(item=>({...item,point:item.kind==='landmark'?round.illustration.landmarks[item.index]:point})));
+    settled.then(result=>{
+      if(!result.cancelled&&generation===roundGeneration&&epoch===feedbackEpoch&&!complete(state))
+        discoveryGuide.show(found.map(item=>({...item,point:item.kind==='landmark'?round.illustration.landmarks[item.index]:point})));
+    });
     $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
   }
 }
@@ -282,8 +319,7 @@ function endDrag(e,cancelled=false) {
   d.b.dataset.suppress='1'; setTimeout(()=>delete d.b.dataset.suppress,0);
   if(!cancelled){
     const rect=board.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*W,y=(e.clientY-rect.top)/rect.height*H;
-    const cx=(d.id%COLS+.5)*CW,cy=(Math.floor(d.id/COLS)+.5)*CH;
-    if(Math.hypot(x-cx,y-cy)<Math.min(CW,CH)*.57)attempt(d.id);
+    if(dropMatchesSlot(d.id,{x,y},{COLS,ROWS,CW,CH}))attempt(d.id);
     else strip('Move closer to its place, or click to place it.');
   }
   drag=null;
@@ -293,7 +329,7 @@ window.addEventListener('pointercancel',e=>endDrag(e,true));
 function updateMode() {
   $('calm').setAttribute('aria-pressed',String(!timed)); $('timed').setAttribute('aria-pressed',String(timed));
   $('calm').disabled=modeLocked(state); $('timed').disabled=modeLocked(state); $('restart').hidden=!state.started;
-  $('timingNote').textContent=modeLocked(state)?'Restart to change mode.':'Choose a mode before placing your first piece. Hints and reference views do not start the timer.';
+  $('timingNote').textContent=modeLocked(state)?'Restart to change mode.':'Choose a mode before placing your first piece. Hints and picture views do not start the timer.';
   $('clock').hidden=!timed||state.timingUnavailable||complete(state); $('clock').textContent=formatTime(elapsedSeconds(state));
 }
 function renderPlayerResult(){
@@ -306,9 +342,9 @@ function renderPlayerResult(){
 window.addEventListener('gregor-player-change',renderPlayerResult);
 function renderResults() {
   const plural=(n,word)=>`${n} ${word}${n===1?'':'s'}`;
-  const mode=timed?(state.timingUnavailable?'Timed · time unavailable':`Timed · ${formatTime(elapsedSeconds(state))}`):'Practice';
+  const mode=timed?(state.timingUnavailable?'Timed · time unavailable':`Timed · ${formatTime(elapsedSeconds(state))}`):'Untimed';
   const route=state.solvedByGuess?(state.namedAt!==null?`Identified this round at ${state.namedAt} of ${SIZE} pieces`:'Gene recognition'):state.usedRoutes.includes('legacy')?'Restored progress':'Image puzzle';
-  $('roundResults').textContent=[mode,route,plural(state.hints,'hint'),plural(state.peeks,'reference view')].join(' · ');
+  $('roundResults').textContent=[mode,route,plural(state.hints,'hint'),plural(state.peeks,'picture view')].join(' · ');
   renderPlayerResult();
 }
 function render(before=state.placed.length) {
@@ -327,6 +363,7 @@ function render(before=state.placed.length) {
     const show=state.placed.includes(landmarkPieces[i]);
     if(show&&marker.hidden&&n>before){marker.classList.add('is-new');marker.style.setProperty('--delay',`${delay++*150}ms`);}
     marker.hidden=!show;marker.classList.remove('is-active');marker.setAttribute('aria-label',`Image note ${i+1}: ${noteFor(i).title}`);
+    marker.dataset.discoveryAccent=String(i+1);
     marker.removeAttribute('aria-pressed');marker.setAttribute('aria-haspopup','dialog');marker.setAttribute('aria-controls','discoveriesDialog');
   });
   const found=landmarkPieces.map((piece,i)=>state.placed.includes(piece)?i:-1).filter(i=>i>=0);
@@ -336,7 +373,7 @@ function render(before=state.placed.length) {
   for(const li of [...$('notesList').children])if(!found.includes(Number(li.dataset.noteIndex)))li.remove();
   for(const i of found){
     const note=noteFor(i);let li=$('notesList').querySelector(`[data-note-index="${i}"]`);
-    if(!li){li=node('li');li.dataset.noteIndex=i;const next=[...$('notesList').children].find(row=>Number(row.dataset.noteIndex)>i);$('notesList').insertBefore(li,next??null);}
+    if(!li){li=node('li');li.dataset.noteIndex=i;li.dataset.discoveryAccent=String(i+1);const next=[...$('notesList').children].find(row=>Number(row.dataset.noteIndex)>i);$('notesList').insertBefore(li,next??null);}
     if(li.dataset.identified!==String(done)){
       const badge=node('span',String(i+1),'strip-badge'),copy=node('div',null,'image-note-copy');badge.setAttribute('aria-hidden','true');
       copy.append(node('h4',note.title),node('p',note.text));li.replaceChildren(badge,copy);li.dataset.identified=String(done);
@@ -346,7 +383,7 @@ function render(before=state.placed.length) {
   document.querySelectorAll('.piece').forEach(b=>{const placed=state.placed.includes(Number(b.dataset.piece));b.classList.toggle('placed',placed);b.disabled=placed;});
   $('remainingCount').textContent=`${SIZE-n} remaining`; $('pieceBank').hidden=done;
   $('identityCard').hidden=!done;$('completionSummary').hidden=!done;$('clueRecap').hidden=!done;$('clueDetails').hidden=false;
-  $('clueConnection').hidden=!state.solvedByGuess;
+  $('clueConnection').hidden=!done;
   $('learningHeading').hidden=done;$('typingDetails').hidden=done;
   $('clueSummary').textContent=`${n} of ${SIZE} pieces`;
   $('progressText').textContent=`${n} of ${SIZE} pieces`; $('progressPercent').textContent=Math.round(n/SIZE*100)+'%';
@@ -360,7 +397,7 @@ function render(before=state.placed.length) {
         li.innerHTML=`<span class="clue-number" aria-hidden="true">${open?'✓':String(i+1).padStart(2,'0')}</span><div class="clue-content"><span class="clue-label">${clue.label}</span>${open?`<h3>${clue.title}</h3><p>${clue.body}</p>`:`<p class="unlock">Unlocks at ${clue.at} pieces</p>`}</div>`;
         li.dataset.unlocked=String(open);
       }
-    });lastCount=n;
+    });termLens.enhance($('clues'));termLens.enhance($('notesList'));lastCount=n;
   }
   $('completion').hidden=!done; $('completionActions').hidden=!done; $('guessForm').hidden=done;
   $('geneHint').hidden=done;
@@ -368,6 +405,7 @@ function render(before=state.placed.length) {
   $('hint').disabled=done; $('peek').disabled=done;
   $('hint').hidden=done;$('peek').hidden=done;$('focusButton').hidden=false;$('enlargeButton').hidden=!done;$('discoveriesButton').hidden=done;
   $('geneBankButton').hidden=done;
+  if(done){$('inlineGeneHint').hidden=true;$('hint').setAttribute('aria-expanded','false');}
   $('artworkPlayback').hidden=!done;
   $('status').hidden=done;
   document.querySelector('.mode-toggle').hidden=done;
@@ -388,14 +426,14 @@ function render(before=state.placed.length) {
       if(related.length){$('relatedRounds').append(node('h3','Connect this round'));for(const item of related){const a=node('a',`${item.relationship} · ${item.title} →`);a.href=item.href;$('relatedRounds').append(a);}}
     }
   }
-  positionCompletion();updateMode();updateSelection();
+  positionCompletion();updateMode();updateSelection();updateTrayHint();
 }
 function formatTime(s) {return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;}
 setInterval(()=>{if(timed)$('clock').textContent=formatTime(elapsedSeconds(state));},1000);
 $('calm').onclick=()=>{timed=changeTimingMode(state,timed,false);render();save();};
 $('timed').onclick=()=>{timed=changeTimingMode(state,timed,true);render();save();};
-$('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);strip(peek?'Reference image visible.':'Reference image hidden.');save();};
-$('hint').onclick=()=>{openGeneBank();if(!state.geneHintsSeen)requestGeneHint();};
+$('peek').onclick=()=>{start('image');peek=!peek;if(peek)state.peeks++;$('reference').hidden=!peek;$('peek').setAttribute('aria-pressed',String(peek));$('board').classList.toggle('started',state.placed.length>0||peek);strip(peek?'Picture shown.':'Picture hidden.');save();};
+$('hint').onclick=()=>openInlineHint();
 function checkGene(value,fromBank=false){
   if(complete(state))return;
   const feedback=message=>{if(fromBank)bank.feedback(message);else $('guessFeedback').textContent=message;};
@@ -412,15 +450,33 @@ function checkGene(value,fromBank=false){
 }
 $('guessForm').onsubmit=e=>{e.preventDefault();checkGene($('geneGuess').value);};
 function updateGeneHint(){
+  const inlineStepFocused=document.activeElement===$('nextInlineHint');
   const hintStatus=geneHintStatus(state);
   $('bankSymbolHint').textContent=hintStatus.nextLabel;$('bankSymbolHint').hidden=!hintStatus.hasNext;
   bank.hint(geneHintText(state,round));
+  $('nextInlineHint').textContent=hintStatus.nextLabel;$('nextInlineHint').hidden=!hintStatus.hasNext;
+  $('inlineHintTitle').textContent=`Gene hint · ${hintStatus.seen} of ${hintStatus.total}`;
+  const text=geneHintText(state,round)??'';
+  if($('inlineHintText').dataset.copy!==text){$('inlineHintText').textContent=text;$('inlineHintText').dataset.copy=text;termLens.enhance($('inlineHintText'));}
+  if(!hintStatus.hasNext&&inlineStepFocused)$('inlineHintTitle').focus({preventScroll:true});
 }
-function requestGeneHint(){start('guess');bank.hint(revealGeneHint(state,round));updateGeneHint();save();bank.focusHint();}
+function requestGeneHint(){start('guess');bank.hint(revealGeneHint(state,round));updateGeneHint();save();if($('geneBankDialog').open)bank.focusHint();}
+function openInlineHint(opener=$('hint')){
+  inlineHintOpener=opener;
+  $('inlineGeneHint').hidden=false;$('hint').setAttribute('aria-expanded','true');
+  if(!geneHintStatus(state).seen)requestGeneHint();else updateGeneHint();
+  $('inlineGeneHint').scrollIntoView({block:'nearest',behavior:'instant'});
+  $('inlineHintTitle').focus({preventScroll:true});
+}
 function openGeneBank(){updateGeneHint();openDialog('geneBankDialog');bank.focus();}
-$('geneHint').onclick=()=>{openGeneBank();if(!state.geneHintsSeen)requestGeneHint();};
+$('geneHint').onclick=()=>openInlineHint($('geneHint'));
+function closeInlineHint(){termLens.close();$('inlineGeneHint').hidden=true;$('hint').setAttribute('aria-expanded','false');(inlineHintOpener??$('hint')).focus({preventScroll:true});}
+$('closeInlineHint').onclick=closeInlineHint;
+$('inlineGeneHint').addEventListener('keydown',event=>{if(event.key==='Escape'&&!event.defaultPrevented){event.preventDefault();closeInlineHint();}});
+$('nextInlineHint').onclick=requestGeneHint;
+$('hintChoices').onclick=openGeneBank;
 $('geneGuess').addEventListener('input',()=>$('geneGuess').removeAttribute('aria-invalid'));
-function openDialog(id){completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
+function openDialog(id){termLens.close();highlightConnection(null);completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();artworkAnimation?.pause();discoveryGuide.clear();$(id).showModal();}
 $('geneBankButton').onclick=openGeneBank;
 $('closeGeneBank').onclick=()=>$('geneBankDialog').close();
 $('bankSymbolHint').onclick=requestGeneHint;
@@ -428,7 +484,6 @@ $('discoveriesButton').onclick=()=>openDiscoveries();
 $('closeDiscoveries').onclick=()=>$('discoveriesDialog').close();
 $('libraryButton').onclick=()=>{renderCollection(true);openDialog('libraryDialog');};
 $('closeLibrary').onclick=()=>$('libraryDialog').close();
-$('collectionReview').onclick=()=>{renderCollection(true);openDialog('libraryDialog');};
 $('helpButton').onclick=()=>openDialog('helpDialog');$('startButton').onclick=()=>$('helpDialog').close();document.querySelector('#helpDialog .dialog-close').onclick=()=>$('helpDialog').close();
 $('focusButton').onclick=()=>{pieceMotion.clear();discoveryGuide.clear();const on=!$('game').classList.contains('focus-view');$('game').classList.toggle('focus-view',on);$('focusButton').setAttribute('aria-pressed',String(on));$('focusButton').textContent=on?'Exit focus view':'Focus view';positionCompletion();};
 const figureView=createFigureView({dialog:$('figureDialog'),frame:$('board').closest('.board-frame'),playback:$('artworkPlayback'),stageHost:$('figureStage'),controlsHost:$('figurePlayback'),motion:()=>artworkAnimation,focusTarget:$('enlargeButton'),onOpen:()=>{completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();discoveryGuide.clear();if(artworkAnimation)$('artworkPlayback').append(artworkAnimation.caption);}});
@@ -447,8 +502,10 @@ $('confirmRestart').onclick=()=>{
   attemptMeta=null;canTrackFresh=true;
   completionPlayback.cancel();
   feedbackEpoch++;roundGeneration++;pieceMotion.clear();figureView.close();artworkAnimation?.dispose();artworkAnimation=null;discoveryGuide.clear();bank.reset();sound.stop();
-  $('board').classList.remove('finishing');
-  for(const panel of [$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
+  clearTimeout(completionTimer);termLens.close();highlightConnection(null);
+  $('inlineGeneHint').hidden=true;$('hint').setAttribute('aria-expanded','false');
+  $('board').classList.remove('finishing','completion-settled');
+  for(const panel of [$('completionSummary'),$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
   state=newState();if(timedEntry){timed=true;timedEntry=false;}selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
   $('discoveriesButton').classList.remove('has-new');
@@ -489,15 +546,16 @@ $('diagramDescription').textContent=diagramDescription;
 $('revealGene').textContent=round.gene;$('revealCondition').textContent=round.condition;$('revealAlias').textContent=round.otherName;
 $('revealMetadata').append(node('span',round.inheritance),citation(`https://omim.org/entry/${round.omim}`,`OMIM ${round.omim}`));
 const p=round.clinical;
-$('revealTakeaway').append(node('span','One connection to remember','eyebrow'),node('p',p.memory));
-$('revealTakeaway').lastElementChild.append(referenceMarks(round,[p.patternSource,...p.connectionSources],'Key connection'));
-$('clueConnection').textContent=geneClueConnection(round);
+renderTeachingConnection($('clueConnection'),round,geneClueConnection(round),highlightConnection);
+$('clueConnection').append(referenceMarks(round,p.connectionSources,'Picture and clinical connection'));
+termLens.enhance($('clueConnection'));
 const completionSections=[
  ['How it connects',p.connection,p.connectionSources],
  ['Clinical pattern',p.pattern,[p.patternSource]],
  ['Onset and course',p.onset,[p.patternSource]],
  ['Clinical significance',p.significance.text,p.significance.sources],
- ['Family implications',p.family.text,p.family.sources]
+ ['Family implications',p.family.text,p.family.sources],
+ ['Remember',p.memory,[p.patternSource,...p.connectionSources]]
 ];
 // Adjacent statements with the same sources share one citation marker group.
 const sourceKey=urls=>[...new Set(urls)].sort().join('|');
@@ -509,6 +567,7 @@ $('revealLines').replaceChildren(...completionSections.map(([label,text,sources]
   }
  row.append(title,body);return row;
 }));
+termLens.enhance($('revealLines'));
 $('referencesBody').append(referenceList(round,{heading:''}));
 $('profileLink').href=`./science.html?level=${round.number}`;
 $('figureDialogTitle').textContent=round.gene;$('figureDialogCondition').textContent=round.condition;$('largeFigureCaption').textContent=round.illustration.note;
@@ -518,7 +577,10 @@ const shareCard=initShareCard($('shareIllustration'),{
   getData:()=>roundComplete(state)?{round:{...round,artwork},completed:collectionProgress(key=>{try{return localStorage.getItem(key);}catch{return null;}},{id:round.id,state}).filter(item=>item.done).length,total:rounds.length}:null,
   onOpen:()=>{completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();artworkAnimation?.pause();discoveryGuide.clear();}
 });
-window.addEventListener('pagehide',event=>{if(!event.persisted)shareCard.destroy();});
+window.addEventListener('pagehide',event=>{
+  clearTimeout(completionTimer);clearTimeout(conceptTimer);termLens.close();
+  if(!event.persisted){shareCard.destroy();termLens.destroy();}
+});
 buildBoard();buildTray();render();save();
 void syncPlayer().catch(()=>{});
 window.addEventListener('pageshow',()=>void syncPlayer().catch(()=>{}));
@@ -543,9 +605,9 @@ function renderCollection(includeCards=false) {
   if(count===rounds.length&&lastCollectionCount!==null&&lastCollectionCount<rounds.length){cancelCollectionCelebration();cancelCollectionCelebration=assembleLogo($('collectionLogo'));}
   lastCollectionCount=count;
   const next=progress.find(p=>Number(p.round.number)>Number(round.number)&&!p.done)??progress.find(p=>!p.done&&p.round.id!==round.id);
-  $('nextRound').href=roundLink(next?.round??rounds[0]);
-  $('nextRound').textContent=next?`Next round · ${next.round.number} →`:'Explore the collection →';
-  $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();renderCollection(true);openDialog('libraryDialog');}:null;
+  $('nextRound').href=next?roundLink(next.round):'./collection.html';
+  $('nextRound').textContent=next?`Next round · ${next.round.number} →`:'View collection →';
+  $('nextRound').onclick=null;
   const journeyNext=journey?nextJourneyStep(rounds,progress,journey.id,round.number):null;
   if(journeyNext){
     $('nextRound').href=journeyNext.href;

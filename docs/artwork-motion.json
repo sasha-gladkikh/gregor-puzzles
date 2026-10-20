@@ -345,5 +345,112 @@
         }
       ]
     }
-  ]
+  ],
+  "losslessDelivery": {
+    "created": "2026-10-20",
+    "method": "Pillow lossless WebP, quality=100, method=6, exact=True; no resizing or pixel edits.",
+    "verification": "All decoded RGBA bytes match the corresponding pre-conversion PNG exactly. The PNG paths above document historical generation inputs and outputs; current playable assets use the WebP delivery paths below.",
+    "assets": [
+      {
+        "round": "01",
+        "source": "game/artwork/motion/01-clean.png",
+        "output": "game/artwork/motion/01-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1668631,
+        "outputBytes": 1107774,
+        "decodedRGBA_SHA256": "bc7ffc373d95ecb51d41d056056d2b1960e771fa25ffe7bc92bd8c1b6d7a7111"
+      },
+      {
+        "round": "02",
+        "source": "game/artwork/motion/02-clean.png",
+        "output": "game/artwork/motion/02-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1749126,
+        "outputBytes": 1102030,
+        "decodedRGBA_SHA256": "c1bae76729218b55510bd002410abb74a444a0deefa1ac87c946e4011b1e5fea"
+      },
+      {
+        "round": "03",
+        "source": "game/artwork/motion/03-clean.png",
+        "output": "game/artwork/motion/03-clean.webp",
+        "width": 1447,
+        "height": 1087,
+        "sourceBytes": 1810643,
+        "outputBytes": 1167490,
+        "decodedRGBA_SHA256": "f94adc49ff0ba48f9cbfae4842500e420c939b068c8d66e258407224df9061f6"
+      },
+      {
+        "round": "04",
+        "source": "game/artwork/motion/04-clean.png",
+        "output": "game/artwork/motion/04-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1722511,
+        "outputBytes": 1028110,
+        "decodedRGBA_SHA256": "a0bb2e2cf8866b89fb1153eda026c2b5514f10f18abb893eae6abae1566abccb"
+      },
+      {
+        "round": "05",
+        "source": "game/artwork/motion/05-clean.png",
+        "output": "game/artwork/motion/05-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1700803,
+        "outputBytes": 1049650,
+        "decodedRGBA_SHA256": "6817371f670eebba4becef989a6065f905113aa2bd9335303152ba0fee47f3e1"
+      },
+      {
+        "round": "06",
+        "source": "game/artwork/motion/06-clean.png",
+        "output": "game/artwork/motion/06-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1694373,
+        "outputBytes": 1061182,
+        "decodedRGBA_SHA256": "7acefc7d0233a57ba64f7e6246918316ac208c4563a3b8fc795facd178380d69"
+      },
+      {
+        "round": "07",
+        "source": "game/artwork/motion/07-clean.png",
+        "output": "game/artwork/motion/07-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1668323,
+        "outputBytes": 1060586,
+        "decodedRGBA_SHA256": "c2292bd74b0e2e0df13515f46f309303f9b22c3c96e29634890428795906282d"
+      },
+      {
+        "round": "08",
+        "source": "game/artwork/motion/08-clean.png",
+        "output": "game/artwork/motion/08-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1665255,
+        "outputBytes": 965254,
+        "decodedRGBA_SHA256": "fccb9a18ede292624c618a05dbcd72c380bbe55fdea7232ea566ea47af381313"
+      },
+      {
+        "round": "09",
+        "source": "game/artwork/motion/09-clean.png",
+        "output": "game/artwork/motion/09-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1745175,
+        "outputBytes": 1105634,
+        "decodedRGBA_SHA256": "6146ec541c6f4b643227e806f92963456568862326246fe91bc192d8ca1d3ccb"
+      },
+      {
+        "round": "10",
+        "source": "game/artwork/motion/10-clean.png",
+        "output": "game/artwork/motion/10-clean.webp",
+        "width": 1448,
+        "height": 1086,
+        "sourceBytes": 1320230,
+        "outputBytes": 796780,
+        "decodedRGBA_SHA256": "c2a1970efd6efb0d1e80aa7cd09d6c579f2491947f9efe5e46719e06f6e94944"
+      }
+    ]
+  }
 }

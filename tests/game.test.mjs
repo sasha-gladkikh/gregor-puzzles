@@ -110,7 +110,7 @@ import {hpoTerms} from '../game/hpo-terms.mjs';
 test('clinical teaching retains traceable terminology and sources without revealing names early',()=>{
  for(const r of allRounds){
   assert.ok(r.clinical.objective&&r.clinical.memory);
-  assert.equal(r.clues.find(c=>c.at===6).body,r.clinical.pattern);
+  assert.equal(r.clues.find(c=>c.at===6).body,r.clinical.playPattern);
   assert.ok(r.clinical.pearls.length>=2);
   for(const f of r.clinical.features){if(f.hpo)assert.ok(hpoTerms[f.hpo],f.hpo);assert.ok(r.sources.some(([,url])=>url===f.source));}
   const earlyText=r.clues.filter(c=>c.at<11).map(c=>c.body+' '+c.title).join(' ');
@@ -150,7 +150,7 @@ import {mechanisms,spliceComparison} from '../game/mechanism.mjs';
 test('clues follow location, function, clinical pattern, inheritance, gene, and condition',()=>{
  for(const r of allRounds){
   assert.deepEqual(r.clues.map(c=>c.label),['Location','Function','Clinical pattern','Inheritance','The gene','The condition']);
-  assert.equal(r.clues[2].title,r.clinical.patternTitle);
+  assert.equal(r.clues[2].title,r.clinical.playPatternTitle);
  }
  for(const r of allRounds)for(const field of ['phenotypes','subtitle'])assert.equal(field in r,false,`${r.gene}.${field}`);
 });
@@ -265,7 +265,7 @@ test('automatic early clues and image notes do not name the gene, product, or co
  const escape=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  for(const r of allRounds){
   const terms=[r.gene,...r.aliases,...r.products,r.condition,...conditions].map(t=>new RegExp(`(^|[^A-Za-z0-9])${escape(t)}(?![A-Za-z0-9])`,'i'));
-  const shown=[...r.illustration.landmarks.flatMap(l=>[l.playTitle,l.playText]),r.description,...r.pieces,...r.clues.filter(c=>c.at<11).flatMap(c=>[c.title,c.body])];
+  const shown=[...r.illustration.landmarks.flatMap(l=>[l.playTitle,l.playText,l.playPreview]),r.description,...r.pieces,...r.clues.filter(c=>c.at<11).flatMap(c=>[c.title,c.body])];
   for(const text of shown)for(const term of terms)assert.ok(!term.test(text),`${r.gene}: ${term} in “${text}”`);
   for(const l of r.illustration.landmarks)assert.ok(l.title&&l.text&&l.playTitle&&l.playText);
  }

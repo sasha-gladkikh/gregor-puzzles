@@ -29,14 +29,14 @@ export function geneHintCount(state){
 export function migrateGeneHints(raw){return {geneHintVersion:GENE_HINT_VERSION,geneHintsSeen:geneHintCount(raw)};}
 export function geneHintStatus(state){
  const seen=geneHintCount(state);
- return {seen,total:GENE_HINT_STEPS,hasNext:seen<GENE_HINT_STEPS&&!complete(state),nextLabel:['Get a gene hint','Connect the biology','Reveal symbol hint','All hints shown'][seen]};
+ return {seen,total:GENE_HINT_STEPS,hasNext:seen<GENE_HINT_STEPS&&!complete(state),nextLabel:['Get a gene hint','Next biology hint','Reveal symbol hint','All hints shown'][seen]};
 }
 // Reading saved hints never reveals another step or changes the hint count.
 export function geneHintText(state,round){
  const seen=geneHintCount(state);if(!seen)return null;
- const location=round.clues.find(clue=>clue.label==='Location');
+ const location=round.clues.find(clue=>clue.label==='Location')??round.clues[0];
  const functionClue=round.clues.find(clue=>clue.label==='Function');
- const biology=`${location.title}. ${functionClue.body}`;
+ const biology=geneHintConnections[round.gene]?.biology??`${location.title}. ${functionClue.body}`;
  if(seen===1)return biology;
  const connection=geneHintConnections[round.gene]?.hint??`Connect the location, ${location.title.toLowerCase()}, with the function: ${functionClue.title.toLowerCase()}.`;
  const teaching=`${biology}\n\n${connection}`;

@@ -42,3 +42,28 @@ test('short previews retain a complete sentence without cutting scientific terms
     }
   }
 });
+
+test('authored image previews take priority over extracting the first sentence',()=>{
+  const round=allRounds[0],note=round.illustration.landmarks[0];
+  const preview=latestPlayClue(round,[landmarkPiece(note)]);
+  assert.equal(preview.text,note.playPreview);
+  assert.deepEqual(cluePreview({title:'Transport',preview:'The transporter moves molecules.',text:'A longer explanation.'}),{title:'Transport',text:'The transporter moves molecules.'});
+});
+
+test('the visible preview key follows the same milestone priority and survives restoring progress',async()=>{
+  const {latestClueKey}=await import('../game/play-learning.mjs');
+  for(const round of allRounds){
+    assert.equal(latestClueKey(round,[]),'');
+    for(let offset=0;offset<12;offset++){
+      const order=Array.from({length:12},(_,i)=>(i+offset)%12);
+      for(let n=1;n<12;n++){
+        const placed=order.slice(0,n),key=latestClueKey(round,placed),preview=latestPlayClue(round,placed);
+        assert.equal(latestClueKey(round,JSON.parse(JSON.stringify(placed))),key);
+        if(!key){assert.equal(preview,null);continue;}
+        const [kind,value]=key.split(':');
+        const expected=kind==='landmark'?round.illustration.landmarks[Number(value)].playTitle:round.clues.find(clue=>clue.at===Number(value)).title;
+        assert.equal(preview.title,expected,`${round.gene} ${key}`);
+      }
+    }
+  }
+});

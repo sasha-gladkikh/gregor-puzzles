@@ -6,6 +6,15 @@ const clamp=value=>Math.max(0,Math.min(1,value));
 const smooth=value=>{const x=clamp(value);return x*x*(3-2*x);};
 export const artworkDetails={...complexArtworkDetails,...membraneArtworkDetails};
 
+// Focus is a reading aid, not a change in biological activity. Only decorative
+// reflections are quieter away from the structure named by the current note.
+export function detailFocusWeight(point,focus){
+  if(!focus||!point)return 1;
+  const dx=(point[0]-focus.x*8)/170,dy=(point[1]-focus.y*6)/135;
+  const proximity=Math.exp(-(dx*dx+dy*dy)/2);
+  return 1-.72*clamp(focus.opacity??1)*(1-proximity);
+}
+
 // These are moving reflections and emphasis along the illustration's existing
 // contours and arrows, not extra molecules or experimentally measured events.
 export function sampleDetailTrack(track,elapsed,period){
@@ -44,15 +53,18 @@ export function createArtworkDetails(number,{parent,sprites=[]}){
     group.append(halo,body,glint);
     const target=track.target?sprites.find(sprite=>sprite.data.id===track.target)?.group:null;
     (target??parent).append(group);groups.push(group);
-    return {track,group,paths:[halo,body],glint,last:null};
+    const values=(track.path.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi)??[]).map(Number);
+    const xs=values.filter((_value,index)=>index%2===0),ys=values.filter((_value,index)=>index%2===1);
+    const center=xs.length&&ys.length?[(Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2]:null;
+    return {track,group,paths:[halo,body],glint,last:null,center};
   });
   return {
-    draw(elapsed){
+    draw(elapsed,{focus=null}={}){
       if(disposed)return;
       for(const entry of tracks){
         const frame=sampleDetailTrack(entry.track,elapsed,scene.period);
         if(frame.opacity===0&&entry.last===0)continue;
-        entry.group.setAttribute('opacity',frame.opacity.toFixed(3));entry.last=frame.opacity;
+        entry.group.setAttribute('opacity',(frame.opacity*detailFocusWeight(entry.center,focus)).toFixed(3));entry.last=frame.opacity;
         if(frame.opacity===0)continue;
         for(const path of entry.paths)path.setAttribute('stroke-dashoffset',frame.offset.toFixed(5));
         entry.glint.setAttribute('stroke-dashoffset',frame.headOffset.toFixed(5));

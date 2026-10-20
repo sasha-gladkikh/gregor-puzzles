@@ -1,6 +1,6 @@
 import {artworkMotionData} from './artwork-motion-data.mjs';
 import {artworkSource} from './artwork-source.mjs';
-import {createArtworkDetails} from './artwork-detail.mjs';
+import {createArtworkDetails,detailFocusWeight} from './artwork-detail.mjs';
 import {createArtworkGuide} from './artwork-guide.mjs';
 
 const NS='http://www.w3.org/2000/svg';
@@ -171,9 +171,9 @@ export function sampleArtworkStage(elapsed,pointer={x:0,y:0}){
     depth:ease,
     halo:Math.max(0,arrival)*.16,
     glint,
-    glintOpacity:time<2780?Math.sin(Math.PI*glint)*.92:0,
+    glintOpacity:time<2780?Math.sin(Math.PI*glint)*.62:0,
     sweepX:-320+1460*sweep*sweep*(3-2*sweep),
-    sweepOpacity:time>280&&time<2480?Math.sin(Math.PI*sweep)*.24:0
+    sweepOpacity:time>280&&time<2480?Math.sin(Math.PI*sweep)*.12:0
   };
 }
 
@@ -272,7 +272,7 @@ export function createArtworkAssetCache(load){
 const assetCache=createArtworkAssetCache(source=>loadedImage(source,new Map()));
 function artworkSources(round,scene){
   const original=new URL(artworkSource(round),import.meta.url).href;
-  const cleanURL=new URL(scene.cleanPath??`./artwork/motion/${round.number}-clean.png`,import.meta.url);
+  const cleanURL=new URL(scene.cleanPath??`./artwork/motion/${round.number}-clean.webp`,import.meta.url);
   const revision=new URL(import.meta.url).searchParams.get('v');
   if(revision&&!cleanURL.searchParams.has('v'))cleanURL.searchParams.set('v',revision);
   return {original,clean:cleanURL.href};
@@ -316,12 +316,16 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
     const clip=svgNode('clipPath',{id:clipId,clipPathUnits:'userSpaceOnUse'});clip.append(svgNode('path',{d:sprite.clip}));defs.append(clip);
     const group=svgNode('g',{'data-artwork-sprite':sprite.id??index});
     const cutout=image(original);cutout.setAttribute('clip-path',`url(#${clipId})`);group.append(cutout);movingObjects.append(group);
-    return {data:sprite,group};
+    return {data:sprite,group,elapsed:0};
   });
   const detailLayer=svgNode('g',{'aria-hidden':'true','data-artwork-details':''});
   const details=createArtworkDetails(round.number,{parent:detailLayer,sprites});
   svg.append(cleanPatch,detailLayer,movingObjects);element.append(svg);board.append(element);
-  const guide=createArtworkGuide(round,{parent:svg,guided});
+  // The guide remains visible on the original still image when animation is
+  // disabled or unavailable. No raster assets are needed to read the notes.
+  const guideOverlay=svgNode('svg',{class:'artwork-guide-overlay',viewBox:'0 0 800 600','aria-hidden':'true',focusable:'false'});
+  board.append(guideOverlay);
+  const guide=createArtworkGuide(round,{parent:guideOverlay,guided,onNavigate:()=>pause(),onFocus:index=>{element.dataset.guideIndex=String(index);}});
 
   const controls=node('div','artwork-motion-controls');controls.setAttribute('role','group');controls.setAttribute('aria-label','Illustration animation');
   const button=node('button','tool artwork-motion-toggle','Play illustration');button.type='button';button.disabled=true;button.setAttribute('aria-controls',prefix);button.setAttribute('aria-pressed','false');element.id=prefix;
@@ -336,11 +340,12 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
   const disposedPromise=new Promise(resolve=>{resolveDisposed=()=>resolve(false);});
   const pointer={x:0,y:0},targetPointer={x:0,y:0};let lastDraw=0,lastOpacity=null,lastEntering=null;
   function paint(){
-    controls.hidden=media.matches;button.disabled=!assetsReady&&!failed;
-    guideButton.disabled=!assetsReady&&!failed;guideButton.textContent=guide.enabled?'Replay guide':'Follow the image';
+    controls.hidden=false;button.hidden=media.matches;live.hidden=media.matches;
+    button.disabled=!assetsReady&&!failed;
+    guideButton.disabled=false;guideButton.textContent=media.matches?'Read image notes':guide.enabled?'Replay guide':'Follow the image';
     label.textContent=failed?'Retry illustration':!assetsReady?'Preparing illustration':clock.playing?'Pause illustration':clock.elapsed>0?'Resume illustration':'Play illustration';
     button.setAttribute('aria-pressed',String(clock.playing));
-    controls.setAttribute('aria-label',clock.playing?'Illustration animation, playing':'Illustration animation, paused');
+    controls.setAttribute('aria-label',media.matches?'Illustration guide':clock.playing?'Illustration animation, playing':'Illustration animation, paused');
     iconPath.setAttribute('d',clock.playing?'M6 4h3v12H6Zm5 0h3v12h-3Z':'M7 4.5 15 10l-8 5.5Z');
     controls.classList.toggle('is-playing',clock.playing);controls.classList.toggle('has-played',played);
     element.dataset.state=failed?'unavailable':!assetsReady?'loading':clock.playing?'playing':clock.elapsed>0?'paused':'ready';
@@ -349,16 +354,22 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
   }
   function draw(position,elapsed=0){
     const entrance=sampleArtworkEntrance(elapsed);
-    const blend=1-Math.exp(-Math.min(64,Math.max(0,elapsed-lastDraw))/170);lastDraw=elapsed;
+    const delta=Math.max(0,elapsed-lastDraw),blend=1-Math.exp(-Math.min(64,delta)/170);lastDraw=elapsed;
     pointer.x+=(targetPointer.x-pointer.x)*blend;pointer.y+=(targetPointer.y-pointer.y)*blend;
     stage.draw(elapsed,pointer);
-    for(const {data,group} of sprites){
-      const frame=sampleArtworkMotion(data,elapsed,scene.duration??18000,pointer),[cx,cy]=data.center??[400,300];
+    guide.draw(elapsed,{reduced:media.matches});
+    element.dataset.guideIndex=String(guide.index);
+    const focus=guide.focus;
+    for(const sprite of sprites){
+      const {data,group}=sprite;
+      // Slow only ambient drift away from the current reading focus. Transport
+      // and pathway events retain their authored trajectory and timing.
+      sprite.elapsed+=delta*(data.motion==='float'?detailFocusWeight(data.center,focus):1);
+      const frame=sampleArtworkMotion(data,data.motion==='float'?sprite.elapsed:elapsed,scene.duration??18000,pointer),[cx,cy]=data.center??[400,300];
       group.setAttribute('transform',`translate(${frame.x} ${frame.y}) translate(${cx} ${cy}) rotate(${frame.rotate}) scale(${frame.scale}) translate(${-cx} ${-cy})`);
       group.setAttribute('opacity',String(frame.opacity));
     }
-    details.draw(elapsed);
-    guide.draw(elapsed,{reduced:media.matches});
+    details.draw(elapsed,{focus});
     // Opacity is no longer touched after entry, and its compositor hint is released.
     const opacity=String(entrance.opacity),entering=entrance.opacity<1;
     if(opacity!==lastOpacity){element.style.opacity=opacity;lastOpacity=opacity;}
@@ -371,6 +382,7 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
   }
   function play(){
     if(disposed||media.matches)return;
+    guide.resume(clock.elapsed);
     pendingPlay=true;
     if(failed||!assetsReady){void loadAssets();return;}
     maybePlay();
@@ -381,10 +393,14 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
     guide.restart(clock.elapsed);guide.draw(clock.elapsed,{reduced:media.matches});paint();
     if(!media.matches)play();
   }
+  function focusLandmark(index){
+    if(disposed)return;
+    pause();guide.select(index);element.dataset.guideIndex=String(guide.index);paint();
+  }
   button.addEventListener('click',()=>{if(clock.playing)pause();else play();});
   guideButton.addEventListener('click',replayGuide);
   const visibility=()=>{if(document.hidden)pause();};
-  const resetPointer=()=>{pointer.x=0;pointer.y=0;targetPointer.x=0;targetPointer.y=0;lastDraw=0;};
+  const resetPointer=()=>{pointer.x=0;pointer.y=0;targetPointer.x=0;targetPointer.y=0;lastDraw=0;for(const sprite of sprites)sprite.elapsed=0;};
   const preference=()=>{pendingPlay=false;if(guide.enabled)guide.restart();resetPointer();clock.reset();stage.reset();element.hidden=true;paint();if(!media.matches)void loadAssets();};
   const pointerMove=event=>{
     if(event.pointerType==='touch'||media.matches||!clock.playing)return;
@@ -412,10 +428,10 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false}={}){
   }
   const ready=media.matches?Promise.resolve(false):loadAssets();
   return {
-    element,controls,caption:guide.caption,ready,play,pause,replayGuide,
+    element,controls,caption:guide.caption,ready,play,pause,replayGuide,focusLandmark,
     reset(){if(disposed)return;pendingPlay=false;guide.cancel();resetPointer();clock.reset();stage.reset();element.hidden=true;},
     dispose(){
-      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();details.dispose();guide.dispose();stage.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
+      if(disposed)return;disposed=true;pendingPlay=false;resolveDisposed();clock.dispose();details.dispose();guide.dispose();guideOverlay.remove();stage.dispose();observer.disconnect();document.removeEventListener('visibilitychange',visibility);media.removeEventListener('change',preference);board.removeEventListener('pointermove',pointerMove);board.removeEventListener('pointerleave',pointerLeave);element.remove();controls.remove();
     }
   };
 }

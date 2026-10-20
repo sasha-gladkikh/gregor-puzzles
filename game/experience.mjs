@@ -19,7 +19,23 @@ export function soundFeedback(button){
   const voices=new Set();
   try{enabled=localStorage.getItem(key)!=='off';}catch{}
   const paint=()=>{button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'Turn sound off':'Turn sound on');button.querySelector('span').textContent=enabled?'Sound on':'Sound off';};
-  const stop=()=>{epoch++;for(const voice of voices){try{voice.oscillator.stop();}catch{}voice.release();}voices.clear();};
+  const stop=({preserveCompletion=false,immediate=false}={})=>{
+    epoch++;
+    for(const voice of [...voices]){
+      if(preserveCompletion&&voice.kind==='complete')continue;
+      const now=context?.currentTime??0;
+      // Cancelling an already sounding note at a nonzero waveform produces a
+      // click. Release it over 25 ms; scheduled notes can be removed silently.
+      if(!immediate&&context?.state==='running'&&voice.at<now&&voice.end>now){
+        try{
+          const volume=voice.gain.gain;
+          if(volume.cancelAndHoldAtTime)volume.cancelAndHoldAtTime(now);
+          else{volume.cancelScheduledValues?.(now);volume.setValueAtTime(Math.max(.0001,volume.value??.0001),now);}
+          volume.linearRampToValueAtTime(0,now+.025);voice.oscillator.stop(now+.03);
+        }catch{voice.release();}
+      }else{try{voice.oscillator.stop();}catch{}voice.release();}
+    }
+  };
   const current=token=>!disposed&&token===epoch&&enabled&&!document.hidden;
   async function ready(token){
     if(!current(token))return false;
@@ -60,7 +76,7 @@ export function soundFeedback(button){
       gain.gain.setValueAtTime(0,at);gain.gain.linearRampToValueAtTime(note.volume,at+(kind==='complete'?.012:.006));gain.gain.exponentialRampToValueAtTime(.0001,at+note.length);
       oscillator.connect(gain);gain.connect(context.destination);
       let released=false;
-      const voice={oscillator,release(){if(released)return;released=true;voices.delete(voice);oscillator.disconnect();gain.disconnect();}};
+      const voice={oscillator,gain,kind,at,end:at+note.length,release(){if(released)return;released=true;voices.delete(voice);oscillator.disconnect();gain.disconnect();}};
       voices.add(voice);oscillator.onended=voice.release;
       oscillator.start(at);oscillator.stop(at+note.length+.02);
     }
@@ -75,13 +91,13 @@ export function soundFeedback(button){
     }
     if(current(token))void play();
   };
-  const visibility=()=>{if(document.hidden){stop();void context?.suspend().catch(()=>{});}};
+  const visibility=()=>{if(document.hidden){stop({immediate:true});void context?.suspend().catch(()=>{});}};
   const refresh=()=>{if(disposed)return;let next=enabled;try{next=localStorage.getItem(key)!=='off';}catch{}if(next!==enabled){enabled=next;stop();paint();}};
   const storage=event=>{if(event.key===key||event.key===null)refresh();};
   window.addEventListener('pageshow',refresh);window.addEventListener('storage',storage);
   button.addEventListener('click',toggle);
   document.addEventListener('visibilitychange',visibility);
-  paint();return {prepare,play,stop,dispose(){disposed=true;stop();window.removeEventListener('pageshow',refresh);window.removeEventListener('storage',storage);button.removeEventListener('click',toggle);document.removeEventListener('visibilitychange',visibility);void context?.close?.().catch(()=>{});}};
+  paint();return {prepare,play,stop,dispose(){disposed=true;stop({immediate:true});window.removeEventListener('pageshow',refresh);window.removeEventListener('storage',storage);button.removeEventListener('click',toggle);document.removeEventListener('visibilitychange',visibility);void context?.close?.().catch(()=>{});}};
 }
 
 // The sequence uses the same three referenced image notes as the editorial page.

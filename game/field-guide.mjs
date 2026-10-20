@@ -37,9 +37,11 @@ function entry(round,progress){
  const footer=node('div',null,'guide-entry-footer');const science=node('a','Science →');science.href=`./science.html?level=${round.number}`;footer.append(node('span','Educational content · AI-generated artwork'),science);article.append(footer);return article;
 }
 function render(){
- const progress=collectionProgress(key=>{try{return localStorage.getItem(key);}catch{return null;}}),completed=completedGuideRounds(progress);
- document.querySelector('#guideSummary').textContent=`${completed.length} of ${progress.length} rounds complete. Each page connects an illustration with its scientific context.`;
- document.querySelector('#guideEmpty').hidden=completed.length>0;document.querySelector('#printGuide').hidden=completed.length===0;
+ let storageUnavailable=false;
+ const progress=collectionProgress(key=>{try{return localStorage.getItem(key);}catch{storageUnavailable=true;return null;}}),completed=completedGuideRounds(progress);
+ document.querySelector('#guideSummary').textContent=storageUnavailable?'Your saved progress could not be read.':`${completed.length} of ${progress.length} rounds complete. Each page connects an illustration with its scientific context.`;
+ document.querySelector('#guideStorageNotice').hidden=!storageUnavailable;
+ document.querySelector('#guideEmpty').hidden=storageUnavailable||completed.length>0;document.querySelector('#printGuide').hidden=storageUnavailable||completed.length===0;
  document.querySelector('#firstRound').href=`./play.html?level=${progress.find(item=>!item.done)?.round.number??progress[0]?.round.number??'01'}`;
  document.querySelector('#guideEntries').replaceChildren(...completed.map(round=>entry(round,progress)));
 }
