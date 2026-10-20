@@ -45,3 +45,18 @@ export function createRoundActionQueue({locks=globalThis.navigator?.locks,isCurr
     }
   };
 }
+
+// A reset may wait behind another save. Cancellation remains available until
+// commit begins; after that, keep the dialog open until success or failure.
+export function createDialogCommit({isOpen,onPending=()=>{}}){
+  let pending=false;
+  return {
+    get pending(){return pending;},
+    async run(action){
+      if(!isOpen()||pending)return false;
+      pending=true;onPending(true);
+      try{await action();return true;}
+      finally{pending=false;onPending(false);}
+    }
+  };
+}

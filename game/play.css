@@ -1,5 +1,7 @@
 /* A stable figure, a visible piece tray, and a separate reading column. */
 body{background:var(--surface)}
+/* Keep surviving footers from anchoring to content replaced at completion. */
+body:has(#game){overflow-anchor:none}
 #game{max-width:var(--page-width,1416px);padding:14px var(--page-gutter,28px) 0}
 #game .collection-bar{gap:14px;margin-bottom:12px}
 #game .collection-track{width:80px}
@@ -395,4 +397,44 @@ body{background:var(--surface)}
  #game:not(.round-complete) .assembly-area:has(.board:not(.started)) .start-reassurance{display:none}
  #game .piece-bank{margin-top:8px}
  #game .tray-heading{margin-bottom:4px}
+}
+
+/* Preserve the illustration's geometry from the final placement into the guide.
+   The outer width stays fixed; only the now-unused tray column is removed. */
+@media(min-width:1101px){
+ #game:not(.focus-view) .game-layout{--assembly-limit:800px;--piece-bank-width:164px;max-width:calc(var(--assembly-limit) + 372px);margin-inline:auto}
+ #game:not(.focus-view).round-complete .game-layout{grid-template-columns:calc(100% - 372px - var(--piece-bank-width) - 16px) 340px}
+ #game:not(.focus-view).round-complete .assembly-area{grid-template-columns:minmax(0,1fr)}
+}
+@media(min-width:1101px) and (max-height:850px){
+ #game:not(.focus-view) .game-layout{--assembly-limit:clamp(600px,calc((100dvh - 400px) * 4 / 3 + 168px),800px);--piece-bank-width:152px}
+}
+#game.round-complete .figure-tools{grid-row:1;grid-column:1/-1;min-height:44px}
+#game.round-complete .board-frame{grid-row:2}
+#game.round-complete .assembly-area>.artwork-guide-caption{grid-column:1;grid-row:3;min-width:0;width:100%;margin:0}
+#game.round-complete .assembly-area>.completion-summary{grid-row:4}
+#game.round-complete .completion{grid-row:5}
+#game.round-complete .board-caption{grid-row:6}
+#game.round-complete .diagram-description{grid-row:7}
+#game.round-complete .round-settings{grid-row:8}
+#game .play-collection .discovery-thumb[data-state=complete] .discovery-thumb-number{font-size:10px}
+#game .play-collection .discovery-thumb-check{top:3px;right:3px;width:18px;height:18px;font-size:11px}
+@media(max-width:600px){
+ #game.round-complete .assembly-area>.figure-tools{order:0;margin:0 0 8px;gap:5px;width:100%}
+ #game.round-complete .assembly-area>.board-frame{order:2}
+ #game.round-complete .assembly-area>.artwork-guide-caption{order:3;margin-top:10px}
+ #game.round-complete .assembly-area>.completion-summary{order:4;margin-top:16px}
+}
+@media(max-width:600px) and (max-height:760px){
+ #game .assembly-area>.board-frame{max-width:320px;align-self:center}
+ #game.round-complete .assembly-area>.artwork-guide-caption{max-width:320px;align-self:center}
+}
+/* Use the native artwork at a crisp display size, without synthetic upscaling. */
+@media(min-resolution:2dppx){#figureDialog .figure-stage{max-width:724px}}
+@media(min-resolution:3dppx){#figureDialog .figure-stage{max-width:482px}}
+
+@media(max-width:600px){
+ #game.round-complete .figure-tools{flex-wrap:nowrap;justify-content:flex-start}
+ #game.round-complete #artworkPlayback{flex:none}
+ #game.round-complete #enlargeButton{flex:none;justify-content:center}
 }

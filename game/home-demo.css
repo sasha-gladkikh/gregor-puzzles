@@ -13,6 +13,11 @@
 .home-demo .demo-piece-button>svg{display:block;width:100%;height:100%;overflow:visible}
 .home-demo .demo-piece-button:hover{filter:drop-shadow(0 12px 9px #16305e50)}
 .home-demo .demo-piece-button:focus-visible{outline:3px solid #0043fd;outline-offset:5px;border-radius:9px}
+.home-demo .demo-piece-button[aria-pressed=true]{filter:drop-shadow(0 3px 2px #0043fd75)}
+.home-demo .demo-slot-button{position:absolute;left:50%;top:33.333333%;width:25%;height:33.333333%;padding:0;border:0;background:transparent;z-index:2;border-radius:8px}
+.home-demo .demo-slot-button[aria-disabled=true]{cursor:default}
+.home-demo .demo-slot-button:focus-visible{outline:3px solid #0043fd;outline-offset:-5px}
+.home-demo .demo-has-selection .demo-slot{fill:#dceaff;stroke:#0043fd;stroke-dasharray:none;stroke-width:3}
 .home-demo .demo-piece-dragging{cursor:grabbing;filter:drop-shadow(0 14px 11px #16305e50)}
 .home-demo .demo-piece-edge{fill:none;stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}
 .home-demo .demo-clue{padding:14px 18px 4px;background:#fff}
@@ -44,15 +49,21 @@
 .demo-inspection-head{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 16px 8px 22px;background:#fff;border-bottom:1px solid #e5ebf3}
 .demo-inspection-head h2{font-size:18px;line-height:1.35;margin:0;font-weight:650;letter-spacing:-.02em}
 .demo-inspection-close{min-width:64px;min-height:44px;padding:8px 12px;background:#f0f4fa;color:#243e64;border:0;border-radius:8px;font:600 13px/1.3 var(--sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif)}
-.demo-inspection-stage{position:relative;width:min(100%,73.333dvh);margin-inline:auto;aspect-ratio:4/3;background:#f5f8fc;overflow:hidden}
+.demo-inspection-stage{container-type:inline-size;position:relative;width:min(100%,73.333dvh);margin-inline:auto;aspect-ratio:4/3;background:#f5f8fc;overflow:hidden}
 .demo-inspection-image{display:block;width:100%;height:100%;object-fit:contain}
-.demo-inspection-marker{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:44px;height:44px;padding:0;border:2px solid #fff;border-radius:50%;background:#112d58;color:#fff;box-shadow:0 2px 12px #112d5850;font:650 15px/1 var(--sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif)}
+.demo-inspection-marker{isolation:isolate;position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:28px;height:28px;min-height:0;padding:0;border:2px solid #fff;border-radius:50%;background:#112d58;color:#fff;box-shadow:0 2px 12px #112d5850;font:650 12px/1 var(--sans,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif)}
 .demo-inspection-marker[aria-pressed=true]{background:#0043fd;box-shadow:0 0 0 5px #0043fd20,0 2px 12px #112d5850}
 .demo-inspection-detail{padding:20px 24px 8px;min-height:124px}
 .demo-inspection-detail h3{margin:0 0 7px;font-size:16px;line-height:1.4;font-weight:650}
 .demo-inspection-detail p{margin:0;color:#405775;font-size:15px;line-height:1.6}
 .demo-inspection-caption{margin:0;padding:8px 24px 22px;color:#64758c;font-size:12px;line-height:1.5}
 .demo-inspection button:focus-visible{outline:3px solid #0043fd;outline-offset:3px}
-@media(max-width:520px){.home-demo,.demo-inspection{border-radius:14px}.home-demo .demo-bar{padding:10px 13px;min-height:41px}.home-demo .demo-instruction{font-size:12px}.home-demo .demo-clue{padding:12px 13px 3px}.home-demo .demo-controls{padding:8px 8px 8px 12px;gap:4px;min-height:60px}.home-demo .demo-place,.home-demo .demo-explore{font-size:12px;padding:10px 12px}.home-demo[data-state=complete] .demo-explore{flex:1 1 100%}.home-demo .demo-inspect,.home-demo .demo-replay{padding:9px 7px;font-size:12px}.home-demo .demo-motion-label{font-size:12px}.demo-inspection{width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}.demo-inspection-head{padding-left:16px}.demo-inspection-detail{padding:16px 16px 8px;min-height:142px}.demo-inspection-detail p{font-size:14px}.demo-inspection-caption{padding:6px 16px 18px}.demo-inspection-marker{width:40px;height:40px}}
+@media(max-width:520px){.home-demo,.demo-inspection{border-radius:14px}.home-demo .demo-bar{padding:10px 13px;min-height:41px}.home-demo .demo-instruction{font-size:12px}.home-demo .demo-clue{padding:12px 13px 3px}.home-demo .demo-controls{padding:8px 8px 8px 12px;gap:4px;min-height:60px}.home-demo .demo-place,.home-demo .demo-explore{font-size:12px;padding:10px 12px}.home-demo[data-state=complete] .demo-explore{flex:1 1 100%}.home-demo .demo-inspect,.home-demo .demo-replay{padding:9px 7px;font-size:12px}.home-demo .demo-motion-label{font-size:12px}.demo-inspection{width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}.demo-inspection-head{padding-left:16px}.demo-inspection-detail{padding:16px 16px 8px;min-height:142px}.demo-inspection-detail p{font-size:14px}.demo-inspection-caption{padding:6px 16px 18px}.demo-inspection-marker{width:28px;height:28px}}
 @media(prefers-reduced-motion:reduce){.home-demo .demo-piece-button,.home-demo .demo-place,.home-demo .demo-explore{transition:none!important}.home-demo .demo-schematic-motion,.home-demo .demo-channel-highlight,.home-demo .demo-perimeter{display:none}}
 @media(forced-colors:active){.home-demo,.demo-inspection{border-color:CanvasText}.home-demo .demo-slot{stroke:Highlight;fill:Canvas}.home-demo .demo-clue-marker{background:Canvas;color:CanvasText;border:1px solid CanvasText}.home-demo .demo-place,.home-demo .demo-explore,.demo-inspection-marker{border-color:ButtonText;color:ButtonText;background:ButtonFace}.demo-inspection-marker[aria-pressed=true]{outline:3px solid Highlight}}
+
+.demo-inspection-marker::after{content:"";position:absolute;inset:-8px;border-radius:50%}
+.demo-inspection-leader{position:absolute;left:50%;top:50%;height:1.5px;transform-origin:left center;pointer-events:none;background:#31486c;box-shadow:0 0 0 1px #ffffffd9;z-index:-1}
+.demo-inspection-leader::after{content:"";position:absolute;right:-2px;top:-1.5px;width:4px;height:4px;border-radius:50%;background:#31486c;box-shadow:0 0 0 1px #fff}
+.demo-inspection-marker[aria-pressed=true] .demo-inspection-leader{background:#0043fd}
+@media(forced-colors:active){.demo-inspection-leader,.demo-inspection-leader::after{background:CanvasText}}

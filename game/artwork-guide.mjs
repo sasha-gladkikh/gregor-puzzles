@@ -6,11 +6,14 @@ const clamp=value=>Math.max(0,Math.min(1,value));
 const smooth=value=>{const t=clamp(value);return t*t*(3-2*t);};
 
 export function artworkGuideSteps(round){
-  let at=1100;
+  let at=2200;
   return round.illustration.landmarks.map((point,index)=>{
     // Allow reading time rather than racing every caption at a fixed rate.
     const words=`${point.title} ${point.text}`.trim().split(/\s+/).length;
-    const duration=Math.max(6500,Math.min(10000,words*225));
+    // Scientific reading competes with inspecting the image. Allow an initial
+    // orientation pause plus a conservative 160 words/minute, without a cap
+    // that silently penalizes the longest notes.
+    const duration=Math.max(10000,2500+words*375);
     const step={...point,index,at,duration};at+=duration;return step;
   });
 }
@@ -42,7 +45,9 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
   const caption=node('section','artwork-guide-caption');caption.hidden=!guided;
   caption.setAttribute('aria-label','Illustration guide');
   const heading=node('div','artwork-guide-heading'),label=node('span','artwork-guide-label','Follow the image');
-  const count=node('span','artwork-guide-count');count.setAttribute('aria-hidden','true');heading.append(label,count);
+  const count=node('span','artwork-guide-count');count.setAttribute('aria-hidden','true');
+  const hold=node('button','artwork-guide-hold','Pause guide');hold.type='button';hold.setAttribute('aria-pressed','false');
+  heading.append(label,count,hold);
   const copy=node('div','artwork-guide-copy');copy.setAttribute('aria-live','polite');copy.setAttribute('aria-atomic','true');
   const current=node('div','artwork-guide-content');
   const title=node('strong','artwork-guide-title'),body=node('p','artwork-guide-text');current.append(title,body);copy.append(current);
@@ -65,7 +70,7 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
   const ring=svgNode('ellipse',{cx:0,cy:0,rx:67,ry:54,fill:'#4488ee','fill-opacity':.035,stroke:'#326dde','stroke-width':1.6,'vector-effect':'non-scaling-stroke'});
   focus.append(halo,ring);parent?.append(focus);
   let enabled=Boolean(guided),origin=0,lastKey=null,disposed=false,lastOpacity=null,lastPosition=null,lastProgress=null;
-  let manualIndex=null,lastElapsed=0,reduced=false,currentIndex=0,currentFocus=null;
+  let manualIndex=null,heldAge=0,lastElapsed=0,reduced=false,currentIndex=0,currentFocus=null;
   const setOpacity=value=>{if(value!==lastOpacity){focus.setAttribute('opacity',value);lastOpacity=value;}};
   const hideFocus=()=>setOpacity('0');
   const api={
@@ -73,13 +78,13 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
     get enabled(){return enabled;},
     get focus(){return currentFocus;},
     get index(){return enabled&&currentIndex<steps.length?currentIndex:-1;},
-    restart(elapsed=0){if(disposed)return;enabled=true;origin=Math.max(0,elapsed);manualIndex=null;lastKey=null;},
+    restart(elapsed=0){if(disposed)return;enabled=true;origin=Math.max(0,elapsed);manualIndex=null;heldAge=0;lastKey=null;},
     resume(elapsed=0){
-      if(manualIndex!==null){origin=Math.max(0,elapsed)-steps[manualIndex].at;manualIndex=null;lastKey=null;}
+      if(manualIndex!==null){origin=Math.max(0,elapsed)-steps[manualIndex].at-heldAge;manualIndex=null;heldAge=0;lastKey=null;}
     },
     select(index){
       if(disposed||!steps.length)return;
-      enabled=true;manualIndex=Math.max(0,Math.min(steps.length-1,index));lastKey=null;
+      enabled=true;manualIndex=Math.max(0,Math.min(steps.length-1,index));heldAge=0;lastKey=null;
       api.draw(lastElapsed,{reduced});
     },
     cancel(){enabled=false;caption.hidden=true;hideFocus();lastKey=null;currentFocus=null;onFocus(-1);},
@@ -92,6 +97,9 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
       const state=manual?{index:manualIndex??0,done:!steps.length,progress:0,opacity:.85}:sampleArtworkGuide(steps,elapsed-origin);
       currentIndex=state.done?steps.length:state.index;
       currentFocus=state.done?null:{...steps[state.index],opacity:state.opacity};
+      hold.hidden=reduced||state.done;
+      hold.textContent=manual?'Resume guide':'Pause guide';
+      hold.setAttribute('aria-pressed',String(manual));
       const key=state.done?'done':`${manual?'static-':''}${state.index}`;
       if(key!==lastKey){
         lastKey=key;caption.dataset.phase=key;
@@ -116,6 +124,12 @@ export function createArtworkGuide(round,{parent,guided=false,onNavigate=()=>{},
     dispose(){disposed=true;enabled=false;focus.remove();caption.remove();}
   };
   const navigate=index=>{if(disposed)return;onNavigate(index);api.select(index);};
+  hold.onclick=()=>{
+    if(disposed||reduced)return;
+    onNavigate(currentIndex);
+    if(manualIndex===null){const age=Math.max(0,lastElapsed-origin-steps[currentIndex].at);api.select(currentIndex);heldAge=age;}
+    else {api.resume(lastElapsed);api.draw(lastElapsed,{reduced});}
+  };
   previous.onclick=()=>navigate(currentIndex===steps.length?0:currentIndex-1);
   next.onclick=()=>navigate(currentIndex+1);
   return api;

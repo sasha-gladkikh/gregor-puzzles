@@ -128,12 +128,13 @@ function floatingFrame(sprite,elapsed,duration){
 // Independent clocks keep neighboring objects from moving in lockstep. The
 // transport clock always starts at its source; ambient drift has its own rhythm.
 export function sampleArtworkMotion(sprite,elapsed,duration=18000,pointer={x:0,y:0}){
+  if(sprite.motion==='fixed')return identity();
   const entrance=sampleArtworkEntrance(elapsed).motion;
   if(entrance===0)return identity();
   if(sprite.motion==='transport'){
     const transport=sampleTransport(sprite,elapsed,duration);if(transport)return transport;
   }
-  const position=cycle(elapsed/(sprite.period??duration)+(sprite.phase??0));
+  const position=cycle(elapsed/(sprite.period??duration)+(sprite.motion==='sequence'?0:sprite.phase??0));
   const frame=sprite.motion==='float'?floatingFrame(sprite,elapsed,duration):interpolateArtworkSprite(sprite,position),secondary=sprite.secondary;
   if(secondary){
     const angle=2*Math.PI*(elapsed/(secondary.period??sprite.period??duration)+(secondary.phase??0));
@@ -179,6 +180,11 @@ export function sampleArtworkStage(elapsed,pointer={x:0,y:0}){
 
 function svgNode(tag,attrs={}){const element=document.createElementNS(NS,tag);for(const [key,value] of Object.entries(attrs))element.setAttribute(key,String(value));return element;}
 function node(tag,className,text){const element=document.createElement(tag);if(className)element.className=className;if(text)element.textContent=text;return element;}
+
+export function artworkControlLabels({failed=false,assetsReady=false,playing=false,elapsed=0,reduced=false,guided=false}={}){
+  const compact=failed?'Retry':!assetsReady?'Preparing':playing?'Pause':elapsed>0?'Resume':'Play';
+  return {playback:`${compact} illustration`,compact,guide:reduced?'Read image notes':guided?'Replay guide':'Follow the image',guideCompact:reduced?'Read notes':guided?'Replay guide':'Guide'};
+}
 
 export function createArtworkRemovalPatch(sprite){
   const group=svgNode('g');
@@ -272,6 +278,7 @@ export function createArtworkAssetCache(load){
 const assetCache=createArtworkAssetCache(source=>loadedImage(source,new Map()));
 function artworkSources(round,scene){
   const original=new URL(artworkSource(round),import.meta.url).href;
+  if(scene.sprites.every(sprite=>sprite.motion==='fixed'))return {original,clean:original};
   const cleanURL=new URL(scene.cleanPath??`./artwork/motion/${round.number}-clean.webp`,import.meta.url);
   const revision=new URL(import.meta.url).searchParams.get('v');
   if(revision&&!cleanURL.searchParams.has('v'))cleanURL.searchParams.set('v',revision);
@@ -310,7 +317,7 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false,onInter
   const patchShapes=svgNode('g',{filter:`url(#${prefix}-feather)`});mask.append(patchShapes);defs.append(mask);
   const cleanPatch=image(clean);cleanPatch.setAttribute('mask',`url(#${patchId})`);cleanPatch.setAttribute('aria-hidden','true');
   const movingObjects=svgNode('g',{'aria-hidden':'true'});
-  const sprites=scene.sprites.map((sprite,index)=>{
+  const sprites=scene.sprites.filter(sprite=>sprite.motion!=='fixed').map((sprite,index)=>{
     const clipId=`${prefix}-sprite-${index}`;
     patchShapes.append(createArtworkRemovalPatch(sprite));
     const clip=svgNode('clipPath',{id:clipId,clipPathUnits:'userSpaceOnUse'});clip.append(svgNode('path',{d:sprite.clip}));defs.append(clip);
@@ -325,14 +332,19 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false,onInter
   // disabled or unavailable. No raster assets are needed to read the notes.
   const guideOverlay=svgNode('svg',{class:'artwork-guide-overlay',viewBox:'0 0 800 600','aria-hidden':'true',focusable:'false'});
   board.append(guideOverlay);
-  const guide=createArtworkGuide(round,{parent:guideOverlay,guided,onNavigate:()=>{onInteract();pause();},onFocus:index=>{element.dataset.guideIndex=String(index);}});
+  // Reading a note holds that note, not all of the biological motion. The main
+  // illustration control still pauses the single shared clock when requested.
+  const guide=createArtworkGuide(round,{parent:guideOverlay,guided,onNavigate:()=>{onInteract();},onFocus:index=>{element.dataset.guideIndex=String(index);}});
 
   const controls=node('div','artwork-motion-controls');controls.setAttribute('role','group');controls.setAttribute('aria-label','Illustration animation');
   const button=node('button','tool artwork-motion-toggle','Play illustration');button.type='button';button.disabled=true;button.setAttribute('aria-controls',prefix);button.setAttribute('aria-pressed','false');element.id=prefix;
   const icon=svgNode('svg',{viewBox:'0 0 20 20','aria-hidden':'true',focusable:'false'}),iconPath=svgNode('path',{d:'M7 4.5 15 10l-8 5.5Z'});icon.append(iconPath);
-  const label=node('span',null,'Play illustration');button.replaceChildren(icon,label);
+  const label=node('span','artwork-control-full','Play illustration'),compactLabel=node('span','artwork-control-compact','Play');
+  for(const copy of [label,compactLabel])copy.setAttribute('aria-hidden','true');button.replaceChildren(icon,label,compactLabel);
   const live=node('span','artwork-motion-live');live.setAttribute('aria-hidden','true');for(let i=0;i<3;i++)live.append(node('i'));
-  const guideButton=node('button','tool artwork-guide-replay','Follow the image');guideButton.type='button';
+  const guideButton=node('button','tool artwork-guide-replay');guideButton.type='button';
+  const guideLabel=node('span','artwork-control-full'),compactGuideLabel=node('span','artwork-control-compact');
+  for(const copy of [guideLabel,compactGuideLabel])copy.setAttribute('aria-hidden','true');guideButton.append(guideLabel,compactGuideLabel);
   guide.caption.id=`${prefix}-guide`;guideButton.setAttribute('aria-controls',guide.caption.id);
   controls.append(button,live,guideButton);
   let disposed=false,assetsReady=false,failed=false,visible=false,pendingPlay=Boolean(autoplay)&&!media.matches,played=false;
@@ -342,8 +354,9 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false,onInter
   function paint(){
     controls.hidden=false;button.hidden=media.matches;live.hidden=media.matches;
     button.disabled=!assetsReady&&!failed;
-    guideButton.disabled=false;guideButton.textContent=media.matches?'Read image notes':guide.enabled?'Replay guide':'Follow the image';
-    label.textContent=failed?'Retry illustration':!assetsReady?'Preparing illustration':clock.playing?'Pause illustration':clock.elapsed>0?'Resume illustration':'Play illustration';
+    const copy=artworkControlLabels({failed,assetsReady,playing:clock.playing,elapsed:clock.elapsed,reduced:media.matches,guided:guide.enabled});
+    guideButton.disabled=false;guideLabel.textContent=copy.guide;compactGuideLabel.textContent=copy.guideCompact;guideButton.setAttribute('aria-label',copy.guide);
+    label.textContent=copy.playback;compactLabel.textContent=copy.compact;button.setAttribute('aria-label',copy.playback);
     button.setAttribute('aria-pressed',String(clock.playing));
     controls.setAttribute('aria-label',media.matches?'Illustration guide':clock.playing?'Illustration animation, playing':'Illustration animation, paused');
     iconPath.setAttribute('d',clock.playing?'M6 4h3v12H6Zm5 0h3v12h-3Z':'M7 4.5 15 10l-8 5.5Z');
@@ -353,7 +366,10 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false,onInter
     if(media.matches||!assetsReady)element.hidden=true;
   }
   function draw(position,elapsed=0){
-    const entrance=sampleArtworkEntrance(elapsed);
+    // The final piece has already settled before this clock starts. Give the
+    // perimeter its one arrival, then bring the original biology into motion.
+    const biologyElapsed=Math.max(0,elapsed-1700);
+    const entrance=sampleArtworkEntrance(biologyElapsed);
     const delta=Math.max(0,elapsed-lastDraw),blend=1-Math.exp(-Math.min(64,delta)/170);lastDraw=elapsed;
     pointer.x+=(targetPointer.x-pointer.x)*blend;pointer.y+=(targetPointer.y-pointer.y)*blend;
     stage.draw(elapsed,pointer);
@@ -364,12 +380,12 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false,onInter
       const {data,group}=sprite;
       // Slow only ambient drift away from the current reading focus. Transport
       // and pathway events retain their authored trajectory and timing.
-      sprite.elapsed+=delta*(data.motion==='float'?detailFocusWeight(data.center,focus):1);
-      const frame=sampleArtworkMotion(data,data.motion==='float'?sprite.elapsed:elapsed,scene.duration??18000,pointer),[cx,cy]=data.center??[400,300];
+      if(biologyElapsed>0)sprite.elapsed+=Math.min(delta,biologyElapsed)*(data.motion==='float'?detailFocusWeight(data.center,focus):1);
+      const frame=sampleArtworkMotion(data,data.motion==='float'?sprite.elapsed:biologyElapsed,scene.duration??18000,pointer),[cx,cy]=data.center??[400,300];
       group.setAttribute('transform',`translate(${frame.x} ${frame.y}) translate(${cx} ${cy}) rotate(${frame.rotate}) scale(${frame.scale}) translate(${-cx} ${-cy})`);
       group.setAttribute('opacity',String(frame.opacity));
     }
-    details.draw(elapsed,{focus});
+    details.draw(biologyElapsed,{focus});
     // Opacity is no longer touched after entry, and its compositor hint is released.
     const opacity=String(entrance.opacity),entering=entrance.opacity<1;
     if(opacity!==lastOpacity){element.style.opacity=opacity;lastOpacity=opacity;}
@@ -382,7 +398,6 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false,onInter
   }
   function play(){
     if(disposed||media.matches)return;
-    guide.resume(clock.elapsed);
     pendingPlay=true;
     if(failed||!assetsReady){void loadAssets();return;}
     maybePlay();
@@ -395,7 +410,7 @@ export function animatedArtwork(round,{board,autoplay=false,guided=false,onInter
   }
   function focusLandmark(index){
     if(disposed)return;
-    pause();guide.select(index);element.dataset.guideIndex=String(guide.index);paint();
+    guide.select(index);element.dataset.guideIndex=String(guide.index);paint();
   }
   button.addEventListener('click',()=>{onInteract();if(clock.playing)pause();else play();});
   guideButton.addEventListener('click',()=>{onInteract();replayGuide();});

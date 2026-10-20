@@ -19,7 +19,7 @@ const entries=[
   variant:'Biallelic variants that reduce chloride-channel function.',
   nuance:'Experiences vary. CLCN1 is also associated with a dominant form; the inheritance pattern belongs to the specific gene–condition relationship.',
   summary:'Reduced chloride conductance can prolong muscle electrical activity and delay relaxation. This round focuses on the recessive gene–condition relationship.',
-  sources:[['MedlinePlus · genetics overview',med('condition/myotonia-congenita')],['GeneReviews · clinical reference','https://www.ncbi.nlm.nih.gov/books/NBK1355/'],['PLOS Biology · channel structure','https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000218']],
+  sources:[['MedlinePlus · genetics overview',med('condition/myotonia-congenita')],['GeneReviews · myotonia congenita','https://www.ncbi.nlm.nih.gov/books/NBK1355/'],['PLOS Biology · channel structure','https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000218']],
   community:['Muscular Dystrophy Association','https://www.mda.org/disease/myotonia-congenita']},
  {gene:'GJB2',omim:'220290',id:'gjb2-dfnb1a-v1',title:'A connection between cells',topic:'Cell communication',
   condition:'Autosomal recessive nonsyndromic hearing loss 1A',otherName:'Also called DFNB1A',inheritance:AR,
@@ -38,7 +38,7 @@ const entries=[
   summary:'ENT3 participates in intracellular nucleoside transport. Reduced function is associated with a broad histiocytosis spectrum; the full disease mechanism remains under study.',
   sources:[['MedlinePlus · condition',med('condition/histiocytosis-lymphadenopathy-plus-syndrome')],['MedlinePlus · SLC29A3',med('gene/slc29a3')],['Nair et al. · Slc29a3 mouse model (2019)','https://www.nature.com/articles/s41467-019-10925-3']],community:nord},
  {gene:'SBDS',omim:'260400',id:'sbds-sds1-v1',title:'Preparing the protein factory',topic:'Ribosome maturation',
-  condition:'Shwachman-Diamond syndrome 1',otherName:'SBDS-related Shwachman-Diamond syndrome',inheritance:AR,
+  condition:'Shwachman-Diamond syndrome 1',otherName:'',inheritance:AR,
   clues:[['Location','Maturing ribosomal subunits','Ribosomes make proteins. This factor helps prepare the larger of their two subunits.'],['Function','Prepare a working ribosome','It helps release a blocking factor so the large and small subunits can join.']],
   geneBody:'Encodes a ribosome maturation factor.',conditionBody:'A condition that can affect the pancreas, blood cell production, and skeleton.',
   variant:'Often splice-site or truncating variants; gene conversion can transfer changes from a nearby pseudogene.',
@@ -54,7 +54,7 @@ const entries=[
   summary:'A functional RNA helps the major spliceosome process RNA messages. A variant can affect a noncoding RNA itself, even when no protein-coding sequence changes.',
   sources:[['Chen et al. · Nature 2024','https://www.nature.com/articles/s41586-024-07773-7'],['GeneReviews · ReNU syndrome','https://www.ncbi.nlm.nih.gov/books/NBK622730/'],['Nature 2026 · distinct dominant and recessive associations','https://www.nature.com/articles/s41586-026-10334-9']],community:['ReNU Syndrome United','https://www.renusyndrome.org/']},
  {gene:'CACNA1A',omim:'617106',id:'cacna1a-dee42-v1',title:'Passing the neural signal',topic:'Synaptic communication',
-  condition:'Developmental and epileptic encephalopathy 42',otherName:'CACNA1A-related DEE42',inheritance:AD,aliases:['CACNL1A4'],
+  condition:'Developmental and epileptic encephalopathy 42',otherName:'Also called DEE42',inheritance:AD,aliases:['CACNL1A4'],
   clues:[['Location','Nerve-ending membranes','Calcium channels in nerve endings help neurons communicate.'],['Function','Trigger chemical-signal release','Calcium enters through the channel and helps trigger release of neurotransmitters, the chemical signals between neurons.']],
   geneBody:'Encodes the pore-forming alpha-1A subunit of CaV2.1.',conditionBody:'A neurodevelopmental condition that includes epilepsy.',
   variant:'Heterozygous variants affecting channel function; effects are variant-dependent.',
@@ -62,7 +62,7 @@ const entries=[
   summary:'CaV2.1 helps couple calcium entry to neurotransmitter release. Disturbed channel function can alter communication between neurons.',
   sources:[['MedlinePlus · CACNA1A',med('gene/cacna1a')],['Jiang et al. · CACNA1A gain and loss of function (2019)','https://pubmed.ncbi.nlm.nih.gov/31468518/']],community:['CACNA1A Foundation','https://www.cacna1a.org/']},
  {gene:'PTPN11',omim:'163950',id:'ptpn11-noonan1-v1',title:'Keeping growth signals in balance',topic:'RAS / MAPK signaling',
-  condition:'Noonan syndrome 1',otherName:'PTPN11-related Noonan syndrome',inheritance:AD,
+  condition:'Noonan syndrome 1',otherName:'',inheritance:AD,
   clues:[['Location','Intracellular signaling complexes','A regulatory protein participates in signals inside cells.'],['Function','Regulate growth signals','The protein regulates the RAS/MAPK pathway, which helps coordinate growth and development.']],
   geneBody:'Encodes the SHP-2 protein tyrosine phosphatase.',conditionBody:'A developmental condition with a variable combination of features.',
   variant:'Typically heterozygous missense variants that increase SHP-2 activity.',
@@ -98,6 +98,11 @@ const entries=[
 // Unambiguous product names are accepted and mapped back to the gene at completion.
 const products={CLCN1:['ClC-1'],GJB2:['Cx26','connexin 26'],SLC29A3:['ENT3'],'RNU4-2':['U4','U4 snRNA'],CACNA1A:['CaV2.1'],PTPN11:['SHP-2'],RNU4ATAC:['U4atac'],STING1:['STING'],FGF14:['FHF4']};
 const referenceNames={
+ 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6019066/':'Park & MacKinnon · human ClC-1 channel structure (2018)',
+ 'https://pubmed.ncbi.nlm.nih.gov/26479198/':'Weis et al. · eIF6 release from the ribosome (2015)',
+ 'https://www.nature.com/articles/s41467-024-50785-0':'Zhan et al. · human spliceosome activation (2024)',
+ 'https://link.springer.com/article/10.15252/embj.2020106536':'de Wolf et al. · minor-spliceosome assembly and CENATAC (2021)',
+ 'https://pubmed.ncbi.nlm.nih.gov/29870684/':'Ogawa et al. · STING trafficking and TBK1 recruitment (2018)',
  'https://pmc.ncbi.nlm.nih.gov/articles/PMC7235630/':'ClinGen Hearing Loss Expert Panel · GJB2 penetrance (2019)',
  'https://pubmed.ncbi.nlm.nih.gov/24172204/':'Molho-Pessach et al. · H syndrome clinical series (2014)',
  'https://pmc.ncbi.nlm.nih.gov/articles/PMC2561939/':'Molho-Pessach et al. · SLC29A3 and H syndrome (2008)',
@@ -128,7 +133,7 @@ export const allRounds=entries.map((r,index)=>{
  const number=String(index+1).padStart(2,'0'),clinical=clinicalProfiles[r.gene],illustration=illustrations[number];
  const sources=new Map([[`https://omim.org/entry/${r.omim}`,`OMIM · condition #${r.omim}`],...r.sources.map(([label,url])=>[url,label])]);
  if(!sources.has(illustration.source))sources.set(illustration.source,referenceNames[illustration.source]??'Illustration · mechanistic reference');
- if(illustration.noteSource&&!sources.has(illustration.noteSource))sources.set(illustration.noteSource,'Spliceosome · assembly and activation');
+ if(illustration.noteSource&&!sources.has(illustration.noteSource))sources.set(illustration.noteSource,referenceNames[illustration.noteSource]??'Spliceosome · assembly and activation');
  const urls=[clinical.patternSource,...clinical.connectionSources,...[clinical.significance,clinical.family,clinical.interpretation].flatMap(claim=>claim.sources),...clinical.features.map(f=>f.source),...clinical.pearls.flatMap(p=>p.sources),...(clinical.extraSources??[])];
  for(const url of urls) if(!sources.has(url)) sources.set(url,referenceNames[url]??(url.includes('ncbi.nlm.nih.gov/books')?'GeneReviews · clinical and molecular reference':url.includes('medlineplus')?'MedlinePlus Genetics · clinical reference':'Primary research · clinical and molecular evidence'));
  for(const [label,url] of interpretationSources)if(!sources.has(url))sources.set(url,label);

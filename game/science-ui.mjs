@@ -1,6 +1,6 @@
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
 import {hpoTerms} from './hpo-terms.mjs';
-import {artworkMarkers} from './artwork-ui.mjs';
+import {artworkMarkers,artworkAnnotations} from './artwork-ui.mjs';
 import {artworkSrcset} from './artwork-source.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
 import {interpretationPrinciples} from './interpretation.mjs';
@@ -24,7 +24,7 @@ export function scientificFigure(round){
  }
  const markers=artworkMarkers(round,select);
  markers.querySelectorAll('button').forEach((button,i)=>button.setAttribute('aria-label',`Explore structure ${i+1}: ${round.illustration.landmarks[i].title}`));
- imageBox.append(image,markers);
+ imageBox.append(image,artworkAnnotations(round),markers);
  const caption=node('figcaption');caption.append(node('span','Illustrated mechanism','science-kicker'),node('p',round.illustration.takeaway),node('span','Select a numbered structure to explore it.','figure-instruction'));
  figure.append(imageBox,caption);section.append(figure);
  round.illustration.landmarks.forEach((point,i)=>{
@@ -48,20 +48,26 @@ export function clinicalDetails(round){
  const features=node('div',null,'science-features');
  for(const {id,label,description,items} of groupedClinicalFeatures(p.features)){
   const group=node('section',null,'science-feature-group');group.dataset.group=id;
-  group.append(node('h4',label));
+  const groupHeading=node('h4',label);
+  const groupSources=[...new Set(items.map(feature=>feature.source))].filter(source=>source!==p.patternSource);
+  groupHeading.append(referenceMarks(round,groupSources,label));
+  group.append(groupHeading);
   if(description)group.append(node('p',description,'science-context'));
   // Group claims with a shared source instead of repeating a source control per finding.
   const systems=new Map();for(const feature of items){if(!systems.has(feature.system))systems.set(feature.system,[]);systems.get(feature.system).push(feature);}
   for(const [system,findings] of systems){
-   const subsection=node('section',null,'science-feature-system'),heading=node('h5',system),sources=new Set(findings.map(f=>f.source));
-   if(sources.size===1)heading.append(referenceMarks(round,[...sources],`${system} findings`));
+   const subsection=node('section',null,'science-feature-system'),heading=node('h5',system);
    subsection.append(heading);const list=node('ul',null,'science-feature-list');
    for(const feature of findings){
-    const item=node('li',null,'science-feature'),description=node('p'),title=node('strong',`${feature.title}.`);
-    if(sources.size>1)title.append(referenceMarks(round,feature.source,feature.title));
+    const item=node('li',null,'science-feature'),description=node('p'),title=node('strong');
+    const inline=hasExactHpoTitle(feature);
+    if(inline){
+     const link=citation(`https://hpo.jax.org/browse/term/${feature.hpo}`,feature.title,`${feature.title} · ${feature.hpo}`);
+     link.classList.add('science-term');link.title=`HPO · ${feature.hpo}`;title.append(link,document.createTextNode('.'));
+    }else title.textContent=`${feature.title}.`;
     description.append(title,document.createTextNode(` ${feature.text}`));
     const context=node('p',feature.context,'science-context');item.append(description,context);
-    if(feature.hpo){
+    if(feature.hpo&&!inline){
      const term=node('p',null,'science-hpo');term.append(node('span','HPO: '),citation(`https://hpo.jax.org/browse/term/${feature.hpo}`,`${hpoTerms[feature.hpo]} · ${feature.hpo}`));
      if(feature.hpoQualifier)term.append(node('span',feature.hpoQualifier,'science-hpo-qualifier'));
      item.append(term);
@@ -74,6 +80,13 @@ export function clinicalDetails(round){
  terminology.append(node('summary','About HPO terms'),node('p','Human Phenotype Ontology (HPO) links define standardized clinical terms. A link maps the wording to a term; it does not establish a formal disease annotation. Qualifiers identify terms that are broader than the described finding.','science-context'));
  section.append(features,terminology);
  return section;
+}
+
+// Only combine identical terms. Broader or partial mappings retain their
+// explicit ontology label and qualifier beside the described finding.
+export function hasExactHpoTitle(feature){
+ const normalized=value=>String(value??'').toLowerCase().replace(/[–—-]/g,' ').replace(/\s+/g,' ').trim();
+ return Boolean(feature.hpo&&!feature.hpoQualifier&&normalized(feature.title)===normalized(hpoTerms[feature.hpo]));
 }
 
 export function groupedClinicalFeatures(features){

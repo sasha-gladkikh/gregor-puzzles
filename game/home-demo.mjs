@@ -1,5 +1,5 @@
 import {pathFor, SIZE, W, H} from './puzzle-geometry.mjs';
-import {illustrations} from './artwork-data.mjs';
+import {illustrations, markerGeometry} from './artwork-data.mjs';
 import {soundFeedback} from './experience.mjs';
 
 const activeDemos = new WeakMap();
@@ -33,7 +33,7 @@ export function demoDestination(destination) {
 
 // The inspection lens deliberately uses the reviewed, anonymous play wording.
 export function demoInspectionNotes() {
-  return illustrations['01'].landmarks.map(({x, y, playTitle, playText}) => ({x, y, title: playTitle, text: playText}));
+  return illustrations['01'].landmarks.map(point => ({x: point.x, y: point.y, title: point.playTitle, text: point.playText, marker: markerGeometry(point)}));
 }
 
 export function initHomeDemo(host = document.getElementById('homeDemo'), options = {}) {
@@ -41,14 +41,14 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
   activeDemos.get(host)?.destroy();
   const controller = new AbortController();
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const state = {phase: 'loading', visible: false, reduced: media.matches, alive: true, run: 0, drag: null, suppressClick: false, animations: new Set(), interacted: false, invited: false, inspection: false};
+  const state = {phase: 'loading', selected: false, visible: false, reduced: media.matches, alive: true, run: 0, drag: null, suppressClick: false, animations: new Set(), interacted: false, invited: false, inspection: false};
   let destination = demoDestination(options.destination);
   const prefix = `home-demo-${++nextId}`;
   const fallback = host.querySelector('img');
   const source = fallback?.getAttribute('src') || './artwork/01.webp';
   const image = fallback || new Image();
   if (!fallback) image.src = source;
-  let observer, resizeObserver, board, piece, place, replay, explore, status, heading, count, clue, clueLabel, marker, illustration, seams, highlight, motion, motionLabel, slot, perimeter, sound, invitationTimer, inspectionDialog, inspectButton;
+  let observer, resizeObserver, board, piece, place, slotButton, replay, explore, status, heading, count, clue, clueLabel, marker, illustration, seams, highlight, motion, motionLabel, slot, perimeter, sound, invitationTimer, inspectionDialog, inspectButton;
   const on = (element, event, listener, options = {}) => element.addEventListener(event, listener, {...options, signal: controller.signal});
   const html = (tag, className, text) => {
     const node = document.createElement(tag);
@@ -108,6 +108,26 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     piece.classList.remove('demo-piece-dragging');
     piece.hidden = false;
     piece.removeAttribute('aria-disabled');
+    state.selected = false;
+    piece.setAttribute('aria-pressed', 'false');
+    slotButton.hidden = false;
+    slotButton.setAttribute('aria-disabled', 'true');
+    slotButton.tabIndex = -1;
+    board.classList.remove('demo-has-selection');
+    heading.textContent = 'Try one piece';
+    place.textContent = 'Select piece';
+  }
+  function selectPiece() {
+    if (state.phase !== 'ready') return;
+    stopInvitation();
+    state.selected = true;
+    piece.setAttribute('aria-pressed', 'true');
+    slotButton.setAttribute('aria-disabled', 'false');
+    slotButton.tabIndex = 0;
+    board.classList.add('demo-has-selection');
+    heading.textContent = 'Now tap the matching space';
+    place.textContent = 'Place in gap';
+    status.textContent = 'Piece selected. Tap the outlined space to place it.';
   }
   function paintDestination() {
     if (!explore) return;
@@ -135,10 +155,11 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     marker.hidden = true;
     clue.hidden = true;
     place.hidden = false;
+    place.textContent = 'Select piece';
     place.removeAttribute('aria-disabled');
     explore.hidden = true;
     replay.hidden = true;
-    status.textContent = 'One-piece preview. Place the final piece to see how discoveries unfold.';
+    status.textContent = 'One-piece preview. Select the loose piece, then tap its matching space.';
   }
 
   async function revealClue(run) {
@@ -191,7 +212,7 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     stopInvitation();
     void sound.prepare();
     const run = ++state.run;
-    const keepFocus = document.activeElement === piece || document.activeElement === place;
+    const keepFocus = document.activeElement === piece || document.activeElement === place || document.activeElement === slotButton;
     const startTransform = piece.style.transform || 'translate(0, 0)';
     setPhase('snapping');
     state.drag = null;
@@ -206,6 +227,8 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     ], {duration: 410, easing: 'cubic-bezier(.23,.8,.24,1)', fill: 'forwards'});
     if (!state.alive || run !== state.run) return;
     piece.hidden = true;
+    slotButton.hidden = true;
+    board.classList.remove('demo-has-selection');
     illustration.style.opacity = '1';
     setPhase('complete');
     if (state.visible && !document.hidden && !state.inspection) {
@@ -259,7 +282,12 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
       notes.forEach((note, i) => {
         const button = html('button', 'demo-inspection-marker', String(i + 1));
         button.type = 'button';
-        button.style.left = `${note.x}%`; button.style.top = `${note.y}%`;
+        button.style.left = `${note.marker.x}%`; button.style.top = `${note.marker.y}%`;
+        const leader = html('span', 'demo-inspection-leader');
+        leader.setAttribute('aria-hidden', 'true');
+        leader.style.width = `max(0px, calc(${note.marker.length}cqw - 14px))`;
+        leader.style.transform = `rotate(${note.marker.angle}deg) translateX(14px)`;
+        button.append(leader);
         button.setAttribute('aria-label', `${i + 1}. ${note.title}`);
         on(button, 'click', () => select(i));
         buttons.push(button); stage.append(button);
@@ -315,7 +343,8 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     scene.append(defs, slot, assembled, illustration, seams, highlight, motion, perimeter);
     piece = html('button', 'demo-piece-button');
     piece.type = 'button';
-    piece.setAttribute('aria-label', 'Place the final puzzle piece');
+    piece.setAttribute('aria-label', 'Select the final puzzle piece');
+    piece.setAttribute('aria-pressed', 'false');
     piece.setAttribute('aria-describedby', heading.id);
     const pieceSvg = svg('svg', {viewBox: '400 200 200 200', width: 200, height: 200, 'aria-hidden': 'true', focusable: 'false'});
     const pieceDefs = svg('defs');
@@ -328,13 +357,18 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     piece.append(pieceSvg);
     motionLabel = html('span', 'demo-motion-label', 'Schematic ion motion · both directions');
     motionLabel.hidden = true;
-    board.append(scene, piece, motionLabel);
+    slotButton = html('button', 'demo-slot-button');
+    slotButton.type = 'button';
+    slotButton.setAttribute('aria-label', 'Matching puzzle space');
+    slotButton.setAttribute('aria-disabled', 'true');
+    slotButton.tabIndex = -1;
+    board.append(scene, slotButton, piece, motionLabel);
     clue = html('div', 'demo-clue');
     clue.hidden = true;
     clueLabel = html('p', 'demo-clue-label');
     clue.append(clueLabel, html('p', 'demo-clue-copy'));
     const controls = html('div', 'demo-controls');
-    place = html('button', 'demo-place', 'Place piece');
+    place = html('button', 'demo-place', 'Select piece');
     place.type = 'button';
     const arrow = html('span', 'demo-control-arrow', '↘');
     arrow.setAttribute('aria-hidden', 'true');
@@ -369,13 +403,22 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
     setPhase('ready');
     on(host, 'pointerdown', stopInvitation, {capture: true});
     on(host, 'keydown', stopInvitation, {capture: true});
-    on(place, 'click', completePiece);
+    on(place, 'click', () => state.selected ? void completePiece() : selectPiece());
+    on(slotButton, 'click', () => {
+      if (state.selected) void completePiece();
+      else status.textContent = 'Select the loose piece first, then tap this space.';
+    });
     on(replay, 'click', () => {replayDemo(); place.focus({preventScroll: true});});
     on(inspectButton, 'click', inspect);
     on(piece, 'click', event => {
       if (event.detail && state.suppressClick) return;
-      void completePiece();
+      selectPiece();
     });
+    on(piece, 'keydown', event => {
+      if (event.key === 'Escape') {resetPiece();heading.textContent='Try one piece';place.textContent='Select piece';status.textContent='Piece deselected.';}
+      if (event.key === 'Enter' || event.key === ' ') {event.preventDefault();selectPiece();slotButton.focus({preventScroll:true});}
+    });
+    on(slotButton, 'keydown', event => {if(event.key==='Escape'){resetPiece();heading.textContent='Try one piece';place.textContent='Select piece';piece.focus({preventScroll:true});}});
     on(piece, 'pointerdown', event => {
       if (state.phase !== 'ready' || !event.isPrimary || event.button !== 0) return;
       const point = demoPoint(event.clientX, event.clientY, board.getBoundingClientRect());
@@ -416,7 +459,7 @@ export function initHomeDemo(host = document.getElementById('homeDemo'), options
         const from = piece.style.transform;
         piece.style.transform = '';
         void animate(piece, [{transform: from}, {transform: 'translate(0, 0)'}], {duration: 250, easing: 'ease-out'});
-        if (!cancelled) status.textContent = 'Try the gap outlined in blue, or use Place piece.';
+        if (!cancelled) {selectPiece();status.textContent = 'Try the outlined space. You can tap it to place the selected piece.';}
       }
     };
     on(piece, 'pointerup', event => stopDrag(event));

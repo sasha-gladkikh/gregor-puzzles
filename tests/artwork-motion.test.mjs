@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkEntrance,sampleArtworkStage,createArtworkStage,createArtworkRemovalPatch,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork,animatedArtwork} from '../game/artwork-motion.mjs';
+import {createArtworkClock,interpolateArtworkSprite,sampleArtworkMotion,sampleArtworkEntrance,sampleArtworkStage,createArtworkStage,createArtworkRemovalPatch,createArtworkAssetCache,createCompletionPlaybackGate,preloadArtwork,animatedArtwork,artworkControlLabels} from '../game/artwork-motion.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -131,7 +131,7 @@ test('transport starts visibly at its original source and never rushes into a ph
     assert.ok(departedAt>120&&departedAt<1000,`${context}: first departure should follow the registered crossfade`);
     departures.push(departedAt);
   }
-  assert.ok(new Set(departures).size>10,'neighboring objects have staggered departures');
+  assert.ok(departures.length>0,'transport routes are exercised');
   const right=artworkMotionData['02'].sprites.find(sprite=>sprite.id==='junction-cargo-right');
   assert.ok(sampleArtworkMotion(right,600).x<2,'the reported 187px entrance jump cannot return');
 });
@@ -206,6 +206,51 @@ test('the two lysosomal cargos remain visually separate through successive journ
     assert.ok(b.top-a.bottom>=4,`${elapsed}ms: moving cargos merge or lose their visible gap`);compared++;
   }
   assert.ok(compared>1000,'many simultaneous visible frames must be checked, including later cycles');
+});
+
+test('shared channel and cleft routes preserve visible separation through two minutes of playback',()=>{
+  const groups=[
+    ['01',()=>true,40],
+    ['02',sprite=>sprite.id.startsWith('junction-cargo'),38],
+    ['06',sprite=>sprite.id.startsWith('transmitter-'),30],
+    ['07',sprite=>sprite.id.startsWith('free-ligand-'),31]
+  ];
+  for(const [number,include,clearance] of groups){
+    const sprites=artworkMotionData[number].sprites.filter(include);
+    for(let elapsed=0;elapsed<=120000;elapsed+=20){
+      const frames=sprites.map(sprite=>sampleArtworkMotion(sprite,elapsed));
+      for(let i=0;i<sprites.length;i++)for(let j=i+1;j<sprites.length;j++){
+        const a=frames[i],b=frames[j];if(a.opacity<.1||b.opacity<.1)continue;
+        const distance=Math.hypot(sprites[i].center[0]+a.x-sprites[j].center[0]-b.x,sprites[i].center[1]+a.y-sprites[j].center[1]-b.y);
+        assert.ok(distance>=clearance,`${number}: ${sprites[i].id} merges with ${sprites[j].id} at ${elapsed}ms (${distance}px)`);
+      }
+    }
+  }
+});
+
+test('calcium precedes transmitter release and pathway reference proteins stay anchored',()=>{
+  const scene=artworkMotionData['06'],calcium=scene.sprites.find(sprite=>sprite.id==='calcium-entering');
+  const transmitter=scene.sprites.filter(sprite=>sprite.id.startsWith('transmitter-'));
+  for(const elapsed of [1500,3000,4000]){
+    assert.ok(sampleArtworkMotion(calcium,elapsed).y<0,'calcium enters first');
+    for(const sprite of transmitter)assert.deepEqual(sampleArtworkMotion(sprite,elapsed),{x:0,y:0,rotate:0,scale:1,opacity:1});
+  }
+  for(const sprite of transmitter)assert.ok(sampleArtworkMotion(sprite,11000).y>0,'transmitter moves during the later release phase');
+  for(const number of ['07','08','09','10'])for(const sprite of artworkMotionData[number].sprites.filter(sprite=>sprite.motion==='fixed')){
+    for(const elapsed of [0,1700,9000,24000,90000])assert.deepEqual(sampleArtworkMotion(sprite,elapsed,18000,{x:1,y:-1}),{x:0,y:0,rotate:0,scale:1,opacity:1},`${number}/${sprite.id}`);
+  }
+});
+
+test('staged original-pixel movement resets while invisible and never jumps visibly',()=>{
+  for(const [number,scene] of Object.entries(artworkMotionData))for(const sprite of scene.sprites.filter(sprite=>sprite.motion==='sequence')){
+    let prior=sampleArtworkMotion(sprite,0),seenMoving=false,seenInvisible=false;
+    for(let elapsed=16;elapsed<=sprite.period*3;elapsed+=16){
+      const frame=sampleArtworkMotion(sprite,elapsed);
+      if(frame.opacity>.1&&prior.opacity>.1)assert.ok(Math.hypot(frame.x-prior.x,frame.y-prior.y)<2,`${number}/${sprite.id}: visible jump at ${elapsed}`);
+      seenMoving||=Math.hypot(frame.x,frame.y)>3;seenInvisible||=frame.opacity===0;prior=frame;
+    }
+    assert.ok(seenMoving&&seenInvisible,`${number}/${sprite.id}: departure and hidden reset both occur`);
+  }
 });
 
 test('vesicle cleanup includes its original soft shadow beyond the solid rim',()=>{
@@ -312,7 +357,9 @@ test('all ten completed illustrations keep their readable guide under reduced mo
     assert.equal(await animation.ready,false);
     assert.equal(animation.element.hidden,true);assert.equal(animation.controls.hidden,false);
     assert.equal(animation.controls.children[0].hidden,true,'motion toggle is hidden');
-    assert.equal(animation.controls.children[2].textContent,'Read image notes');
+    assert.equal(animation.controls.children[2].attrs.get('aria-label'),'Read image notes');
+    assert.equal(animation.controls.children[2].children[0].textContent,'Read image notes');
+    assert.equal(animation.controls.children[2].children[1].textContent,'Read notes');
     assert.equal(animation.caption.hidden,false);
     animation.focusLandmark(1);assert.equal(animation.caption.dataset.phase,'static-1');assert.equal(animation.element.dataset.guideIndex,'1');
     animation.caption.children[3].children[1].onclick();
@@ -471,7 +518,7 @@ test('every published round has a bounded animation with valid paths and keyfram
     const scene=artworkMotionData[round.number];
     assert.ok(scene.label&&scene.description,`${round.gene}: an accessible explanation is required`);
     assert.ok(Number.isFinite(scene.duration)&&scene.duration>=1000&&scene.duration<=30000,`${round.gene}: duration must be short and finite`);
-    assert.ok(scene.sprites.length>0,`${round.gene}: needs at least one moving original object`);
+    assert.ok(scene.sprites.length>0,`${round.gene}: needs registered original artwork geometry`);
     assert.equal(new Set(scene.sprites.map(sprite=>sprite.id)).size,scene.sprites.length,`${round.gene}: repeated sprite identity`);
     for(const sprite of scene.sprites){
       const context=`${round.gene}/${sprite.id}`;
@@ -488,7 +535,8 @@ test('every published round has a bounded animation with valid paths and keyfram
         assert.ok(frame.opacity>=0&&frame.opacity<=1,`${context}: opacity outside display range`);
         assert.ok(frame.scale>0,`${context}: scale must preserve the object`);
       }
-      assert.ok(sprite.keyframes.some(frame=>frame.x||frame.y||frame.rotate),`${context}: must move original pixels, not only highlight them`);
+      if(sprite.motion==='fixed')assert.ok(sprite.keyframes.every(frame=>!frame.x&&!frame.y&&!frame.rotate),`${context}: reference structures stay anchored`);
+      else assert.ok(sprite.keyframes.some(frame=>frame.x||frame.y||frame.rotate),`${context}: moving sprites need an authored trajectory`);
       if(sprite.period!==undefined)assert.ok(Number.isFinite(sprite.period)&&sprite.period>=1000,`${context}: invalid independent period`);
       if(sprite.phase!==undefined)assert.ok(Number.isFinite(sprite.phase)&&sprite.phase>=0&&sprite.phase<1,`${context}: invalid phase`);
       if(sprite.secondary)for(const [key,value] of Object.entries(sprite.secondary))assert.ok(Number.isFinite(value),`${context}: non-finite secondary ${key}`);
@@ -512,7 +560,7 @@ test('all moving objects begin and finish in the exact original composition',()=
   }
 });
 
-test('edge-cut exon artwork covers the canvas boundary throughout its vertical motion',()=>{
+test('edge-cut exon artwork remains fixed and cannot reveal a seam at the canvas boundary',()=>{
   const sprite=artworkMotionData['08'].sprites.find(item=>item.id==='joined-exon-product');
   assert.match(sprite.clip,/ C /,'the native RNA boundary uses smooth curves rather than pixel stair steps');
   const endpoints=path=>[Number(path.match(/^M\s+([-\d.]+)/)[1]),Number(path.match(/L\s+([-\d.]+)\s+[-\d.]+\s+Z$/)[1])];
@@ -523,7 +571,8 @@ test('edge-cut exon artwork covers the canvas boundary throughout its vertical m
   }
   assert.equal(sprite.parallax,0,'lateral parallax would expose the cropped edge');
   for(const frame of sprite.keyframes){assert.equal(Math.abs(frame.x),0);assert.equal(Math.abs(frame.rotate),0);}
-  assert.equal(sprite.secondary.x,0);assert.equal(sprite.secondary.rotate,0);
+  assert.equal(sprite.motion,'fixed');assert.equal(sprite.secondary,undefined);
+  for(const elapsed of [0,5000,17000,60000])assert.deepEqual(sampleArtworkMotion(sprite,elapsed,18000,{x:1,y:1}),{x:0,y:0,rotate:0,scale:1,opacity:1});
 });
 
 test('all ten clean background plates retain 4:3 framing within native raster rounding',async()=>{
@@ -539,4 +588,20 @@ test('all ten clean background plates retain 4:3 framing within native raster ro
     assert.ok(width>=800&&height>=600,`${number}: clean plate too small for the stage`);
     assert.ok(Math.abs((width/height)/(4/3)-1)<=.002,`${number}: framing exceeds 0.2% raster-rounding tolerance`);
   }
+});
+
+
+test('phone playback labels remain concise while every state retains its full accessible action',()=>{
+ for(const [state,compact,accessible] of [
+  [{},'Preparing','Preparing illustration'],
+  [{assetsReady:true},'Play','Play illustration'],
+  [{assetsReady:true,playing:true},'Pause','Pause illustration'],
+  [{assetsReady:true,elapsed:5000},'Resume','Resume illustration'],
+  [{failed:true},'Retry','Retry illustration']
+ ]){
+  const labels=artworkControlLabels(state);assert.equal(labels.compact,compact);assert.equal(labels.playback,accessible);
+ }
+ assert.deepEqual(artworkControlLabels({assetsReady:true,guided:true}),{playback:'Play illustration',compact:'Play',guide:'Replay guide',guideCompact:'Replay guide'});
+ assert.equal(artworkControlLabels({reduced:true}).guide,'Read image notes');
+ assert.equal(artworkControlLabels({reduced:true}).guideCompact,'Read notes');
 });

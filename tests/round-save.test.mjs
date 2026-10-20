@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRoundSaveGuard,createRoundActionQueue} from '../game/round-save.mjs';
+import {createRoundSaveGuard,createRoundActionQueue,createDialogCommit} from '../game/round-save.mjs';
 import {newState} from '../game/engine.mjs';
 import {restoreSession,startRound} from '../game/session.mjs';
 
@@ -139,4 +139,32 @@ test('the no-Web-Locks fallback still aborts ordinary stale pages and preserves 
   const local=createRoundActionQueue({locks:null}),actions=[];
   await Promise.all([local.run(()=>actions.push(1)),local.run(()=>actions.push(2))]);
   assert.deepEqual(actions,[1,2]);
+});
+
+
+test('cancelling a queued new-player action prevents the later reset',async()=>{
+ const locks=lockManager(),queue=createRoundActionQueue({locks}),hold=deferred(),entered=deferred();
+ let open=true,resets=0;
+ const dialog=createDialogCommit({isOpen:()=>open});
+ const saving=queue.run(async()=>{entered.resolve();await hold.promise;});await entered.promise;
+ const reset=queue.run(()=>dialog.run(()=>{resets++;}));
+ open=false;hold.resolve();await saving;
+ assert.equal(await reset,false);assert.equal(resets,0);assert.equal(dialog.pending,false);
+});
+
+test('a committing reset stays protected through its async save and rejects duplicate confirmation',async()=>{
+ const hold=deferred(),states=[];let resets=0;
+ const dialog=createDialogCommit({isOpen:()=>true,onPending:value=>states.push(value)});
+ const first=dialog.run(async()=>{await hold.promise;resets++;});
+ assert.equal(dialog.pending,true);
+ assert.equal(await dialog.run(()=>{resets++;}),false);assert.equal(resets,0);
+ hold.resolve();assert.equal(await first,true);assert.equal(resets,1);assert.equal(dialog.pending,false);
+ assert.deepEqual(states,[true,false]);
+});
+
+test('a failed reset unlocks cancellation and allows an explicit retry',async()=>{
+ const dialog=createDialogCommit({isOpen:()=>true});
+ await assert.rejects(dialog.run(async()=>{throw Error('offline');}),/offline/);
+ assert.equal(dialog.pending,false);
+ let retried=false;assert.equal(await dialog.run(()=>{retried=true;}),true);assert.equal(retried,true);
 });

@@ -34,6 +34,10 @@
 .artwork-guide-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px}
 .artwork-guide-label{font-size:11px;line-height:1.4;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:#426086}
 .artwork-guide-count{font-size:11px;font-variant-numeric:tabular-nums;color:#5e7191}
+.artwork-guide-hold{margin-left:auto;flex:none;min-height:44px;padding:7px 10px;border:1px solid #c6d7ef;border-radius:7px;background:#fff;color:#2457a6;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.artwork-guide-hold:hover{background:#edf3ff;border-color:#8eaee0}
+.artwork-guide-hold:focus-visible{outline:3px solid #769cff;outline-offset:3px}
+.artwork-guide-hold[hidden]{display:none}
 .artwork-guide-copy{display:grid;font-size:15px;line-height:1.55}
 .artwork-guide-content,.artwork-guide-measure{grid-area:1/1;min-width:0}
 .artwork-guide-measure{visibility:hidden;pointer-events:none;user-select:none}
@@ -49,7 +53,21 @@
 .artwork-guide-navigation .tool:disabled{opacity:.45;cursor:default}
 @keyframes artwork-live-breath{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}
 @media(max-width:600px){.artwork-motion-controls{gap:7px}.artwork-motion-toggle{font-size:12px;padding-inline:10px}}
+@media(max-width:380px){.artwork-guide-heading{gap:7px}.artwork-guide-label{font-size:10px;letter-spacing:.04em}.artwork-guide-hold{padding-inline:8px}}
 @media(prefers-reduced-motion:reduce){.artwork-motion-layer,.artwork-motion-toggle,.artwork-motion-live,.artwork-stage-rim,.artwork-stage-sheen{display:none!important}#game .board-frame.artwork-stage-active,.board-frame.artwork-stage-active{transform:none;box-shadow:none;will-change:auto}}
 @media(forced-colors:active){.artwork-stage-rim,.board>.artwork-stage-sheen{display:none}#game .board-frame.artwork-stage-active,.board-frame.artwork-stage-active{border-color:CanvasText;box-shadow:none}.artwork-motion-live>i{background:Highlight}.artwork-motion-toggle[aria-pressed=true]{background:Canvas;color:Highlight;border-color:Highlight}}
-@media(forced-colors:active){.artwork-guide-caption{border-color:CanvasText;background:Canvas;color:CanvasText}.artwork-guide-label,.artwork-guide-count,.artwork-guide-title,.artwork-guide-text{color:CanvasText}.artwork-guide-progress>span{background:Highlight}}
-@media print{.artwork-motion-layer,.artwork-motion-controls,.artwork-guide-navigation,.artwork-guide-overlay,.artwork-stage-rim,.artwork-stage-sheen{display:none!important}#game .board-frame.artwork-stage-active,.board-frame.artwork-stage-active{transform:none;box-shadow:none;will-change:auto}}
+@media(forced-colors:active){.artwork-guide-caption{border-color:CanvasText;background:Canvas;color:CanvasText}.artwork-guide-label,.artwork-guide-count,.artwork-guide-title,.artwork-guide-text{color:CanvasText}.artwork-guide-hold{border-color:ButtonText;background:ButtonFace;color:ButtonText}.artwork-guide-progress>span{background:Highlight}}
+@media print{.artwork-motion-layer,.artwork-motion-controls,.artwork-guide-navigation,.artwork-guide-hold,.artwork-guide-overlay,.artwork-stage-rim,.artwork-stage-sheen{display:none!important}#game .board-frame.artwork-stage-active,.board-frame.artwork-stage-active{transform:none;box-shadow:none;will-change:auto}}
+
+/* Short visible phone labels preserve the full accessible action names. */
+.artwork-control-compact{display:none}
+@media(max-width:600px){
+ .artwork-control-full{display:none}
+ .artwork-control-compact{display:inline}
+ .artwork-motion-controls{flex-wrap:nowrap;gap:4px}
+ .artwork-motion-live{width:14px;gap:2px;flex:none}
+ .artwork-motion-live>i{width:3px;height:3px}
+ .artwork-motion-toggle{width:92px;flex:none;gap:5px}
+ .artwork-guide-replay{width:84px;flex:none;justify-content:center}
+ #figureDialog .artwork-motion-toggle{font-size:12px;padding:8px 7px}
+}

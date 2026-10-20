@@ -27,7 +27,7 @@
 .home-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:23px}
 .home-section-heading h2{margin:0;font-size:clamp(26px,2.7vw,34px);font-weight:650;line-height:1.2;letter-spacing:-.03em;text-wrap:balance}
 .home-section-heading>.home-text-link{flex-shrink:0}
-.community-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);align-items:start;gap:24px}
+.community-grid{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:20px}
 .community-contribute{display:grid;gap:20px;min-width:0}
 .community-card{min-width:0;padding:28px;border:1px solid #dce4ef;border-radius:16px;background:#fff;scroll-margin-top:24px}
 .card-heading{margin-bottom:20px}
@@ -37,6 +37,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  max-width: 440px;
 }
 
 .leaderboard-filter label {

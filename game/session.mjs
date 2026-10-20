@@ -1,6 +1,13 @@
 import {SIZE, newState, validSave, complete, shuffled, migrateGeneHints} from './engine.mjs';
 
 export const roundComplete = complete;
+// Collection achievements outlive an individual replay; the active board does not.
+export const earnedCompletion = state => state.earnedCompletion === true || roundComplete(state);
+export function restartSession(previous) {
+  const session = restoreSession(null);
+  session.state.earnedCompletion = earnedCompletion(previous);
+  return session;
+}
 const TIMING_VERSION = 2;
 // Keep the complete tray permutation, including placed pieces, so its letters
 // and remaining positions stay the same when the player returns.
@@ -39,7 +46,9 @@ export function startRound(state, timed, route, now = Date.now()) {
   if (timed && state.startedAt === null) state.startedAt = now - state.seconds * 1000;
 }
 export function finishRound(state, now = Date.now()) {
-  if (!roundComplete(state) || state.finishedAt !== null) return;
+  if (!roundComplete(state)) return;
+  state.earnedCompletion = true;
+  if (state.finishedAt !== null) return;
   state.seconds = elapsedSeconds(state, now);
   state.finishedAt = now;
 }
@@ -51,6 +60,7 @@ export function restoreSession(save, now = Date.now()) {
   delete state.answers;
   delete state.learningVersion;
   state.sessionVersion = 3;
+  state.earnedCompletion = raw.earnedCompletion === true || roundComplete(state);
   state.timingVersion = TIMING_VERSION;
   state.timingUnavailable = raw.timingUnavailable === true;
   Object.assign(state, migrateGeneHints(raw));

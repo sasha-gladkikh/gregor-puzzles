@@ -8,24 +8,24 @@ export function createRoundCarousel(list,catalogue,{currentRound='',assetQuery='
     link.className='discovery-thumb';link.href=href(round);
     image.src=`./artwork/${round.number}.webp${assetQuery}`;image.alt='';
     image.width=1200;image.height=900;image.loading='lazy';image.decoding='async';
-    const badge=document.createElement('span'),bar=document.createElement('span');
-    badge.className='discovery-thumb-number';bar.className='discovery-thumb-progress';
+    const badge=document.createElement('span'),bar=document.createElement('span'),check=document.createElement('span');
+    badge.className='discovery-thumb-number';bar.className='discovery-thumb-progress';check.className='discovery-thumb-check';check.textContent='✓';check.setAttribute('aria-hidden','true');
     badge.setAttribute('aria-hidden','true');bar.setAttribute('aria-hidden','true');
     if(round.number===currentRound)link.setAttribute('aria-current','page');
-    link.append(image,badge,bar);item.append(link);list.append(item);
-    thumbnails.set(round.number,{link,badge,bar});
+    link.append(image,badge,bar,check);item.append(link);list.append(item);
+    thumbnails.set(round.number,{link,badge,bar,check});
   }
   function update(progress){
-    for(const {round,done,pieces} of progress){
+    for(const {round,done,pieces,replaying=false} of progress){
       const thumbnail=thumbnails.get(round.number);
       if(!thumbnail)continue;
-      const {link,badge,bar}=thumbnail,current=round.number===currentRound;
-      const status=done?'Complete':pieces?`${pieces} of 12 pieces placed`:'Not started';
-      link.dataset.state=done?'complete':pieces?'started':'new';
+      const {link,badge,bar,check}=thumbnail,current=round.number===currentRound;
+      const status=replaying?`Complete. Replay: ${pieces} of 12 pieces placed`:done?'Complete':pieces?`${pieces} of 12 pieces placed`:'Not started';
+      link.dataset.state=done?'complete':pieces?'started':'new';link.dataset.replaying=String(replaying);
       link.setAttribute('aria-label',`Round ${round.number}: ${round.topic}. ${status}.${current?' Current round.':''}`);
       link.title=`Round ${round.number} · ${round.topic} · ${status}${current?' · Current round':''}`;
-      badge.textContent=done?'✓':round.number;
-      bar.style.setProperty('--piece-progress',`${done?100:Math.max(0,Math.min(12,pieces))/12*100}%`);
+      badge.textContent=round.number;check.hidden=!done;
+      bar.style.setProperty('--piece-progress',`${done&&!replaying?100:Math.max(0,Math.min(12,pieces))/12*100}%`);
     }
   }
   function revealCurrent(){

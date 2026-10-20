@@ -2,6 +2,7 @@ import {collectionProgress,affectsRoundProgress,progressSignature} from './colle
 import {findRound} from './rounds.mjs';
 import {completedGuideRounds,guideClinicalSections,guideReferences,relatedCompletedRounds,splicingPairComplete} from './collection-data.mjs';
 import {renderSite} from './site.mjs';
+import {artworkAnnotations} from './artwork-ui.mjs';
 import {artworkSrcset} from './artwork-source.mjs';
 
 const currentRound=findRound(new URLSearchParams(location.search).get('level'));
@@ -20,7 +21,7 @@ function entry(round,progress){
  // Entries cap at 1076px; the illustration occupies 47.5% of their inner grid.
  img.sizes='(max-width:400px) calc(100vw - 66px), (max-width:600px) min(500px, calc(100vw - 82px)), (max-width:750px) min(500px, calc(100vw - 90px)), (max-width:800px) calc(47.5vw - 67.45px), (max-width:1132px) calc(47.5vw - 75.05px), 463px';
  img.alt=round.description;img.width=800;img.height=600;img.decoding='async';
- const caption=node('figcaption');caption.append(node('p',round.illustration.takeaway),node('p',round.illustration.note));visual.append(img,caption);
+ const caption=node('figcaption');caption.append(node('p',round.illustration.takeaway),node('p',round.illustration.note));const imageBox=node('div',null,'artwork-figure');imageBox.append(img,artworkAnnotations(round));visual.append(imageBox,caption);
  const text=node('div',null,'guide-text'),implications=node('div',null,'guide-implications');
  guideClinicalSections(round).forEach(({label,text:body},index)=>{const section=node('section');section.append(node('h3',label),node('p',body));(index<3?text:implications).append(section);});
  const content=node('div',null,'guide-content');content.append(visual,text);article.append(content);

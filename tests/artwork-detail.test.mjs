@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {artworkDetails,sampleDetailTrack,createArtworkDetails,detailFocusWeight} from '../game/artwork-detail.mjs';
+import {artworkDetails,artworkSequences,sampleDetailTrack,createArtworkDetails,detailFocusWeight} from '../game/artwork-detail.mjs';
 import {artworkMotionData} from '../game/artwork-motion-data.mjs';
 import {allRounds} from '../game/rounds.mjs';
 
@@ -46,7 +46,7 @@ test('every track is dark on reset and at the ends of each pass, with bounded sm
   }
 });
 
-test('route highlights never reverse while surface reflections alternate direction',()=>{
+test('routes and message flow never reverse while ambient reflections alternate direction',()=>{
   for(const [number,scene] of Object.entries(artworkDetails))for(const track of scene.tracks){
     const direction=[];
     for(const pass of [0,1,2,3]){
@@ -54,7 +54,7 @@ test('route highlights never reverse while surface reflections alternate directi
       const early=sampleDetailTrack(track,start+track.duration*.2,scene.period),late=sampleDetailTrack(track,start+track.duration*.8,scene.period);
       direction.push(Math.sign(late.offset-early.offset));
     }
-    assert.deepEqual(direction,track.type==='route'?[-1,-1,-1,-1]:[-1,1,-1,1],`${number}/${track.id}`);
+    assert.deepEqual(direction,track.type==='route'||track.direction==='forward'?[-1,-1,-1,-1]:[-1,1,-1,1],`${number}/${track.id}`);
   }
 });
 
@@ -65,7 +65,7 @@ test('the narrow glint leads the body in both directions and remains inside its 
       const frame=sampleDetailTrack(track,time,scene.period),bodyStart=-frame.offset,headStart=-frame.headOffset;
       const headEnd=headStart+track.span*.3,bodyEnd=bodyStart+track.span;
       assert.ok(headStart>=bodyStart-1e-12&&headEnd<=bodyEnd+1e-12,`${number}/${track.id}: glint inside body`);
-      if(track.type==='route'||pass===0)assert.ok(Math.abs(headEnd-bodyEnd)<1e-12,`${number}/${track.id}: glint leads forward`);
+      if(track.type==='route'||track.direction==='forward'||pass===0)assert.ok(Math.abs(headEnd-bodyEnd)<1e-12,`${number}/${track.id}: glint leads forward`);
       else assert.ok(Math.abs(headStart-bodyStart)<1e-12,`${number}/${track.id}: glint leads backward`);
     }
   }
@@ -104,7 +104,7 @@ test('detail rendering uses only the supplied artwork clock and follows its movi
     const initialWrites=groups.map(group=>group.writes);
     detail.draw(0);assert.deepEqual(groups.map(group=>group.writes),initialWrites,'an idle shared clock causes no repeated hidden updates');
     const track=scene.tracks[0],group=groups.find(element=>element.attrs.get('data-artwork-detail')===track.id);
-    detail.draw(600+track.offset+track.duration/2);assert.equal(group.attrs.get('opacity'),'1.000');
+    detail.draw(600+track.offset+track.duration/2);assert.equal(group.attrs.get('opacity'),(track.intensity??1).toFixed(3));
     const forward=Number(group.children[1].attrs.get('stroke-dashoffset'));
     detail.draw(600+track.offset+track.duration*.7);assert.ok(Number(group.children[1].attrs.get('stroke-dashoffset'))<forward,'the supplied clock advances the contour');
     detail.draw(0);for(const item of groups)assert.equal(item.attrs.get('opacity'),'0.000','reset makes every contour invisible');
@@ -126,4 +126,53 @@ test('guide focus leaves its structure fully visible and gradually quiets unrela
   assert.equal(detailFocusWeight([780,30],{...focus,opacity:0}),1);
   assert.equal(detailFocusWeight([780,30],null),1);
   assert.equal(detailFocusWeight(null,focus),1);
+});
+
+test('causal scenes share an ordered cadence with their original-pixel actions',()=>{
+  for(const [number,sequence] of Object.entries(artworkSequences)){
+    assert.equal(artworkDetails[number].period,sequence.period);
+    let end=0;
+    for(const [label,start,finish] of sequence.beats){
+      assert.ok(label&&start>=end&&finish>start&&finish<=sequence.period,`${number}: non-overlapping, ordered explanatory beats`);end=finish;
+    }
+    for(const sprite of artworkMotionData[number].sprites.filter(sprite=>sprite.motion==='sequence'))assert.equal(sprite.period,sequence.period,`${number}/${sprite.id}: action and emphasis cannot drift apart`);
+  }
+  const track=(number,id)=>artworkDetails[number].tracks.find(item=>item.id===id);
+  for(const [number,ids] of [
+    ['04',['blocking-factor-release','small-subunit-joining','assembled-message-surface']],
+    ['05',['major-input-message','major-intron-surface','major-joined-message']],
+    ['06',['calcium-entry-arrow','release-arrow','receptor-left-rim']],
+    ['07',['receptor-fold','regulator-fold','regulator-to-ras','nuclear-response']],
+    ['08',['minor-input-exon','minor-lariat-route','minor-joined-message']],
+    ['09',['er-membrane-fold','carrier-departure','carrier-arrival','golgi-response','rna-product']]
+  ]){
+    for(let i=1;i<ids.length;i++)assert.ok(track(number,ids[i]).offset>track(number,ids[i-1]).offset,`${number}: ${ids.join(' → ')}`);
+  }
+});
+
+test('repeat-length comparison highlights both fixed segments together without a travelling neuronal signal',()=>{
+  const scene=artworkDetails['10'];
+  assert.ok(scene.tracks.every(track=>/^(short|long)-repeat-/.test(track.id)));
+  for(const strand of ['near','far']){
+    const shorter=scene.tracks.find(track=>track.id===`short-repeat-${strand}-strand`),expanded=scene.tracks.find(track=>track.id===`long-repeat-${strand}-strand`);
+    for(let elapsed=0;elapsed<=60000;elapsed+=100)assert.equal(sampleDetailTrack(shorter,elapsed,scene.period).opacity,sampleDetailTrack(expanded,elapsed,scene.period).opacity,'Both comparison diagrams receive emphasis at the same time');
+  }
+});
+
+test('RNA processing traces keep their first-pass direction on every later sequence',()=>{
+  for(const [number,ids] of [
+    ['04',['assembled-message-surface']],
+    ['05',['major-input-message','major-intron-surface','major-joined-message']],
+    ['08',['minor-input-exon','minor-intron-surface','minor-downstream-exon','minor-joined-message']],
+    ['09',['rna-product']]
+  ])for(const id of ids){
+    const scene=artworkDetails[number],track=scene.tracks.find(track=>track.id===id);
+    for(const pass of [0,1,2,9,20]){
+      const start=600+track.offset+scene.period*pass;
+      const early=sampleDetailTrack(track,start+track.duration*.2,scene.period),late=sampleDetailTrack(track,start+track.duration*.8,scene.period);
+      assert.ok(late.offset<early.offset,`${number}/${id}: reversed RNA processing on pass ${pass}`);
+      const initial=sampleDetailTrack(track,600+track.offset+track.duration*.2,scene.period);
+      assert.ok(Math.abs(initial.offset-early.offset)<1e-10,`${number}/${id}: every pass follows the same route`);
+    }
+  }
 });

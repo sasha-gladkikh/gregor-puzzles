@@ -4,24 +4,24 @@ const conceptual='Conceptual illustration, not to scale or an experimentally det
 export const illustrations={
  '01':{
   takeaway:'Two pores help stabilize muscle excitability.',
-  description:'Two adjacent blue channel subunits span a curved muscle-cell membrane. Each has a separate pore containing teal chloride ions. Coral muscle fibers run beneath the membrane. No fixed direction of chloride flow is implied.',
-  pieces:['upper membrane curve','extracellular chloride ion','upper channel edge','extracellular space and ion','lipid bilayer and muscle','first channel pore','second channel pore','right lipid bilayer','coral muscle fibers','muscle fiber striations','cytoplasmic scaffold','lower membrane edge'],
-  landmarks:[landmark(43,42,"ClC-1 has two subunits.","The paired blue forms represent two subunits. Each contains its own chloride-conduction pathway.",{"preview":"Two channel subunits each contain a pore for chloride ions.","title":"Two subunits form a channel."}),landmark(66,46,"Chloride conductance matters.","Teal circles represent chloride. ClC-1 conductance helps stabilize skeletal-muscle membrane excitability; the picture does not prescribe a fixed ion-flow direction.",{"preview":"Chloride flow helps stabilize electrical activity in skeletal muscle.","text":"Teal circles represent chloride. Chloride conductance through this channel helps stabilize skeletal-muscle membrane excitability; the picture does not prescribe a fixed ion-flow direction."}),landmark(24,79,"Connect the channel to muscle.","The coral fibers supply tissue context. Reduced channel function can contribute to repetitive electrical activity and delayed relaxation.",{"preview":"Reduced channel function can delay relaxation after a muscle contracts."})],
+  description:'Two adjacent blue channel subunits span a curved muscle-cell membrane. Each has a separate pore containing teal chloride ions. Coral bands represent intracellular contractile structures beneath the muscle-cell membrane. No fixed direction of chloride flow is implied.',
+  pieces:['upper membrane curve','extracellular chloride ion','upper channel edge','extracellular space and ion','lipid bilayer and muscle','first channel pore','second channel pore','right lipid bilayer','coral contractile bands','contractile striations','cytoplasmic scaffold','lower membrane edge'],
+  landmarks:[landmark(43,42,"ClC-1 has two subunits.","The paired blue forms represent two subunits. Each contains its own chloride-conduction pathway.",{"preview":"Two channel subunits each contain a pore for chloride ions.","title":"Two subunits form a channel."}),landmark(66,46,"Chloride conductance matters.","Teal circles represent chloride. ClC-1 conductance helps stabilize skeletal-muscle membrane excitability; the picture does not prescribe a fixed ion-flow direction.",{"preview":"Chloride flow helps stabilize electrical activity in skeletal muscle.","text":"Teal circles represent chloride. Chloride conductance through this channel helps stabilize skeletal-muscle membrane excitability; the picture does not prescribe a fixed ion-flow direction."}),landmark(24,79,"Connect the channel to muscle.","The coral bands represent contractile structures inside a muscle cell, not separate cells at channel scale. Reduced channel function can contribute to repetitive electrical activity and delayed relaxation.",{"preview":"Reduced channel function can delay relaxation after a muscle contracts."})],
   note:conceptual,source:'https://pmc.ncbi.nlm.nih.gov/articles/PMC6019066/'
  },
  '02':{
   takeaway:'Two cells share a direct passage.',
-  description:'Blue and teal neighboring cells have facing membranes. Docked channel halves connect their cytoplasms. Amber circles pass through the lower open channel, while a second junction appears above. A mitochondrion and membrane folds provide cell context.',
+  description:'Blue and teal neighboring cells have facing membranes. Docked channel halves connect their cytoplasms. Amber circles pass through the lower open channel, while a second schematic junction appears above. These are two connections illustrating the same principle, not an open-versus-closed comparison. A mitochondrion and membrane folds provide cell context.',
   pieces:['left cell boundary','left membrane curve','right membrane curve','teal endomembrane','left cell solutes','blue junction half','teal junction half','right cell solutes','mitochondrial folds','left lower membrane','right lower membrane','right cell interior'],
-  landmarks:[landmark(37,61,"Two hemichannels dock.","A connexon in each neighboring cell contributes to the gap-junction channel. Connexin 26 is a component of these connections.",{"preview":"One channel half from each cell joins to make a direct connection.","title":"Join two channel halves.","text":"A half-channel in each neighboring cell joins to form a gap junction. This creates a direct connection between the cells’ interiors."}),landmark(51,61,"Small molecules cross directly.","Amber circles represent ions or small molecules passing between cytoplasms through the shared channel, rather than being released into the gap.",{"preview":"Ions and small molecules pass directly between the neighboring cells."}),landmark(80,45,"Communication supports cochlear function.","Gap junctions support communication among inner-ear cells. This generic cell junction illustrates the mechanism, not the anatomy of the entire cochlea.",{"preview":"These connections support communication among cells in the inner ear."})],
-  note:conceptual+' The arrows show one direction for clarity; gap-junction channels allow exchange in either direction and are not pumps.',source:'https://medlineplus.gov/genetics/gene/gjb2/'
+  landmarks:[landmark(37,61,"Two hemichannels dock.","A connexon from each cell contributes to a gap-junction channel. Both junctions illustrate this connection; the lower cutaway exposes the shared passage. Connexin 26 is a component of these connections.",{"preview":"One channel half from each cell joins to make a direct connection.","title":"Join two channel halves.","text":"A half-channel in each neighboring cell joins to form a gap junction. This creates a direct connection between the cells’ interiors."}),landmark(51,61,"Small molecules cross directly.","Amber circles represent ions or small molecules passing between cytoplasms through the shared channel, rather than being released into the gap.",{"preview":"Ions and small molecules pass directly between the neighboring cells."}),landmark(80,45,"Communication supports cochlear function.","Gap junctions support communication among inner-ear cells. This generic cell junction illustrates the mechanism, not the anatomy of the entire cochlea.",{"preview":"These connections support communication among cells in the inner ear."})],
+  note:conceptual+' The upper junction is an exterior schematic view; the lower cutaway exposes its passage. Neither depicts a measured channel state. Arrows show one direction for clarity; these channels allow exchange in either direction and are not pumps. Background organelles provide context, not additional steps in transport.',source:'https://medlineplus.gov/genetics/gene/gjb2/'
  },
  '03':{
   takeaway:'Breakdown products need a route out.',
-  description:'A cutaway lysosome contains short RNA strands, fragments, and amber nucleoside symbols. A blue transporter in the lower-right rim provides an outward route to the cytoplasm. A mitochondrion and membrane folds surround the organelle.',
-  pieces:['mitochondrion edge','lysosome cutaway lid','lysosome upper rim','outer rim curve','left endomembrane','RNA fragments','nucleoside symbols','RNA strand and membrane','teal membrane folds','lysosome lower rim','membrane transporter','exported nucleosides'],
+  description:'A cutaway lysosome contains short RNA strands, fragments, and amber nucleoside symbols. The displaced membrane segment is a drawing convention that reveals the interior, not a lid opening during transport. A blue transporter in the lower-right rim provides an outward route to the cytoplasm. A mitochondrion and membrane folds surround the organelle.',
+  pieces:['mitochondrion edge','lysosome cutaway membrane','lysosome upper rim','outer rim curve','left endomembrane','RNA fragments','nucleoside symbols','RNA strand and membrane','teal membrane folds','lysosome lower rim','membrane transporter','exported nucleosides'],
   landmarks:[landmark(54,28,"Material is broken down.","The lysosomal interior contains nucleic-acid fragments. Their breakdown supplies smaller building blocks, represented here by amber symbols.",{"preview":"The lysosome breaks down material into smaller, reusable building blocks.","text":"The lysosome breaks down material such as DNA and RNA into smaller building blocks. Amber symbols represent nucleosides released by this process."}),landmark(75,62,"ENT3 spans an internal membrane.","The blue form represents a nucleoside transporter in the lysosomal membrane. Large fragments are not the cargo passing through it.",{"preview":"A membrane transporter carries nucleosides, not large RNA fragments.","title":"A transporter spans an internal membrane."}),landmark(82,88,"Nucleosides reach the cytoplasm.","ENT3-mediated export contributes to nucleoside handling. Impaired transport can disturb lysosomal and cellular homeostasis.",{"preview":"Transport returns small recycling products to the surrounding cytoplasm.","text":"Nucleosides are small building blocks released from DNA and RNA. Transport across the lysosomal membrane returns them to the surrounding cytoplasm for reuse."})],
-  note:conceptual+' Amber shapes are symbols, not chemical structures. This transport scene does not explain every clinical feature of SLC29A3-related disease.',source:'https://pubmed.ncbi.nlm.nih.gov/22174130/'
+  note:conceptual+' The membrane cutaway reveals the interior; a lysosome does not open like a lid. Amber shapes all represent nucleosides, not different transport stages or chemical structures; the smaller marks within the narrow pore use the same meaning. This transport scene does not explain every clinical feature of SLC29A3-related disease.',source:'https://pubmed.ncbi.nlm.nih.gov/22174130/'
  },
  '04':{
   takeaway:'Remove the blocker before the subunits join.',
@@ -34,7 +34,7 @@ export const illustrations={
   takeaway:'A functional RNA helps process another RNA.',
   description:'Within the nuclear interior, an RNA message enters a blue major-spliceosome assembly with visible folded RNA components. An amber intron loop is removed. A released lariat appears at upper right; a continuous joined navy-and-teal exon strand appears at lower right.',
   pieces:['upper nuclear interior','incoming exon and intron','upper assembly lobe','released intron loop','nuclear interior','folded RNA machinery','processing arrow','intron tail','lower nuclear interior','lower assembly lobe','joined navy exon','joined teal exon'],
-  landmarks:[landmark(43,44,"RNA is part of the machinery.","The major spliceosome contains functional small nuclear RNAs, including U4. A gene can therefore act through its RNA product rather than through a protein.",{"preview":"Small RNAs help build the machinery that processes RNA messages.","text":"The major spliceosome contains functional small nuclear RNAs. A gene can therefore act through its RNA product rather than through a protein."}),landmark(80,29,"An intron is removed.","The amber lariat represents the removed intron. It is separate from the joined exon product below.",{"preview":"The amber loop is an intron removed from the RNA message.","text":"The amber loop is an intron removed from the RNA message. It is separate from the joined exon product below."}),landmark(78,80,"Exons are joined.","Navy and teal segments become one continuous RNA message. Appropriate splice-site use is essential for correct RNA processing.",{"preview":"The remaining exon segments join to form a continuous RNA message.","text":"The navy and teal segments are exons retained in the RNA message. Splicing joins these segments after removing an intron."})],
+  landmarks:[landmark(43,44,"RNA is part of the machinery.","The folded RNAs outlined in violet belong to the machinery, including U4. The long navy–amber–teal strand is the RNA message being processed. A gene can act through its RNA product rather than through a protein.",{"preview":"Small RNAs help build the machinery that processes RNA messages.","text":"The major spliceosome contains functional small nuclear RNAs. A gene can therefore act through its RNA product rather than through a protein."}),landmark(80,29,"An intron is removed.","The amber lariat represents the removed intron. It is separate from the joined exon product below.",{"preview":"The amber loop is an intron removed from the RNA message.","text":"The amber loop is an intron removed from the RNA message. It is separate from the joined exon product below."}),landmark(78,80,"Exons are joined.","Navy and teal segments become one continuous RNA message. Appropriate splice-site use is essential for correct RNA processing.",{"preview":"The remaining exon segments join to form a continuous RNA message.","text":"The navy and teal segments are exons retained in the RNA message. Splicing joins these segments after removing an intron."})],
   note:conceptual+' All RNA-processing steps shown occur inside the nucleus. Assembly and processing stages are combined. U4 rearranges and is released before catalysis; the drawing is not an active-state structure or a count of spliceosome components.',source:'https://www.nature.com/articles/s41586-024-07773-7',noteSource:'https://www.nature.com/articles/s41467-024-50785-0'
  },
  '06':{
@@ -55,7 +55,7 @@ export const illustrations={
   takeaway:'A specialist spliceosome handles minor introns.',
   description:'A navy-and-teal RNA message contains an amber intron. An RNA-rich minor-spliceosome assembly processes it within the nuclear interior. The released amber lariat sits below left, while joined navy-and-teal exons sit below right.',
   pieces:['upper nuclear interior','incoming navy exon','RNA hairpin','upper teal exon','nuclear interior','amber intron and complex','folded specialist RNAs','complex right edge','released intron loop','intron tail','joined exon junction','joined teal exon'],
-  landmarks:[landmark(58,41,"Use the specialist machinery.","U4atac is a functional RNA involved in minor-spliceosome assembly. This pathway processes a specialized class of introns.",{"preview":"A small RNA helps assemble machinery for a specialized class of introns.","text":"This round’s gene makes a small functional RNA. It helps assemble the minor spliceosome, machinery that removes a specialized class of introns from RNA messages."}),landmark(23,75,"Remove a minor intron.","The amber lariat represents an intron after removal. “Minor” describes the splicing system, not the clinical impact of its disruption.",{"preview":"The amber loop is a removed intron; “minor” does not mean unimportant."}),landmark(78,78,"Join the flanking exons.","Successful splicing produces a continuous RNA message. Impaired minor-intron processing can affect multiple transcripts.",{"preview":"Joining the exon segments produces a continuous RNA message.","text":"The RNA segments on either side of the intron are exons. Joining them produces a continuous message; impaired processing can affect multiple transcripts."})],
+  landmarks:[landmark(58,41,"Use the specialist machinery.","The folded RNAs outlined in violet belong to the minor-spliceosome machinery. U4atac helps assemble this system, which recognizes a specialized class of introns in the long RNA message.",{"preview":"A small RNA helps assemble machinery for a specialized class of introns.","text":"This round’s gene makes a small functional RNA. It helps assemble the minor spliceosome, machinery that removes a specialized class of introns from RNA messages."}),landmark(23,75,"Remove a minor intron.","The amber lariat represents an intron after removal. “Minor” describes the splicing system, not the clinical impact of its disruption.",{"preview":"The amber loop is a removed intron; “minor” does not mean unimportant."}),landmark(78,78,"Join the flanking exons.","Successful splicing produces a continuous RNA message. Impaired minor-intron processing can affect multiple transcripts.",{"preview":"Joining the exon segments produces a continuous RNA message.","text":"The RNA segments on either side of the intron are exons. Joining them produces a continuous message; impaired processing can affect multiple transcripts."})],
   note:conceptual+' All RNA-processing steps shown occur inside the nucleus. This combines assembly and processing stages. U4atac is released before catalysis; it is not depicted as a persistent catalytic-core component. Shapes do not specify component number.',source:'https://www.nature.com/articles/ncomms9718',noteSource:'https://link.springer.com/article/10.15252/embj.2020106536'
  },
  '09':{
@@ -73,3 +73,52 @@ export const illustrations={
   note:conceptual+' Repeat counts and exon spacing are symbolic. This depicts DNA, not a polyglutamine protein tract.',source:'https://www.ncbi.nlm.nih.gov/books/NBK599589/'
  }
 };
+
+// Annotation positions are independent of the biological anchor. Piece unlocks,
+// guide focus and discovery origins continue to use x/y, while the number sits
+// beside the structure rather than obscuring a pore, junction or small protein.
+const markerPositions={
+ '01':[[34,36],[76,37],[20,68]],
+ '02':[[29,56],[53,77],[73,34]],
+ '03':[[45,20],[87,79],[72,88]],
+ '04':[[23,37],[61,30],[89,70]],
+ '05':[[27,47],[91,48],[90,72]],
+ '06':[[24,53],[80,57],[60,71]],
+ '07':[[12,31],[40,49],[88,57]],
+ '08':[[53,62],[12,60],[83,63]],
+ '09':[[14,42],[86,43],[50,72]],
+ '10':[[44,9],[58,31],[33,65]]
+};
+for(const [number,positions] of Object.entries(markerPositions)){
+ illustrations[number].landmarks.forEach((point,index)=>{
+  [point.markerX,point.markerY]=positions[index];
+ });
+}
+
+export function markerGeometry(item){
+ const x=item.markerX??item.x,y=item.markerY??item.y;
+ // Y is expressed in scene-height units; leaders use the 4:3 image width.
+ const dx=item.x-x,dy=(item.y-y)*.75;
+ return {x,y,length:Math.hypot(dx,dy),angle:Math.atan2(dy,dx)*180/Math.PI};
+}
+
+// These labels appear only on the complete scientific illustration. Their SVG
+// geometry follows the same 800×600 scene as the registered raster and motion.
+const rnaKey=[
+ {x:22,y:94,text:'Machinery RNA',tone:'machinery'},
+ {x:77,y:94,text:'Message RNA',tone:'message'}
+];
+illustrations['03'].annotations={labels:[{x:25,y:6,text:'Cutaway view',tone:'neutral'}]};
+illustrations['05'].annotations={
+ labels:[{x:74,y:7,text:'Major spliceosome',tone:'machinery'},...rnaKey],
+ traces:['major-upper-rna','major-left-rna']
+};
+illustrations['08'].annotations={
+ labels:[{x:66,y:6,text:'Minor spliceosome',tone:'machinery'},...rnaKey],
+ traces:['minor-upper-rna','minor-left-rna','minor-right-rna']
+};
+illustrations['10'].annotations={labels:[
+ {x:20,y:7,text:'Shorter repeat',tone:'repeat'},
+ {x:80,y:31,text:'Expanded repeat',tone:'repeat'},
+ {x:69,y:58,text:'Fixed-length comparison',tone:'neutral'}
+]};

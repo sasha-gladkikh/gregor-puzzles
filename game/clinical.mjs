@@ -194,7 +194,7 @@ export const clinicalProfiles={
    feature('Chest','Pectus abnormality','HP:0000767','A depressed lower chest may occur with an upper chest prominence.','HPO link represents the excavatum component',NO),
    feature('Hematologic','Bleeding tendency','HP:0001892','Coagulation or platelet abnormalities can contribute to bruising or bleeding.','Variable; clinical history matters',NO,true),
    feature('Genitourinary','Cryptorchidism','HP:0000028','Undescended testes may occur in affected males.','Sex-specific associated feature',med('condition/noonan-syndrome')),
-   feature('Development','Learning or language difficulties','HP:0000750','Language and educational support needs differ among individuals.','Intellectual disability is not universal',med('condition/noonan-syndrome')),
+   {...feature('Development','Learning or language difficulties','HP:0000750','Language and educational support needs differ among individuals.','Intellectual disability is not universal',med('condition/noonan-syndrome')),hpoQualifier:'The HPO term describes speech and language delay, not all learning difficulties.'},
    feature('Lymphatic','Lymphatic dysplasia','HP:0100766','Abnormal lymphatic development can cause fluid accumulation.','Spectrum feature; not specific to PTPN11',NO),
    feature('Feeding','Infant feeding difficulties','HP:0008872','Feeding difficulties can contribute to poor weight gain early in life.','Common in Noonan syndrome; often changes with age',NO),
    feature('Face and neck','Age-dependent facial and neck pattern',null,'Widely spaced eyes, ptosis, low-set ears, and a broad or webbed neck can contribute to recognition.','Variable; facial features can become subtler in adulthood',NO)

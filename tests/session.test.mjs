@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SIZE, newState, place, guess} from '../game/engine.mjs';
-import {restoreSession, restoreTrayOrder, modeLocked, changeTimingMode, recordInteraction, startRound, elapsedSeconds, finishRound} from '../game/session.mjs';
+import {restoreSession, restoreTrayOrder, modeLocked, changeTimingMode, recordInteraction, startRound, elapsedSeconds, finishRound, earnedCompletion, restartSession} from '../game/session.mjs';
 
 const ids = Array.from({length: SIZE}, (_, id) => id);
 const savedOrder = [8, 1, 11, 3, 7, 0, 10, 6, 9, 2, 5, 4];
@@ -119,4 +119,33 @@ test('practice remains untimed after progress and completion', () => {
   finishRound(state, 90000);
   assert.equal(elapsedSeconds(state, 100000), 0);
   assert.equal(state.startedAt, null);
+});
+
+
+test('replaying preserves earned completion without preserving a score, answer, or active clock',()=>{
+ const completed=restoreSession({state:{...newState(),placed:Array.from({length:12},(_,i)=>i),seconds:45},timed:true},100000).state;
+ assert.equal(earnedCompletion(completed),true);
+ const replay=restartSession(completed);
+ assert.equal(earnedCompletion(replay.state),true);assert.deepEqual(replay.state.placed,[]);
+ assert.equal(replay.state.startedAt,null);assert.equal(replay.state.finishedAt,null);assert.equal(replay.state.seconds,0);
+ assert.equal(replay.state.solvedByGuess,false);
+ const restored=restoreSession(persisted(replay));assert.equal(earnedCompletion(restored.state),true);
+ assert.equal(earnedCompletion(restartSession(restored.state).state),true);
+ assert.equal(earnedCompletion(restoreSession(null).state),false);
+});
+
+test('only valid saved completion or a strict earned flag retains the collection achievement',()=>{
+ assert.equal(earnedCompletion(restoreSession({state:{...newState(),earnedCompletion:'true'}}).state),false);
+ assert.equal(earnedCompletion(restoreSession({state:{earnedCompletion:true,placed:[]}}).state),false);
+});
+
+test('replaying retains collection and field-guide access without treating its board as finished',async()=>{
+ const {rounds,saveKey}=await import('../game/rounds.mjs');
+ const {collectionProgress}=await import('../game/collection.mjs');
+ const {completedGuideRounds}=await import('../game/collection-data.mjs');
+ const round=rounds[0],completed={...newState(),placed:Array.from({length:12},(_,i)=>i)};
+ const replay=restartSession(completed);replay.state.placed.push(3);
+ const progress=collectionProgress(key=>key===saveKey(round)?JSON.stringify(replay):null);
+ assert.equal(progress[0].done,true);assert.equal(progress[0].replaying,true);assert.equal(progress[0].pieces,1);
+ assert.deepEqual(completedGuideRounds(progress).map(round=>round.id),[round.id]);
 });

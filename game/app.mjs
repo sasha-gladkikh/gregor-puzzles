@@ -2,9 +2,9 @@ import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
 import {COLS,ROWS,SIZE,W,H,CW,CH,pathFor,place,guess,complete,shuffled,normalizeGene,recognizeGene,revealGeneHint,geneHintText,geneHintStatus,geneClueConnection,landmarkPiece} from './engine.mjs';
 import {rounds,allRounds,findRound,saveKey} from './rounds.mjs';
 import {collectionProgress,roundLink,newPlayerKeys} from './collection.mjs';
-import {artworkMarkers} from './artwork-ui.mjs';
+import {artworkMarkers,artworkAnnotations} from './artwork-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
-import {restoreSession,choosePiece,elapsedSeconds,startRound,recordInteraction,modeLocked,changeTimingMode,finishRound,roundComplete} from './session.mjs';
+import {restoreSession,restartSession,choosePiece,elapsedSeconds,startRound,recordInteraction,modeLocked,changeTimingMode,finishRound,roundComplete} from './session.mjs';
 import {reduceMotion as reducedMotion,soundFeedback,assembleLogo} from './experience.mjs';
 import {renderSite} from './site.mjs';
 import {relatedRoundLinks} from './collection-data.mjs';
@@ -18,8 +18,8 @@ import {getJourney,nextJourneyStep,journeyRoundHref} from './journeys.mjs';
 import {initShareCard} from './share-card.mjs';
 import {latestPlayClue,latestClueKey} from './play-learning.mjs';
 import {createTermLens,renderTeachingConnection} from './teaching-ui.mjs';
-import {nextOpenSlot} from './board-navigation.mjs';
-import {createRoundSaveGuard,createRoundActionQueue} from './round-save.mjs';
+import {nextOpenSlot,nextTrayPiece,horizontalRevealDelta} from './board-navigation.mjs';
+import {createRoundSaveGuard,createRoundActionQueue,createDialogCommit} from './round-save.mjs';
 import {createRoundCarousel} from './round-carousel.mjs';
 import {eligibleScore} from './community.mjs';
 import {getPlayer,getPlayerStatus,getAttempt,hasAttempt,startAttempt,updateAttempt,finishAttempt,syncPlayer,newPlayer} from './player.mjs';
@@ -42,6 +42,7 @@ const position = id => `row ${Math.floor(id/COLS)+1}, column ${id%COLS+1}`;
 // Each landmark belongs to the piece that contains it; placing that piece reveals the note.
 const landmarkPieces=round.illustration.landmarks.map(landmarkPiece);
 const imageMarkers=artworkMarkers(round,index=>showNote(index)),markers=[...imageMarkers.children];markers.forEach(m=>m.hidden=true);$('board').append(imageMarkers);
+const completedAnnotations=artworkAnnotations(round);completedAnnotations.hidden=true;$('board').append(completedAnnotations);
 let stored,storedRaw=null;
 try { storedRaw=localStorage.getItem(KEY);stored=JSON.parse(storedRaw); } catch {}
 const roundSave=createRoundSaveGuard({read:()=>localStorage.getItem(KEY),write:value=>localStorage.setItem(KEY,value),initial:storedRaw});
@@ -105,7 +106,7 @@ function positionCompletion(){
     if($('clueDetails').parentElement!==$('clueRecap'))$('clueRecap').append($('clueDetails'));
   }else if($('clueDetails').parentElement!==panel)$('learningHeading').after($('clueDetails'));
   if(artworkAnimation&&!$('figureDialog').open){
-    $('completionActions').after(artworkAnimation.caption);
+    $('board').closest('.board-frame').after(artworkAnimation.caption);
   }
 }
 walkthroughLayout.addEventListener('change',positionCompletion);
@@ -281,6 +282,8 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
   finishRound(state);
   const found=discoveries(before,previous);
   const finishing=roundComplete(state)&&before<SIZE;
+  const activeBefore=document.activeElement;
+  const returnToTray=id!==null&&(activeBefore?.classList.contains('slot')||activeBefore?.closest('.piece')?.dataset.piece===String(id));
   $('board').classList.toggle('finishing',finishing&&!reducedMotion());
   $('completion').classList.toggle('reveal-pending',finishing&&!reducedMotion());
   $('identityCard').classList.toggle('reveal-pending',finishing&&!reducedMotion());
@@ -322,8 +325,18 @@ function afterProgress(before,previous,{id=null,from=null,alias=''}={}) {
       if(!result.cancelled&&generation===roundGeneration&&epoch===feedbackEpoch&&!complete(state))
         discoveryGuide.show(found.map(item=>({...item,point:item.kind==='landmark'?round.illustration.landmarks[item.index]:point})));
     });
-    $('tray').querySelector('.piece:not(.placed)')?.focus({preventScroll:true});
+    if(returnToTray)focusRemainingPiece(id);
   }
+}
+function focusRemainingPiece(from){
+  const tray=$('tray'),bounds=tray.getBoundingClientRect();
+  const visible=[...tray.querySelectorAll('.piece:not(.placed)')].filter(button=>{
+    const rect=button.getBoundingClientRect();return rect.right>bounds.left+Math.min(rect.width/2,20)&&rect.left<bounds.right-Math.min(rect.width/2,20);
+  }).map(button=>Number(button.dataset.piece));
+  const id=nextTrayPiece(from,order,state.placed,visible),button=id===null?null:trayButton(id);
+  if(!button)return;
+  button.focus({preventScroll:true});
+  if(tray.scrollWidth>tray.clientWidth)tray.scrollLeft+=horizontalRevealDelta(bounds,button.getBoundingClientRect());
 }
 function attempt(slot,{fromDrag=false}={}) {
   if(selected===null){strip('First select a piece from the tray.');return;}
@@ -390,6 +403,7 @@ function renderResults() {
 function render(before=state.placed.length) {
   const n=state.placed.length, done=complete(state);
   $('game').classList.toggle('round-complete',done);
+  completedAnnotations.hidden=!done;
   const settingsAnchor=done?$('diagramDescription').closest('details'):$('pieceBank');
   if(settingsAnchor.nextElementSibling!==$('roundSettings'))settingsAnchor.after($('roundSettings'));
   $('board').classList.toggle('started',n>0||peek); $('board').classList.toggle('completed',done);
@@ -532,7 +546,7 @@ $('enlargeButton').onclick=()=>{if(complete(state))figureView.open();};
 $('closeFigure').onclick=()=>figureView.close();
 function resetRestartCopy(){
   $('restartDialog').querySelector('h2').textContent='Restart this round?';
-  $('restartDialog').querySelector('p').textContent='Restarting resets this puzzle. Your recorded attempts stay in your player history.';
+  $('restartDialog').querySelector('p').textContent='Restarting resets the current puzzle. Your completed-round check, field-guide entry, and recorded attempts stay saved.';
   $('confirmRestart').textContent='Restart round';
 }
 $('restart').onclick=()=>openDialog('restartDialog');$('cancelRestart').onclick=()=>{timedEntry=false;$('restartDialog').close();resetRestartCopy();};
@@ -547,7 +561,7 @@ $('confirmRestart').onclick=()=>runRoundAction(()=>{
   $('board').classList.remove('finishing','completion-settled');
   for(const panel of [$('completionSummary'),$('identityCard'),$('completion')])panel.classList.remove('reveal-arriving','reveal-pending');
   $('board').querySelectorAll('.discovery-ring').forEach(n=>n.remove());
-  state=restoreSession(null).state;if(timedEntry){timed=true;timedEntry=false;}selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
+  state=restartSession(state).state;if(timedEntry){timed=true;timedEntry=false;}selected=null;hinted=null;peek=false;lastCount=-1;extrasShown=false;activeSlot=0;order=shuffled(order);
   $('discoveriesButton').classList.remove('has-new');
   $('game').classList.remove('focus-view');$('focusButton').setAttribute('aria-pressed','false');$('focusButton').textContent='Focus view';
   $('typingDetails').open=false;$('revealExtras').open=false;$('clueRecap').open=false;$('clinicalDetails').open=false;
@@ -558,15 +572,26 @@ $('confirmRestart').onclick=()=>runRoundAction(()=>{
   strip('Tap a piece, then tap its matching space.');$('roundSettings').open=false;trayButton(order[0])?.focus({preventScroll:true});
 });
 document.querySelectorAll('.new-player-button').forEach(b=>b.onclick=()=>{$('libraryDialog').close();openDialog('newPlayerDialog');});
-$('cancelNewPlayer').onclick=()=>$('newPlayerDialog').close();
+const playerReset=createDialogCommit({
+  isOpen:()=>$('newPlayerDialog').open,
+  onPending:pending=>{
+    $('confirmNewPlayer').disabled=pending;$('cancelNewPlayer').disabled=pending;
+    $('newPlayerDialog').setAttribute('aria-busy',String(pending));
+  }
+});
+$('cancelNewPlayer').onclick=()=>{if(!playerReset.pending)$('newPlayerDialog').close();};
+$('newPlayerDialog').addEventListener('cancel',event=>{if(playerReset.pending)event.preventDefault();});
 $('confirmNewPlayer').onclick=()=>runRoundAction(async()=>{
-  const button=$('confirmNewPlayer'),notice=$('newPlayerStatus');button.disabled=true;notice.textContent='Saving any pending results…';
+  const notice=$('newPlayerStatus');
   try{
-    await newPlayer();
-    // Preserve the newly rotated player identity while clearing old game saves.
-    try{newPlayerKeys(Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))).filter(key=>!key.startsWith('gregor-puzzles:player:v1:')).forEach(key=>localStorage.removeItem(key));}catch{}
-    location.href=`./play.html?level=${rounds[0].number}`;
-  }catch(error){notice.textContent=`${error.message} Your current player and history have been kept. Retry when connected, or cancel.`;button.disabled=false;}
+    await playerReset.run(async()=>{
+      notice.textContent='Saving results and starting a new player. Please wait; this step cannot be cancelled.';
+      await newPlayer();
+      // Preserve the newly rotated player identity while clearing old game saves.
+      try{newPlayerKeys(Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))).filter(key=>!key.startsWith('gregor-puzzles:player:v1:')).forEach(key=>localStorage.removeItem(key));}catch{}
+      location.href=`./play.html?level=${rounds[0].number}`;
+    });
+  }catch(error){notice.textContent=`${error.message} Your current player and history have been kept. Retry when connected, or cancel.`;}
 });
 window.addEventListener('keydown',e=>{
   if(e.defaultPrevented||e.key!=='Escape'||selected===null||document.querySelector('dialog[open]'))return;
@@ -583,7 +608,7 @@ $('libraryLabel').textContent=`Browse rounds`;
 $('figureLabel').textContent=`FIG. ${round.number} / ${round.topic.toUpperCase()}`;
 $('reference').src=artwork; $('reference').alt=diagramDescription;
 $('diagramDescription').textContent=diagramDescription;
-$('revealGene').textContent=round.gene;$('revealCondition').textContent=round.condition;$('revealAlias').textContent=round.otherName;
+$('revealGene').textContent=round.gene;$('revealCondition').textContent=round.condition;$('revealAlias').hidden=!round.otherName;$('revealAlias').textContent=round.otherName;
 $('revealMetadata').append(node('span',round.inheritance),citation(`https://omim.org/entry/${round.omim}`,`OMIM ${round.omim}`));
 const p=round.clinical;
 renderTeachingConnection($('clueConnection'),round,geneClueConnection(round),highlightConnection);
@@ -671,7 +696,7 @@ function renderCollection(includeCards=false) {
     const num=document.createElement('span');num.className='level-number';num.textContent=item.round.number;
     const title=document.createElement('h3');title.textContent=item.round.title;
     const topic=document.createElement('p');topic.textContent=item.round.topic;
-    const status=document.createElement('span');status.className='level-status';status.textContent=item.done?`${item.round.gene} · Complete ✓`:item.started?`${item.pieces}/12 pieces`:i===0&&!anyStarted?'Start here':'Ready to explore';
+    const status=document.createElement('span');status.className='level-status';status.textContent=item.replaying?`Complete ✓ · Replay ${item.pieces}/12`:item.done?`${item.round.gene} · Complete ✓`:item.started?`${item.pieces}/12 pieces`:i===0&&!anyStarted?'Start here':'Ready to explore';
     const bar=document.createElement('span');bar.className='level-progress';const fill=document.createElement('span');fill.style.width=item.percent+'%';bar.append(fill);
     a.append(thumbnail,num,title,topic,status);
     if(item.done)a.append(node('span',item.round.condition,'level-condition'));

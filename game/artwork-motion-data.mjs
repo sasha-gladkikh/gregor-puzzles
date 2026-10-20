@@ -183,3 +183,57 @@ for(const [round,scene] of Object.entries(artworkMotionData)){
   };
  });
 }
+
+// Shared routes need shared clocks. Independent random periods are appropriate
+// for free diffusion, but let channel cargo overtake or merge on later cycles.
+const setMotion=(number,id,properties)=>Object.assign(artworkMotionData[number].sprites.find(sprite=>sprite.id===id),properties);
+const convoy=(number,ids,keyframes,period)=>{
+ for(const id of ids)setMotion(number,id,{keyframes,period,phase:.65,motion:'transport',secondary:undefined,parallax:0});
+};
+convoy('01',['left-pore-upper','left-pore-lower'],transport(0,28,{delay:.12,finish:.7}),7800);
+convoy('01',['right-pore-upper','right-pore-lower'],transport(0,-38,{delay:.12,finish:.7}),8600);
+convoy('02',['junction-cargo-left','junction-cargo-centre','junction-cargo-right'],transport(254,0,{delay:.12,finish:.7}),9000);
+convoy('07',['free-ligand-left','free-ligand-upper','free-ligand-right'],transport(31,7,{delay:.12,finish:.7}),20000);
+
+// A sequence is an authored stage on the scene's one clock. It does not use
+// ambient phase offsets, pointer parallax, or a separate timer. Reference views
+// remain reference views; route light connects them without morphing structures.
+const sequence=(number,id,period,frames)=>setMotion(number,id,{motion:'sequence',period,phase:0,keyframes:frames,secondary:undefined,parallax:0});
+const fixed=(number,id)=>setMotion(number,id,{motion:'fixed',keyframes:[k(0),k(1)],secondary:undefined,parallax:0});
+
+artworkMotionData['04'].label='Blocker release, subunit joining, and translation';
+artworkMotionData['04'].description='Sequential emphasis follows eIF6 release, small-subunit joining, and the assembled translating ribosome. These are separate reference views in one illustration, not a literal structural simulation.';
+sequence('04','released-eif6',18000,[k(0),k(.07),k(.22,20,-18,9),k(.27,20,-18,9,0),k(.9,0,0,0,0),k(1)]);
+sequence('04','free-small-ribosomal-subunit',18000,[k(0),k(.24),k(.43,-12,5,-.8),k(.49,-12,5,-.8,0),k(.9,0,0,0,0),k(1)]);
+
+artworkMotionData['05'].label='The message is spliced and its products separate';
+artworkMotionData['05'].description='Emphasis follows the precursor message, the intron, the released lariat, and the joined exon product. Machinery RNA stays distinct from the message; the illustrated states do not imply a measured molecular trajectory.';
+sequence('05','major-released-lariat',18000,[k(0),k(.4),k(.61,-8,-10,-1.5),k(.7,-8,-10,-1.5,0),k(.91,0,0,0,0),k(1)]);
+
+// Calcium entry precedes vesicle release. The two transmitter symbols travel
+// together with constant separation, then reset only while invisible.
+sequence('06','calcium-entering',18000,[k(0),k(.03),k(.22,2.7,-62),k(.26,2.7,-62,0,0),k(.93,0,0,0,0),k(1)]);
+for(const id of ['transmitter-upper','transmitter-lower'])sequence('06',id,18000,[k(0),k(.45),k(.68,-5,26),k(.74,-5,26,0,0),k(.93,0,0,0,0),k(1)]);
+for(const sprite of artworkMotionData['06'].sprites.filter(sprite=>sprite.id.startsWith('closed-vesicle-'))){
+ for(const frame of sprite.keyframes){frame.x*=.45;frame.y*=.45;frame.rotate*=.45;}
+ if(sprite.secondary){sprite.secondary.x*=.4;sprite.secondary.y*=.4;sprite.secondary.rotate*=.4;}
+}
+
+artworkMotionData['07'].label='A signal passes through the central regulator';
+artworkMotionData['07'].description='The extracellular signal approaches its receptor. Ordered emphasis then follows the central regulator, RAS, the downstream cascade, and nuclear response. The pathway proteins remain anchored in their explanatory positions.';
+for(const id of ['free-ligand-left','free-ligand-upper','free-ligand-right'])sequence('07',id,20000,[k(0),k(.02),k(.16,31,7),k(.2,31,7,0,0),k(.94,0,0,0,0),k(1)]);
+fixed('07','cascade-blue-protein');fixed('07','cascade-purple-protein');
+
+artworkMotionData['08'].label='A specialized intron is removed by the minor spliceosome';
+artworkMotionData['08'].description='Emphasis follows the minor-intron-containing precursor, the released lariat, and joined exons. The specialized machinery is a schematic reference view. The product remains anchored so the RNA stays continuous at the image edge.';
+sequence('08','minor-released-lariat',19000,[k(0),k(.4),k(.63,-10,9,-1.5),k(.72,-10,9,-1.5,0),k(.92,0,0,0,0),k(1)]);
+fixed('08','joined-exon-product');
+
+artworkMotionData['09'].label='ER trafficking precedes Golgi signaling';
+artworkMotionData['09'].description='Sequential emphasis follows the ER, a STING-bearing carrier, the Golgi, and downstream signaling. Repeated STING drawings are reference stages. This normal pathway schematic does not directly simulate a SAVI variant.';
+sequence('09','sting-carrier',21000,[k(0),k(.15),k(.37,61,10),k(.42,67,11,0,0),k(.94,0,0,0,0),k(1)]);
+fixed('09','downstream-amber-protein');fixed('09','downstream-teal-protein');
+
+artworkMotionData['10'].label='Compare two fixed repeat lengths';
+artworkMotionData['10'].description='Shorter and expanded repeat segments are emphasized together. Both DNA diagrams and the neuron stay fixed. The image compares repeat lengths; it does not show a repeat growing over time or a measured change in the neuron.';
+fixed('10','neuron-context');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {allRounds} from '../game/rounds.mjs';
 import {hpoTerms} from '../game/hpo-terms.mjs';
 import {roundReferences} from '../game/clinical-ui.mjs';
-import {clinicalDetails,groupedClinicalFeatures,scientificFamily,scientificInterpretation,scientificReferences} from '../game/science-ui.mjs';
+import {clinicalDetails,hasExactHpoTitle,groupedClinicalFeatures,scientificFamily,scientificInterpretation,scientificReferences} from '../game/science-ui.mjs';
 import {interpretationPrinciples} from '../game/interpretation.mjs';
 
 // Small DOM adapter lets the content projections be exercised without a browser.
@@ -56,5 +56,19 @@ test('Science retains overview, clinical significance, family context, and quali
    const targets=new Set(walk(references).map(element=>element.id).filter(Boolean));
    for(const element of [clinical,family,interpretation].flatMap(walk).filter(element=>element.href?.startsWith('#ref-')))assert.ok(targets.has(element.href.slice(1)),`${round.gene}: citation has no target`);
   }
+ }finally{globalThis.document=previous;}
+});
+
+
+test('Exact HPO titles link once, while partial mappings retain their qualifier',()=>{
+ assert.equal(hasExactHpoTitle({title:'Short stature',hpo:'HP:0004322'}),true);
+ assert.equal(hasExactHpoTitle({title:'Learning or language difficulties',hpo:'HP:0000750'}),false);
+ assert.equal(hasExactHpoTitle({title:'Short stature',hpo:'HP:0004322',hpoQualifier:'Broader mapping'}),false);
+ const previous=globalThis.document;globalThis.document=document;
+ try{
+  const round=allRounds.find(round=>round.gene==='PTPN11'),clinical=clinicalDetails(round);
+  const matches=walk(clinical).filter(element=>element.href==='https://hpo.jax.org/browse/term/HP:0004322');
+  assert.equal(matches.length,1);assert.equal(matches[0].textContent,'Short stature ↗');
+  assert.ok(clinical.textContent.includes('not all learning difficulties'));
  }finally{globalThis.document=previous;}
 });

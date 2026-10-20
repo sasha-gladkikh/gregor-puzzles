@@ -13,7 +13,9 @@ test('all ten image guides use the referenced notes and the same structure coord
       const landmark=round.illustration.landmarks[index];
       assert.equal(step.title,landmark.title);assert.equal(step.text,landmark.text);
       assert.equal(step.x,landmark.x);assert.equal(step.y,landmark.y);
-      assert.ok(step.duration>=6500&&step.duration<=10000);
+      const words=`${landmark.title} ${landmark.text}`.trim().split(/\s+/).length;
+      assert.ok(step.duration>=10000,'Every technical note allows at least ten seconds');
+      assert.ok((step.duration-2500)/words>=375,'Reading budget stays at or below 160 words/minute after orientation');
       if(index)assert.equal(step.at,steps[index-1].at+steps[index-1].duration);
     });
   }
@@ -58,7 +60,7 @@ test('restored rounds stay ambient until the reader explicitly starts the guide'
     state.guide.draw(19000);assert.equal(state.caption.hidden,true);assert.equal(state.focus.attrs.opacity,'0');
     state.guide.restart(19000);state.guide.draw(19000);
     assert.equal(state.caption.hidden,false);assert.equal(state.caption.dataset.phase,'0');
-    state.guide.draw(21000);assert.equal(state.focus.attrs.opacity,'1.000');
+    state.guide.draw(22000);assert.equal(state.focus.attrs.opacity,'1.000');
     assert.equal(state.focus.attrs.transform,'translate(432 168)');
     assert.equal(state.parent.children[0],state.originalArtwork);
   }finally{state.restore();}
@@ -72,7 +74,7 @@ test('pausing the artwork clock freezes the caption and focus, then resumes the 
     clock.play();advance(2500);clock.pause();
     const caption=state.caption.dataset.phase,opacity=state.focus.attrs.opacity;
     advance(60000);assert.equal(state.caption.dataset.phase,caption);assert.equal(state.focus.attrs.opacity,opacity);assert.equal(frames.size,0);
-    clock.play();advance(6000);assert.equal(state.caption.dataset.phase,'1');assert.equal(frames.size,1);
+    clock.play();advance(artworkGuideSteps(state.round)[1].at);assert.equal(state.caption.dataset.phase,'1');assert.equal(frames.size,1);
     state.guide.restart(clock.elapsed);state.guide.draw(clock.elapsed);assert.equal(state.caption.dataset.phase,'0');
     assert.equal(frames.size,1,'replaying the guide does not add an animation loop');
   }finally{clock.dispose();state.guide.dispose();state.restore();}
@@ -106,6 +108,20 @@ test('selecting a structure pauses on that note, and resuming continues there in
     state.guide.resume(5000);state.guide.draw(5500);
     assert.equal(state.caption.dataset.phase,'2');assert.equal(state.guide.focus.title,state.round.illustration.landmarks[2].title);
   }finally{state.restore();}
+});
+
+test('holding a caption preserves reading position while the shared artwork clock keeps running',()=>{
+  const state=setup(true);let now=0,id=0;const frames=new Map();
+  const clock=createArtworkClock({duration:18000,loop:true,now:()=>now,request:callback=>{frames.set(++id,callback);return id;},cancel:key=>frames.delete(key),onFrame:(_progress,elapsed)=>state.guide.draw(elapsed)});
+  const advance=ms=>{now+=ms;const pending=[...frames.values()];frames.clear();pending.forEach(callback=>callback());};
+  try{
+    const step=artworkGuideSteps(state.round)[0],hold=state.caption.children[0].children[2];
+    clock.play();advance(step.at+step.duration*.5);hold.onclick();
+    assert.equal(hold.textContent,'Resume guide');assert.equal(hold.attrs['aria-pressed'],'true');
+    advance(60000);assert.equal(state.caption.dataset.phase,'static-0');assert.equal(clock.playing,true);assert.equal(frames.size,1);
+    hold.onclick();assert.equal(state.caption.dataset.phase,'0');assert.equal(hold.textContent,'Pause guide');
+    advance(step.duration*.51);assert.equal(state.caption.dataset.phase,'1','resume keeps the already-read portion of the note');
+  }finally{clock.dispose();state.guide.dispose();state.restore();}
 });
 
 test('natural caption measurements stay present through every step, then collapse for the static takeaway',()=>{

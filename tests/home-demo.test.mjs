@@ -33,10 +33,14 @@ test('the inspection lens uses complete anonymous notes at the reviewed structur
   const notes = demoInspectionNotes();
   assert.equal(notes.length, 3);
   assert.deepEqual(notes.map(({x,y}) => [x,y]), [[43,42],[66,46],[24,79]]);
+  assert.deepEqual(notes.map(({marker}) => [marker.x,marker.y]), [[34,36],[76,37],[20,68]]);
   for (const note of notes) {
     assert.ok(note.title.length > 5);
     assert.ok(note.text.length > 60);
     assert.doesNotMatch(note.title + ' ' + note.text, /CLCN1|ClC-1|myotonia|Becker/i);
+    const radians=note.marker.angle*Math.PI/180;
+    assert.ok(Math.abs(note.marker.x+note.marker.length*Math.cos(radians)-note.x)<1e-10);
+    assert.ok(Math.abs(note.marker.y+note.marker.length*Math.sin(radians)/.75-note.y)<1e-10);
   }
   assert.match(notes[1].text, /does not prescribe a fixed ion-flow direction/);
 });

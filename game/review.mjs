@@ -1,5 +1,5 @@
 import {allRounds as rounds,rounds as playable,findRound,searchText} from './rounds.mjs';
-import {artworkMarkers} from './artwork-ui.mjs';
+import {artworkMarkers,artworkAnnotations} from './artwork-ui.mjs';
 import {artworkSrcset} from './artwork-source.mjs';
 import {node,citation,referenceMarks,referenceList} from './clinical-ui.mjs';
 import {mechanismFigure,spliceCompare} from './mechanism.mjs';
@@ -18,7 +18,7 @@ glossary.id='reviewGlossary';glossary.className='review-guidance';
 const definitions=node('dl',null,'review-definitions');
 for(const entry of terminology)definitions.append(node('dt',entry.term),node('dd',entry.definition));
 glossary.append(node('p','Shared definitions used by the in-game terminology controls.'),definitions);
-document.querySelector('.review-intro').append(glossary);
+document.querySelector('.review-intro').after(glossary);
 for(const round of rounds){
  const p=round.clinical;
  const jump=node('a',`${round.number} · ${round.gene}`);jump.href=`#round-${round.number}`;document.getElementById('reviewIndex').append(jump);indexLinks.push(jump);
@@ -33,7 +33,7 @@ for(const round of rounds){
  const img=node('img');img.src=round.artwork;img.srcset=artworkSrcset(round);
  // Match the review card padding and its 42.5% visual column above 900px.
  img.sizes='(max-width:600px) calc(100vw - 68px), (max-width:800px) min(678px, calc(100vw - 92px)), (max-width:900px) min(678px, calc(100vw - 108px)), (max-width:1416px) calc(42.5vw - 67.45px), 534px';
- img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';img.decoding='async';figure.append(img,artworkMarkers(round));
+ img.alt=round.description;img.width=800;img.height=600;img.loading='lazy';img.decoding='async';figure.append(img,artworkAnnotations(round),artworkMarkers(round));
  const walkthrough=illustrationWalkthrough(round,{board:figure,id:`review-walkthrough-${round.number}`,onStep:i=>{cards.forEach(c=>{if(c.card!==card)c.walkthrough.pause();});figure.querySelectorAll('.artwork-marker').forEach((m,j)=>m.classList.toggle('is-active',i===j));},onClose:()=>figure.querySelectorAll('.artwork-marker').forEach(m=>m.classList.remove('is-active'))});
  visual.append(figure,walkthrough.element);
  visual.append(node('p',round.illustration.note,'review-figure-note'));
@@ -64,7 +64,7 @@ for(const round of rounds){
  for(const [i,text]of geneHintText({geneHintVersion:GENE_HINT_VERSION,geneHintsSeen:3},round).split('\n\n').entries()){
   const li=node('li');li.append(node('strong',`${['Picture hint','Biology hint','Symbol hint'][i]}: `),document.createTextNode(text));hints.append(li);
  }
- clues.append(node('h4','Anonymous image notes'),node('p','Full notes and their compact clues, as shown during play. Gene and condition names are revealed at completion.','small'),playNotes,node('h4','Optional gene hints'),hints);
+ clues.append(node('h4','Anonymous image notes'),node('p','Image notes stay anonymous during play. The gene appears at 11 pieces; the condition appears when the round is complete. Naming the gene can complete the round earlier.','small'),playNotes,node('h4','Optional gene hints'),hints);
  const terms=node('a','Shared terminology definitions ↑');terms.href='#reviewGlossary';terms.addEventListener('click',()=>glossary.open=true);clues.append(terms);content.append(clues);
  const references=panel('References');references.append(referenceList(round,{heading:''}));content.append(references);
  body.append(visual,content);card.append(body);document.getElementById('reviewRounds').append(card);
@@ -78,6 +78,14 @@ const search=document.getElementById('reviewSearch');search.addEventListener('in
 });
 document.getElementById('clearSearch').onclick=()=>{search.value='';search.dispatchEvent(new Event('input'));search.focus();};
 document.getElementById('collapseProfiles').onclick=()=>{for(const {card,walkthrough}of cards)if(!card.hidden){card.querySelectorAll('.learning-panel, .science-detail-panel').forEach(d=>d.open=false);walkthrough.close();}};
-if(/^#(?:round-|ref-|reviewGlossary)/.test(location.hash))requestAnimationFrame(()=>{const target=document.getElementById(location.hash.slice(1));if(!target)return;if(target===glossary)glossary.open=true;for(let parent=target.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;target.scrollIntoView();});
-window.addEventListener('beforeprint',()=>{document.querySelectorAll('.learning-panel, .science-detail-panel').forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});});
+function revealHashTarget(){
+ if(!/^#(?:round-|ref-|reviewGlossary)/.test(location.hash))return;
+ const target=document.getElementById(location.hash.slice(1));if(!target)return;
+ if(target.closest('.review-round')?.hidden){search.value='';search.dispatchEvent(new Event('input'));}
+ if(target===glossary)glossary.open=true;
+ for(let parent=target.parentElement;parent;parent=parent.parentElement)if(parent.tagName==='DETAILS')parent.open=true;
+ requestAnimationFrame(()=>target.scrollIntoView());
+}
+revealHashTarget();window.addEventListener('hashchange',revealHashTarget);
+window.addEventListener('beforeprint',()=>{document.querySelectorAll('.learning-panel, .science-detail-panel, #reviewGlossary').forEach(d=>{d.dataset.wasOpen=String(d.open);d.open=true;});});
 window.addEventListener('afterprint',()=>{document.querySelectorAll('[data-was-open]').forEach(d=>{d.open=d.dataset.wasOpen==='true';delete d.dataset.wasOpen;});});

@@ -42,3 +42,17 @@ test('built home exposes only playable rounds before JavaScript runs',async()=>{
  assert.doesNotMatch(two,/class="featured-card"/);
  assert.throws(()=>prepareHomeHTML(html,[]),/playable/);
 });
+
+
+test('a replay remains resumable after all rounds have been earned',async()=>{
+ const {homeProgress,homeDestination}=await import('../game/home-state.mjs');
+ const {newState}=await import('../game/engine.mjs');
+ const catalogue=[{number:'01',topic:'Membrane transport',saveKey:'one'},{number:'02',topic:'Cell communication',saveKey:'two'}];
+ const data={one:{state:{...newState(),placed:Array.from({length:12},(_,i)=>i)}},two:{state:{...newState(),earnedCompletion:true,placed:[0,1,2]}}};
+ const progress=homeProgress(catalogue,key=>JSON.stringify(data[key]));
+ assert.equal(progress.filter(item=>item.done).length,2);
+ assert.equal(progress[1].replaying,true);
+ assert.equal(homeDestination(progress).label,'Continue replay · 02');
+ assert.equal(homeDestination(progress).href,'./play.html?level=02');
+ assert.match(homeDestination(progress).detail,/3 of 12 pieces placed. Completion saved/);
+});

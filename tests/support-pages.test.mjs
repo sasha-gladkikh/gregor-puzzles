@@ -20,9 +20,10 @@ function page(filename,{url='https://example.test/',saved=new Map()}={}){
   set textContent(value){this.replaceChildren(String(value));}get textContent(){return this.children.map(child=>typeof child==='string'?child:child.textContent).join('');}
   append(...children){for(const child of children){if(child instanceof Element){child.parentElement?.remove(child);child.parentElement=this;}this.children.push(child);}}
   remove(child){this.children=this.children.filter(item=>item!==child);}
+  after(element){const parent=this.parentElement;if(!parent)return;element.parentElement?.remove(element);element.parentElement=parent;parent.children.splice(parent.children.indexOf(this)+1,0,element);}
   replaceChildren(...children){for(const child of this.children)if(child instanceof Element)child.parentElement=null;this.children=[];this.append(...children);}
   setAttribute(name,value){this.attributes[name]=String(value);}
-  getAttribute(name){return this.attributes[name]??(name==='href'?this.href??null:null);}
+  getAttribute(name){return this.attributes[name]??(name.startsWith('data-')?this.dataset[name.slice(5).replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]??null:name==='href'?this.href??null:null);}
   removeAttribute(name){delete this.attributes[name];}
   get classList(){return {contains:name=>this.className.split(' ').includes(name),add:name=>{this.className+=` ${name}`;},toggle:(name,on)=>{const classes=new Set(this.className.split(' '));on?classes.add(name):classes.delete(name);this.className=[...classes].join(' ');}};}
   get isConnected(){return this===document.body||Boolean(this.parentElement?.isConnected);}
@@ -43,6 +44,7 @@ function page(filename,{url='https://example.test/',saved=new Map()}={}){
   querySelector(selector){return this.querySelectorAll(selector)[0]??null;}
   addEventListener(type,callback){if(!handlers.has(this))handlers.set(this,new Map());const events=handlers.get(this);if(!events.has(type))events.set(type,[]);events.get(type).push(callback);}
   dispatch(type,event={}){for(const callback of handlers.get(this)?.get(type)??[])callback({button:0,target:this,preventDefault(){},...event});this[`on${type}`]?.(event);}
+  dispatchEvent(event){this.dispatch(event.type,event);}
   focus(){document.activeElement=this;}scrollIntoView(){this.scrolled=true;}
  }
  document={body:new Element('body'),createElement:tag=>new Element(tag),createTextNode:text=>String(text),querySelector:selector=>document.body.querySelector(selector),querySelectorAll:selector=>document.body.querySelectorAll(selector),getElementById:id=>document.body.querySelector(`#${id}`),addEventListener(){}};
@@ -69,7 +71,7 @@ function page(filename,{url='https://example.test/',saved=new Map()}={}){
  const scientificFigure=()=>{const visual=node('section'),figure=node('figure',null,'science-figure');visual.append(figure,node('div','Notes'));return visual;};
  const scientificMechanisms=()=>{const root=node('section');root.append(node('button','Select model'));return root;};
  const scientificReferences=round=>{const section=node('section');section.id='references';const ref=node('li','Reference');ref.id=`ref-${round.number}-1`;section.append(ref);return section;};
- const context={console,URLSearchParams,document,window,location,history:{pushState(_,__,href){location.href=new URL(href,location).href;}},localStorage:{getItem:key=>saved.get(key)??null},requestAnimationFrame:fn=>fn(),node,allRounds,rounds:filename==='review.mjs'?allRounds:rounds,playable:rounds,findRound,searchText,...collection,...collectionData,...journeys,renderSite(){},scientificFigure,scientificMechanisms,scientificReferences,clinicalDetails:()=>node('section'),scientificFamily:()=>node('section'),scientificInterpretation:()=>node('section'),scientificPrinciples:()=>node('section'),citation:(_,text)=>node('a',text),referenceMarks,referenceList:()=>node('ol'),artworkSrcset:()=>'',artworkMarkers:()=>node('div'),mechanismFigure:()=>null,spliceCompare:()=>null,illustrationWalkthrough:()=>({element:node('div'),pause(){},close(){}}),geneClueConnection,geneHintText,GENE_HINT_VERSION,terminology};
+ const context={console,URLSearchParams,Event,document,window,location,history:{pushState(_,__,href){location.href=new URL(href,location).href;}},localStorage:{getItem:key=>saved.get(key)??null},requestAnimationFrame:fn=>fn(),node,allRounds,rounds:filename==='review.mjs'?allRounds:rounds,playable:rounds,findRound,searchText,...collection,...collectionData,...journeys,renderSite(){},scientificFigure,scientificMechanisms,scientificReferences,clinicalDetails:()=>node('section'),scientificFamily:()=>node('section'),scientificInterpretation:()=>node('section'),scientificPrinciples:()=>node('section'),citation:(_,text)=>node('a',text),referenceMarks,referenceList:()=>node('ol'),artworkSrcset:()=>'',artworkMarkers:()=>node('div'),artworkAnnotations:()=>node('div'),mechanismFigure:()=>null,spliceCompare:()=>null,illustrationWalkthrough:()=>({element:node('div'),pause(){},close(){}}),geneClueConnection,geneHintText,GENE_HINT_VERSION,terminology};
  const source=readFileSync(new URL(`../game/${filename}`,import.meta.url),'utf8').replace(/^import .*;\n/gm,'');
  vm.runInNewContext(source,context,{filename});
  return {document,location,saved,node,emit(type,event={}){for(const fn of windowHandlers.get(type)??[])fn(event);}};
@@ -126,4 +128,14 @@ test('Editorial review exposes exact compact notes, every hint step, memory text
  }
  const glossary=p.document.getElementById('reviewGlossary');
  for(const term of terminology)assert.equal(glossary.textContent.split(term.definition).length-1,1,term.term);
+});
+
+
+test('Editorial hash navigation restores closed details and printing includes the glossary',()=>{
+ const p=page('review.mjs'),glossary=p.document.getElementById('reviewGlossary');
+ assert.equal(glossary.closest('.review-intro'),null,'glossary remains outside the non-printing intro');
+ glossary.open=false;p.location.hash='#reviewGlossary';p.emit('hashchange');assert.equal(glossary.open,true);assert.equal(glossary.scrolled,true);
+ glossary.open=false;p.emit('beforeprint');assert.equal(glossary.open,true);p.emit('afterprint');assert.equal(glossary.open,false);
+ const card=p.document.getElementById('round-01'),panel=card.querySelector('.learning-panel'),target=p.node('li','Reference');target.id='ref-01-history';panel.append(target);panel.open=false;
+ p.location.hash='#ref-01-history';p.emit('hashchange');assert.equal(panel.open,true);assert.equal(target.scrolled,true);
 });

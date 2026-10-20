@@ -38,7 +38,7 @@ test('completion and reset update badges in place, preserving focus and browsing
   carousel.update([{round:catalogue[0],done:false,pieces:3},{round:catalogue[1],done:true,pieces:12}]);
   assert.equal(links[0].dataset.state,'started');
   assert.equal(links[0].children[2].properties.get('--piece-progress'),'25%');
-  assert.equal(second.dataset.state,'complete');assert.equal(second.children[1].textContent,'✓');
+  assert.equal(second.dataset.state,'complete');assert.equal(second.children[1].textContent,'05');assert.equal(second.children[3].hidden,false);
   assert.match(second.attributes.get('aria-label'),/Complete\. Current round/);
   assert.equal(document.activeElement,second);assert.equal(list.scrollLeft,74);
   assert.deepEqual(list.children.map(item=>item.children[0]),links);
@@ -69,4 +69,15 @@ test('journey navigation can preserve its route without exposing unapproved roun
   assert.equal(list.children[0].children[0].href,'./play.html?level=05&journey=rna');
   carousel.update([{round:catalogue[0],done:true,pieces:12}]);
   assert.equal(list.children.length,1);
+});
+
+
+test('replays keep the earned check and round number while showing current piece progress',()=>{
+ const {list,catalogue}=setup(),carousel=createRoundCarousel(list,catalogue,{currentRound:'05'});
+ carousel.update([{round:catalogue[1],done:true,replaying:true,pieces:3}]);
+ const link=list.children[1].children[0];
+ assert.equal(link.children[1].textContent,'05');assert.equal(link.children[3].hidden,false);
+ assert.equal(link.dataset.state,'complete');assert.equal(link.dataset.replaying,'true');
+ assert.equal(link.children[2].properties.get('--piece-progress'),'25%');
+ assert.match(link.attributes.get('aria-label'),/Complete. Replay: 3 of 12 pieces placed/);
 });

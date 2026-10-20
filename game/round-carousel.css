@@ -8,12 +8,14 @@
 .discovery-thumb[data-state=complete]{border-color:#8cb9b2}
 .discovery-thumb[aria-current=page]{border-color:#0043fd;box-shadow:0 0 0 2px #0043fd;outline-offset:5px}
 .discovery-thumb-number{position:absolute;top:5px;left:5px;display:grid;place-items:center;min-width:22px;height:22px;padding:0 3px;border:1px solid #dce4ef;border-radius:5px;background:#fffffff2;color:#1b416c;font-size:10px;font-weight:700;line-height:1}
-.discovery-thumb[data-state=complete] .discovery-thumb-number{border-color:#fff;background:#16796f;color:#fff;font-size:14px}
+.discovery-thumb-check{position:absolute;right:5px;top:5px;display:grid;place-items:center;width:20px;height:20px;background:#16796f;color:#fff;border:1px solid #fff;border-radius:50%;font-size:13px;font-weight:700;line-height:1}
+.discovery-thumb-check[hidden]{display:none}
+.discovery-thumb[data-replaying=true] .discovery-thumb-progress:before{background:#0043fd}
 .discovery-thumb-progress{position:absolute;inset:auto 0 0;height:3px;background:#e3ebf7}
 .discovery-thumb-progress:before{content:"";display:block;height:100%;width:var(--piece-progress,0%);background:#0043fd}
-.discovery-thumb[data-state=complete] .discovery-thumb-progress:before{background:#16796f}
+.discovery-thumb[data-state=complete]:not([data-replaying=true]) .discovery-thumb-progress:before{background:#16796f}
 @media(hover:hover){.discovery-thumb:hover{transform:translateY(-2px);border-color:#0043fd;box-shadow:0 5px 14px #10366512}.discovery-thumb[aria-current=page]:hover{box-shadow:0 0 0 2px #0043fd,0 5px 14px #10366512}}
 @media(max-width:900px){.discovery-strip{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:104px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding-inline:6px;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#c4d1e5 transparent;padding-bottom:10px}}
 @media(max-width:760px){.discovery-strip{gap:8px}}
 @media(prefers-reduced-motion:reduce){.discovery-thumb{transition:none}.discovery-thumb:hover{transform:none}}
-@media(forced-colors:active){.discovery-thumb{border-color:LinkText}.discovery-thumb-number{border-color:CanvasText}.discovery-thumb[data-state=complete] .discovery-thumb-number{background:Highlight;color:HighlightText;border-color:Highlight}.discovery-thumb[aria-current=page]{outline:2px solid Highlight;box-shadow:none}}
+@media(forced-colors:active){.discovery-thumb{border-color:LinkText}.discovery-thumb-number{border-color:CanvasText}.discovery-thumb-check{background:Highlight;color:HighlightText;border-color:Highlight}.discovery-thumb[aria-current=page]{outline:2px solid Highlight;box-shadow:none}}

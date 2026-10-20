@@ -43,7 +43,7 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 ## iPhone and Safari checklist
 
 - Board, strip, and pieces fit on screen once the board is scrolled to the top.
-- On Play, use the thumbnail carousel to change rounds. Confirm the current round is outlined, completion adds a green check, and the current thumbnail remains visible after rotating the phone.
+- On Play, use the thumbnail carousel to change rounds. Confirm the current round is outlined, completion adds a separate green check without hiding its round number, and the current thumbnail remains visible after rotating the phone.
 - Open the same round in two tabs. Complete it in one: the other must show the saved completion without resetting progress or repeatedly reloading. Repeat with Restart and New player.
 - Taps on board positions do not zoom the page.
 - Place a piece, then scroll or resize during its flight. The transient piece should disappear, the placed piece remain visible, and no late contact sound play.
@@ -54,8 +54,9 @@ Simulate the booth once: three people in a row on one device, standing, in a noi
 - Press Next in the image guide immediately after completion; delayed autoplay must not override the chosen note.
 - Open an image note immediately after the final piece lands. The illustration must stay still for reading. Try restarting while the illustration is loading, and opening and closing a dialog during completion. No delayed animation should override these actions.
 - Enable reduced motion while the illustration is playing. The frame and artwork should return to their static state. Returning to a previously completed round should also remain still until Play is selected.
-- On a fresh completion, follow the three highlights and captions on the original image. They should finish once, leaving ambient motion and an image takeaway. **Follow the image** or **Replay guide** restarts the guide; pause freezes both guide and illustration. Opening a dialog or leaving the tab pauses playback.
+- On a fresh completion, follow the three highlights and captions on the original image. They should finish once, leaving ambient motion and an image takeaway. **Follow the image** or **Replay guide** restarts the guide. **Pause guide** holds the current caption while ambient motion continues; **Pause illustration** freezes both. Allow enough time to inspect each highlighted structure and read its full caption. Opening a dialog or leaving the tab pauses playback.
 - Check that the completion summary shows the gene, condition, and **How the picture connects** beside the image on a laptop and directly below it on a phone. **Clinical context** and **Revisit your clues** should expand without duplicating the summary.
+- Restart a completed round. Its green check and field-guide entry should remain, with the new replay progress shown separately.
 - Complete a round in **Focus view**. The final piece should land without the board changing size; the illustration guide should remain accessible below it.
 - Watch the first second in rounds 01 and 02: particles should depart gradually without teleporting or vanishing. Observe one full cycle: source resets happen while cargo is invisible, and surface highlights remain attached to moving structures. Pause and confirm all motion stops together.
 - Enlarge the completed illustration. Playing artwork should continue; paused artwork should remain paused. Close or press Escape and confirm the same board and controls return to their original positions, with focus on Enlarge illustration. On a phone, enlarging must not shrink the image. Restart afterward.

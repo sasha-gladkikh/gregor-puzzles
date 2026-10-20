@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {SIZE} from '../game/engine.mjs';
-import {nextOpenSlot} from '../game/board-navigation.mjs';
+import {nextOpenSlot,nextTrayPiece,horizontalRevealDelta} from '../game/board-navigation.mjs';
 
 const ids = Array.from({length: SIZE}, (_, id) => id);
 const placedExcept = open => ids.filter(id => !open.includes(id));
@@ -58,4 +58,20 @@ test('one remaining position keeps focus and a finished board has no focus desti
   }
   assert.equal(nextOpenSlot(-1, 'ArrowRight', placedExcept([7])), 7);
   assert.equal(nextOpenSlot(7, 'Escape', placedExcept([7])), 7);
+});
+
+
+test('tray focus stays near the consumed piece and prefers survivors visible in a scrolled tray',()=>{
+ const order=[4,1,8,9,2,5,10,6,0,3,7,11];
+ assert.equal(nextTrayPiece(10,order,[10],[0,3,7,11]),0);
+ assert.equal(nextTrayPiece(10,order,[10],[]),6);
+ assert.equal(nextTrayPiece(4,order,[4],[1,8,9]),1);
+ assert.equal(nextTrayPiece(11,order,order),null);
+});
+
+test('revealing a focused piece changes only the necessary horizontal offset',()=>{
+ const view={left:20,right:320};
+ assert.equal(horizontalRevealDelta(view,{left:100,right:182}),0);
+ assert.equal(horizontalRevealDelta(view,{left:270,right:352}),32);
+ assert.equal(horizontalRevealDelta(view,{left:-18,right:64}),-38);
 });

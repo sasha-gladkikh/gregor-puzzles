@@ -176,3 +176,6 @@
 .science-detail-panel{border-top:1px solid var(--line);padding:14px 0;margin-top:16px}.science-detail-panel>summary{font-size:14px;font-weight:650;line-height:1.5;cursor:pointer;min-height:30px}.science-detail-panel[open]>summary{margin-bottom:20px}.science-detail-panel>.reference-marks{margin-left:0}.science-detail-panel .science-pearl{margin-bottom:18px}.science-detail-panel .science-pearl:last-of-type{margin-bottom:12px}.science-detail-panel h4{font-size:15px}.science-detail-panel .science-pearl p{font-size:14px}
 @media(max-width:600px){.science-detail-panel>summary{min-height:44px;padding-top:8px}.science-significance{padding:15px}.science-feature-group{margin-top:24px}}
 @media print{.science-significance{background:none;border:1px solid #aebacb;break-inside:avoid}.science-significance p{font-size:12px}.science-feature-system>h5{break-after:avoid}.science-feature-group>h4{break-after:avoid}.science-hpo .inline-source{font-size:10px!important}.science-detail-panel{break-inside:auto}.science-detail-panel>summary{font-size:14px;min-height:0}}
+
+/* A matching clinical term links directly to its definition, without repeating it. */
+.science-feature .science-term{font-size:inherit!important;font-weight:inherit;white-space:normal;text-decoration-style:dotted;text-underline-offset:3px}

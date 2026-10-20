@@ -23,3 +23,16 @@ export function nextOpenSlot(from, key, placed) {
   }
   return null;
 }
+
+// Prefer the nearest visible survivor in the original tray order. This preserves
+// the player's place when the horizontal tray compacts after a placement.
+export function nextTrayPiece(from, order, placed, visible = []) {
+  const occupied = new Set(placed), available = order.filter(id => !occupied.has(id));
+  const visibleSet = new Set(visible), candidates = available.filter(id => visibleSet.has(id));
+  const index = Math.max(0, order.indexOf(from));
+  return (candidates.length ? candidates : available).sort((a, b) =>
+    Math.abs(order.indexOf(a) - index) - Math.abs(order.indexOf(b) - index) || order.indexOf(b) - order.indexOf(a))[0] ?? null;
+}
+export function horizontalRevealDelta(container, item) {
+  return item.left < container.left ? item.left - container.left : item.right > container.right ? item.right - container.right : 0;
+}
