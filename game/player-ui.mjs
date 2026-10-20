@@ -111,7 +111,7 @@ function allocationEntries(entries){
   const item=node('li',undefined,'leaderboard-allocation');
   item.append(node('strong',entry.displayName),node('span',shortPlayerTime(entry.seconds),'leaderboard-allocation-time'));list.append(item);
  }
- section.append(list,node('p','Round times allocated from the reported overall total.','leaderboard-allocation-note'));
+ section.append(list);
  return section;
 }
 const assistance=attempt=>[
