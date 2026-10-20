@@ -1,3 +1,5 @@
+import {discoveryProgress} from './home-explore.mjs';
+
 const REGIONS=[
  {id:'membrane',label:'Cell membrane',description:'Explore transport and communication at the cell boundary.',numbers:['01','02']},
  {id:'nucleus',label:'Nucleus & RNA',description:'Explore RNA processing and repeated DNA sequences.',numbers:['05','08','10']},
@@ -22,6 +24,11 @@ export function groupHomeRounds(catalogue){
  return REGIONS.map(region=>({...region,rounds:rounds.filter(round=>region.numbers.includes(round.number))})).filter(region=>region.rounds.length);
 }
 
+export function homeMapProgress(catalogue,progressItems=[]){
+ const items=discoveryProgress(catalogue,progressItems);
+ return groupHomeRounds(catalogue).map(region=>({...region,completed:region.rounds.filter(round=>items.find(item=>item.round.number===round.number)?.done).length}));
+}
+
 function drawCell(doc){
  const ns='http://www.w3.org/2000/svg';
  const shape=(tag,attributes={},parent)=>{
@@ -36,6 +43,13 @@ function drawCell(doc){
  const membrane=layer('membrane');
  shape('path',{d:'M152 75C208 33 346 34 421 69S538 180 489 252 341 333 240 305 102 232 112 157C117 120 132 92 152 75Z',fill:'#e0eef7',stroke:'#83bac8','stroke-width':11},membrane);
  shape('path',{d:'M152 75C208 33 346 34 421 69S538 180 489 252 341 333 240 305 102 232 112 157C117 120 132 92 152 75Z',fill:'#f7fbff',stroke:'#c0e1e7','stroke-width':3,'stroke-dasharray':'2 9','stroke-linecap':'round'},membrane);
+ // Quiet intracellular landmarks provide context without adding extra actions.
+ const context=shape('g',{'aria-hidden':'true',opacity:.7},svg);
+ for(const offset of [0,12,24])shape('path',{d:`M318 ${172+offset}c31 -14 54 -9 57 4s-29 5 -34 13 34 10 39 16`,fill:'none',stroke:'#b6d6e2','stroke-width':6,'stroke-linecap':'round'},context);
+ const mitochondrion=shape('g',{transform:'translate(431 230) rotate(-25)'},context);
+ shape('rect',{x:-32,y:-15,width:64,height:30,rx:15,fill:'#fff2d8',stroke:'#d6b477','stroke-width':2},mitochondrion);
+ shape('path',{d:'M-20 0c3 -17 8 -17 9 0s7 13 8 -1 8 -14 9 0 8 13 10 -1',fill:'none',stroke:'#d1ac67','stroke-width':2.5,'stroke-linecap':'round'},mitochondrion);
+ for(const [x,y,r] of [[165,211,3],[296,92,2.8],[305,227,2.2],[188,234,2],[453,199,2.5],[364,113,2.3]])shape('circle',{cx:x,cy:y,r,fill:'#b9d0e7'},context);
  for(const [x,y,rotation] of [[129,132,-66],[486,171,5],[372,302,-12]]){
   const channel=shape('g',{transform:`translate(${x} ${y}) rotate(${rotation})`},membrane);
   shape('rect',{x:-10,y:-17,width:7,height:34,rx:3,fill:'#168493',stroke:'#fff','stroke-width':2},channel);
@@ -72,12 +86,12 @@ function drawCell(doc){
  return svg;
 }
 
-export function initHomeMap(catalogue,host=document.getElementById('homeProcessMap')){
- if(!host)return;
+export function initHomeMap(catalogue,host=document.getElementById('homeProcessMap'),progressItems=[]){
+ if(!host)return {update(){}};
  const doc=host.ownerDocument,rounds=approvedRounds(catalogue),regions=groupHomeRounds(rounds);
- if(!rounds.length){host.replaceChildren();return;}
+ if(!rounds.length){host.replaceChildren();return {update(){}};}
  const node=(tag,text,className)=>{const element=doc.createElement(tag);if(text!==undefined)element.textContent=text;if(className)element.className=className;return element;};
- const intro=node('p','Choose a cell process to find your next puzzle.','cell-map-intro');
+ const intro=node('p','Choose a cell process. Follow it into a puzzle.','cell-map-intro');
  const layout=node('div',undefined,'cell-map-layout'),diagram=node('div',undefined,'cell-map-diagram');
  const stage=node('div',undefined,'cell-map-stage'),art=drawCell(doc),controls=node('div',undefined,'cell-map-controls');
  controls.setAttribute('role','group');controls.setAttribute('aria-label','Choose a cell process');
@@ -87,9 +101,13 @@ export function initHomeMap(catalogue,host=document.getElementById('homeProcessM
  const description=node('p',`${rounds.length} illustrated puzzles. Start wherever your curiosity leads.`, 'cell-map-description');
  const list=node('ol',undefined,'cell-map-rounds');list.id=`${host.id||'homeProcessMap'}Rounds`;
  const status=node('p',undefined,'cell-map-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.setAttribute('aria-atomic','true');
+ const filters=node('div',undefined,'cell-map-filters'),filterLabel=node('label',undefined,'cell-map-filter');
+ const unfinished=node('input');unfinished.type='checkbox';unfinished.setAttribute('aria-controls',list.id);filterLabel.append(unfinished,node('span','Unfinished only'));filters.append(filterLabel);
+ let progress=discoveryProgress(rounds,progressItems),selected=null;
  const buttons=new Map();
- function select(region){
-  const active=region?.id??'all',visible=region?.rounds??rounds;
+ function select(region,animate=false){
+  selected=region;
+  const active=region?.id??'all',eligible=region?.rounds??rounds,visible=eligible.filter(round=>!unfinished.checked||!progress.find(item=>item.round.number===round.number)?.done);
   host.dataset.active=active;
   for(const [id,button] of buttons)button.setAttribute('aria-pressed',String(id===active));
   all.setAttribute('aria-pressed',String(!region));
@@ -99,19 +117,34 @@ export function initHomeMap(catalogue,host=document.getElementById('homeProcessM
   list.replaceChildren(...visible.map(round=>{
    const item=node('li'),link=node('a',undefined,'cell-map-round');link.href=`./play.html?level=${round.number}`;
    const number=node('span',round.number,'cell-map-number');number.setAttribute('aria-hidden','true');
-   const title=node('span',round.topic,'cell-map-topic'),arrow=node('span','→','cell-map-arrow');arrow.setAttribute('aria-hidden','true');
-   link.setAttribute('aria-label',`Round ${round.number}: ${round.topic}`);link.append(number,title,arrow);item.append(link);return item;
+   const state=progress.find(item=>item.round.number===round.number),copy=node('span',undefined,'cell-map-round-copy');
+   const title=node('span',round.topic,'cell-map-topic'),detail=node('span',state?.done?'Complete · View round':state?.pieces?`Continue · ${state.pieces} of 12 pieces`:'Start this puzzle','cell-map-round-state'),arrow=node('span',state?.done?'✓':'→','cell-map-arrow');arrow.setAttribute('aria-hidden','true');
+   link.dataset.state=state?.state??'new';
+   link.setAttribute('aria-label',`Round ${round.number}: ${round.topic}. ${detail.textContent}`);copy.append(title,detail);link.append(number,copy,arrow);item.append(link);return item;
   }));
+  if(!visible.length){const empty=node('li','All puzzles in this view are complete. Turn off “Unfinished only” to explore them again.','cell-map-empty');list.append(empty);}
+  if(animate&&!doc.defaultView.matchMedia('(prefers-reduced-motion: reduce)').matches&&typeof list.animate==='function')list.animate([{opacity:.35,transform:'translateY(5px)'},{opacity:1,transform:'translateY(0)'}],{duration:240,easing:'cubic-bezier(.2,.7,.2,1)'});
   status.textContent=`${visible.length} ${visible.length===1?'round':'rounds'} shown${region?` for ${region.label.toLowerCase()}`:''}.`;
  }
  for(const region of regions){
   const button=node('button',undefined,`cell-map-region cell-map-region--${region.id}`);button.type='button';button.setAttribute('aria-controls',list.id);
   button.setAttribute('aria-label',`${region.label}, ${region.rounds.length} ${region.rounds.length===1?'round':'rounds'}`);
   button.append(node('span',region.label),node('span',region.rounds.length,'cell-map-count'));
-  button.addEventListener('click',()=>select(region));buttons.set(region.id,button);controls.append(button);
+  button.addEventListener('click',()=>select(region,true));buttons.set(region.id,button);controls.append(button);
  }
- all.setAttribute('aria-controls',list.id);all.addEventListener('click',()=>select(null));
+ all.setAttribute('aria-controls',list.id);all.addEventListener('click',()=>select(null,true));unfinished.addEventListener('change',()=>select(selected,true));
  const caption=node('p','Conceptual schematic. Processes can span several compartments; these are starting points for exploration, not exclusive cell locations.','cell-map-caption');
- stage.append(art,controls);diagram.append(stage,caption);headingRow.append(heading,all);panel.append(headingRow,description,list,status);layout.append(diagram,panel);
- host.classList.add('cell-map');host.replaceChildren(intro,layout);select(null);
+ stage.append(art,controls);diagram.append(stage,caption);headingRow.append(heading,all);panel.append(headingRow,description,filters,list,status);layout.append(diagram,panel);
+ function update(items){
+  progress=discoveryProgress(rounds,items);
+  const hasProgress=progress.some(item=>item.done||item.pieces>0);filters.hidden=!hasProgress;
+  if(!hasProgress)unfinished.checked=false;
+  for(const region of regions){
+   const button=buttons.get(region.id),count=region.rounds.filter(round=>progress.find(item=>item.round.number===round.number)?.done).length;
+   button.querySelector('.cell-map-count').textContent=hasProgress?`${count}/${region.rounds.length}`:region.rounds.length;
+   button.setAttribute('aria-label',`${region.label}, ${region.rounds.length} ${region.rounds.length===1?'round':'rounds'}${hasProgress?`, ${count} complete`:''}`);
+  }
+  select(selected);
+ }
+ host.classList.add('cell-map');host.replaceChildren(intro,layout);update(progressItems);return {update};
 }

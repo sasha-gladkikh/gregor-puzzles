@@ -8,9 +8,9 @@ export function prepareHomeHTML(html,rounds){
  let result=html
   .replace('<div id="siteHeader"></div>',`<div id="siteHeader" data-prerendered="true">${markup.header}</div>`)
   .replace('<div id="siteFooter"></div>',`<div id="siteFooter" data-prerendered="true">${markup.footer}</div>`)
-  .replace(/(<a id="homePlay"[^>]*href=")[^"]+("[^>]*>)/,`$1./play.html?level=${rounds[0].number}$2`)
+  .replace(/(<a id="(?:homePlay|homeQuickPlayLink)"[^>]*href=")[^"]+("[^>]*>)/g,`$1./play.html?level=${rounds[0].number}$2`)
   .replace(/(<span id="roundCount">)\d+(<\/span>)/,`$1${rounds.length}$2`)
-  .replace(/(<p id="homeProgress"[^>]*>)[\s\S]*?(<\/p>)/,`$1${rounds.length} rounds · No account required$2`)
+  .replace(/(<p id="homeProgress"[^>]*>)[\s\S]*?(<\/p>)/,`$1${rounds.length} rounds · 12 pieces each · No account required$2`)
   .replace(/<a\b[^>]*class="featured-card"[^>]*>[\s\S]*?<\/a>/g,card=>{
    const number=/[?&]level=(\d{2})/.exec(card)?.[1];return allowed.has(number)?card:'';
   })

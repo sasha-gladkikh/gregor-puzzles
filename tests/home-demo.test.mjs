@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {demoPoint, demoFits} from '../game/home-demo.mjs';
+import {demoPoint, demoFits, demoDestination, demoInspectionNotes} from '../game/home-demo.mjs';
 
 test('pointer coordinates preserve the original image at desktop and mobile sizes', () => {
   for (const width of [320, 560, 1200]) {
@@ -17,4 +17,25 @@ test('drag snapping accepts the intended channel slot and rejects the loose-piec
   assert.equal(demoFits(475, 200), false);
   assert.equal(demoFits(560, 30), false);
   assert.equal(demoFits(NaN, 200), false);
+});
+
+
+test('preview action preserves the main page destination and returning-player label', () => {
+  assert.deepEqual(demoDestination({href: './play.html?level=07', label: 'Continue · 7 of 12 pieces'}), {href: './play.html?level=07', label: 'Continue · 7 of 12 pieces'});
+  assert.deepEqual(demoDestination({href: './collection.html', label: 'Play another round'}), {href: './collection.html', label: 'Play another round'});
+  for (const value of [null, {}, {href: 'javascript:alert(1)'}, {href: 'https://example.com/'}, {href: './about.html'}]) {
+    assert.deepEqual(demoDestination(value), {href: './play.html?level=01', label: 'Play your first puzzle'});
+  }
+});
+
+test('the inspection lens uses complete anonymous notes at the reviewed structure coordinates', () => {
+  const notes = demoInspectionNotes();
+  assert.equal(notes.length, 3);
+  assert.deepEqual(notes.map(({x,y}) => [x,y]), [[43,42],[66,46],[24,79]]);
+  for (const note of notes) {
+    assert.ok(note.title.length > 5);
+    assert.ok(note.text.length > 60);
+    assert.doesNotMatch(note.title + ' ' + note.text, /CLCN1|ClC-1|myotonia|Becker/i);
+  }
+  assert.match(notes[1].text, /does not prescribe a fixed ion-flow direction/);
 });

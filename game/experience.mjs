@@ -15,12 +15,12 @@ export function createSequence(count,{onStep=()=>{},onState=()=>{},delay=()=>600
 // No audio files, analytics, autoplay, or third-party requests are used.
 export function soundFeedback(button){
   const key='gregor-puzzles:sound';
-  let enabled=true,context=null,epoch=0;
+  let enabled=true,context=null,epoch=0,disposed=false;
   const voices=new Set();
   try{enabled=localStorage.getItem(key)!=='off';}catch{}
   const paint=()=>{button.setAttribute('aria-pressed',String(enabled));button.setAttribute('aria-label',enabled?'Turn sound off':'Turn sound on');button.querySelector('span').textContent=enabled?'Sound on':'Sound off';};
   const stop=()=>{epoch++;for(const voice of voices){try{voice.oscillator.stop();}catch{}voice.release();}voices.clear();};
-  const current=token=>token===epoch&&enabled&&!document.hidden;
+  const current=token=>!disposed&&token===epoch&&enabled&&!document.hidden;
   async function ready(token){
     if(!current(token))return false;
     try{
@@ -45,6 +45,9 @@ export function soundFeedback(button){
       {hz:493.88,tail:493.88,at:.065,length:.46,volume:.012},
       {hz:587.33,tail:587.33,at:.13,length:.50,volume:.010},
       {hz:783.99,tail:783.99,at:.21,length:.60,volume:.006}
+    ]:kind==='discovery'?[
+      {hz:587.33,tail:587.33,at:0,length:.19,volume:.009},
+      {hz:783.99,tail:783.99,at:.075,length:.27,volume:.006}
     ]:[
       {hz:base,tail:base*.82,at:0,length:.085,volume:.022},
       {hz:base*2.12,tail:base*1.7,at:.003,length:.045,volume:.0045}
@@ -63,7 +66,7 @@ export function soundFeedback(button){
     }
   }
   const save=()=>{try{localStorage.setItem(key,enabled?'on':'off');}catch{}};
-  button.addEventListener('click',async()=>{
+  const toggle=async()=>{
     enabled=!enabled;stop();paint();save();if(!enabled)return;
     const token=epoch;
     if(!await ready(token)){
@@ -71,9 +74,14 @@ export function soundFeedback(button){
       return;
     }
     if(current(token))void play();
-  });
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();void context?.suspend().catch(()=>{});}});
-  paint();return {prepare,play,stop};
+  };
+  const visibility=()=>{if(document.hidden){stop();void context?.suspend().catch(()=>{});}};
+  const refresh=()=>{if(disposed)return;let next=enabled;try{next=localStorage.getItem(key)!=='off';}catch{}if(next!==enabled){enabled=next;stop();paint();}};
+  const storage=event=>{if(event.key===key||event.key===null)refresh();};
+  window.addEventListener('pageshow',refresh);window.addEventListener('storage',storage);
+  button.addEventListener('click',toggle);
+  document.addEventListener('visibilitychange',visibility);
+  paint();return {prepare,play,stop,dispose(){disposed=true;stop();window.removeEventListener('pageshow',refresh);window.removeEventListener('storage',storage);button.removeEventListener('click',toggle);document.removeEventListener('visibilitychange',visibility);void context?.close?.().catch(()=>{});}};
 }
 
 // The sequence uses the same three referenced image notes as the editorial page.

@@ -113,7 +113,7 @@ async function soundHarness(run,{muted=false,suspended=false}={}){
     createGain(){const gain={gain:automation(),connect(){},disconnect(){this.disconnected=true;}};gains.push(gain);return gain;}
   }
   const label={textContent:''},button={...events(),attributes:{},setAttribute(key,value){this.attributes[key]=value;},querySelector:()=>label};
-  const document={...events(),hidden:false},window={AudioContext,navigator:{userActivation:{isActive:true}}};
+  const document={...events(),hidden:false},window={...events(),AudioContext,navigator:{userActivation:{isActive:true}}};
   globalThis.document=document;globalThis.window=window;globalThis.localStorage={getItem:()=>stored,setItem:(_key,value)=>{stored=value;}};
   try{await run({sound:soundFeedback(button),button,document,window,oscillators,gains,resumes,contexts,get stored(){return stored;}});}
   finally{for(const [key,descriptor] of saved)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}
@@ -151,4 +151,15 @@ test('completion uses a quiet staggered resolution and foreground gesture is req
   assert.deepEqual(oscillators.map(voice=>voice.frequency.values[0].value),[392,493.88,587.33,783.99]);
   assert.ok(oscillators.every((voice,index)=>!index||voice.started>oscillators[index-1].started));
   assert.ok(gains.every(gain=>gain.gain.values.every(point=>point.value<=.015)));sound.stop();
+}));
+
+
+test('sound follows saved preferences across restored pages and other tabs, and disposes without restarting',()=>soundHarness(async({sound,window,button,oscillators})=>{
+ await sound.play('discovery');assert.equal(oscillators.length,2);
+ localStorage.setItem('gregor-puzzles:sound','off');await window.dispatch('pageshow');
+ assert.equal(button.attributes['aria-pressed'],'false');assert.ok(oscillators.every(voice=>voice.stopped==='now'));
+ await sound.play('discovery');assert.equal(oscillators.length,2);
+ localStorage.setItem('gregor-puzzles:sound','on');await window.dispatch('storage',{key:'gregor-puzzles:sound'});
+ assert.equal(button.attributes['aria-pressed'],'true');await sound.play('discovery');assert.equal(oscillators.length,4);
+ sound.dispose();await sound.play('complete');assert.equal(oscillators.length,4);assert.ok(oscillators.every(voice=>voice.disconnected));
 }));

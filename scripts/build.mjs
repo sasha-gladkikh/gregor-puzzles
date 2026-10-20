@@ -7,12 +7,12 @@ import {prepareHomeHTML} from './homepage.mjs';
 const source = fileURLToPath(new URL('../game/', import.meta.url));
 const output = fileURLToPath(new URL('../dist/', import.meta.url));
 const files = [
-  'index.html', 'home.mjs', 'home.css', 'home-state.mjs', 'home-demo.mjs', 'home-demo.css', 'home-map.mjs', 'home-map.css', 'puzzle-geometry.mjs', 'suggestions.mjs', 'community.mjs', 'player.mjs', 'player-ui.mjs', 'player.css', 'play.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
+  'index.html', 'home.mjs', 'home.css', 'home-state.mjs', 'home-demo.mjs', 'home-demo.css', 'home-map.mjs', 'home-map.css', 'home-explore.mjs', 'home-explore.css', 'journeys.mjs', 'puzzle-geometry.mjs', 'suggestions.mjs', 'community.mjs', 'player.mjs', 'player-ui.mjs', 'player.css', 'play.html', 'style.css', 'brand.css', 'app.mjs', 'engine.mjs', 'session.mjs', 'board-navigation.mjs',
   'rounds.mjs', 'collection.mjs', 'signoff.mjs', 'mechanism.mjs',
   'review.html', 'review.mjs', 'review.css',
   'clinical.mjs', 'interpretation.mjs', 'clinical-ui.mjs', 'clinical.css', 'hpo-terms.mjs',
   'artwork-data.mjs', 'artwork-ui.mjs', 'artwork-source.mjs', 'artwork.css',
-  'experience.mjs', 'experience.css',
+  'experience.mjs', 'experience.css', 'share-card.mjs', 'share-card.css',
   'gene-bank.mjs', 'gene-bank.css', 'gene-hints.mjs', 'play-learning.mjs', 'discovery-motion.mjs', 'discovery-motion.css',
   'artwork-motion.mjs', 'artwork-motion.css', 'artwork-motion-data.mjs', 'artwork-guide.mjs',
   'artwork-detail.mjs', 'artwork-detail-data.mjs', 'artwork-detail-membranes.mjs',

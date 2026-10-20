@@ -14,6 +14,8 @@ import {discoveryMotion} from './discovery-motion.mjs';
 import {createPieceMotion} from './piece-motion.mjs';
 import {createFigureView} from './figure-view.mjs';
 import {artworkSource} from './artwork-source.mjs';
+import {getJourney,nextJourneyStep,journeyRoundHref} from './journeys.mjs';
+import {initShareCard} from './share-card.mjs';
 import {latestPlayClue} from './play-learning.mjs';
 import {nextOpenSlot} from './board-navigation.mjs';
 import {eligibleScore} from './community.mjs';
@@ -22,6 +24,8 @@ const params=new URLSearchParams(location.search);
 const round=findRound(params.get('level') ?? rounds[0].number);
 const {pieces:pieceDescriptions,description:diagramDescription}=round;
 const artwork=artworkSource(round);
+const requestedJourney=getJourney(rounds,params.get('journey'));
+const journey=requestedJourney?.rounds.some(item=>item.number===round.number)?requestedJourney:null;
 
 const $ = id => document.getElementById(id);
 renderSite({active:'play',roundNumber:round.number,playControls:true});
@@ -477,6 +481,7 @@ document.title=`Round ${round.number} · GREGoR Puzzles`;
 document.querySelectorAll('.first-round').forEach(el=>el.textContent=rounds[0].number);
 $('roundLabel').textContent=`Round ${round.number} / ${String(allRounds.length).padStart(2,'0')} · ${round.topic}`;
 $('roundTitle').textContent=round.title;
+if(journey){$('journeyProgress').hidden=false;$('journeyProgress').textContent=`${journey.title} · Step ${journey.rounds.findIndex(item=>item.number===round.number)+1} of ${journey.rounds.length}`;}
 $('libraryLabel').textContent=`Browse rounds`;
 $('figureLabel').textContent=`FIG. ${round.number} / ${round.topic.toUpperCase()}`;
 $('reference').src=artwork; $('reference').alt=diagramDescription;
@@ -509,6 +514,11 @@ $('profileLink').href=`./science.html?level=${round.number}`;
 $('figureDialogTitle').textContent=round.gene;$('figureDialogCondition').textContent=round.condition;$('largeFigureCaption').textContent=round.illustration.note;
 $('community').textContent=round.community[0]+' ↗';$('community').href=round.community[1];
 $('sourceNote').textContent=`Sources checked ${round.checked}. Conceptual artwork generated with AI; not a patient image or atomic structure.`;
+const shareCard=initShareCard($('shareIllustration'),{
+  getData:()=>roundComplete(state)?{round:{...round,artwork},completed:collectionProgress(key=>{try{return localStorage.getItem(key);}catch{return null;}},{id:round.id,state}).filter(item=>item.done).length,total:rounds.length}:null,
+  onOpen:()=>{completionPlayback.cancel();feedbackEpoch++;pieceMotion.clear();sound.stop();artworkAnimation?.pause();discoveryGuide.clear();}
+});
+window.addEventListener('pagehide',event=>{if(!event.persisted)shareCard.destroy();});
 buildBoard();buildTray();render();save();
 void syncPlayer().catch(()=>{});
 window.addEventListener('pageshow',()=>void syncPlayer().catch(()=>{}));
@@ -536,9 +546,15 @@ function renderCollection(includeCards=false) {
   $('nextRound').href=roundLink(next?.round??rounds[0]);
   $('nextRound').textContent=next?`Next round · ${next.round.number} →`:'Explore the collection →';
   $('nextRound').onclick=count===rounds.length?e=>{e.preventDefault();renderCollection(true);openDialog('libraryDialog');}:null;
-  const index=rounds.indexOf(round);
-  for(const [id,target] of [['previousRound',rounds[index-1]],['followingRound',rounds[index+1]]]){
-    const a=$(id);a.hidden=!target;if(target){a.href=roundLink(target);a.setAttribute('aria-label',`Go to round ${target.number}`);}
+  const journeyNext=journey?nextJourneyStep(rounds,progress,journey.id,round.number):null;
+  if(journeyNext){
+    $('nextRound').href=journeyNext.href;
+    $('nextRound').textContent=`${journeyNext.label}${journeyNext.round?` · ${journeyNext.round.number}`:''} →`;
+    $('nextRound').onclick=null;
+  }
+  const navigation=journey?.rounds??rounds,index=navigation.indexOf(round);
+  for(const [id,target] of [['previousRound',navigation[index-1]],['followingRound',navigation[index+1]]]){
+    const a=$(id);a.hidden=!target;if(target){a.href=journey?journeyRoundHref(target,journey.id):roundLink(target);a.setAttribute('aria-label',`Go to round ${target.number}`);}
   }
   if(!includeCards)return;
   $('levelGrid').replaceChildren();

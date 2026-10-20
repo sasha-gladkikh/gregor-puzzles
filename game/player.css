@@ -70,6 +70,44 @@
 .player-dialog-actions { display: flex; justify-content: end; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .player-dialog-actions button { min-height: 44px; font-size: 13px; }
 .player-profile button:disabled, .player-board > .leaderboard-bottom button:disabled { opacity: .55; cursor: wait; }
+.home-page .player-profile {
+  margin: 24px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.home-page .player-invitation { display: flex; align-items: center; gap: 18px; padding: 19px 0 3px; border-top: 1px solid #e1e9f4; }
+.home-page .player-join-open { flex-shrink: 0; min-height: 46px; padding: 11px 17px; font-size: 13px; }
+.home-page .player-intro { max-width: 31ch; margin: 0; font-size: 12px; line-height: 1.6; }
+.home-page .player-join { padding: 18px; border: 1px solid #d8e4f5; border-radius: 12px; background: #f6f9fe; }
+.home-page .player-join-fields { display: block; }
+.home-page .player-form-actions { display: flex; align-items: center; gap: 17px; margin-top: 16px; }
+.home-page .player-form-actions .home-text-button { font-size: 13px; }
+.home-page .player-privacy { max-width: 67ch; margin-top: 12px; }
+.home-page .player-account { margin-top: 16px; border: 1px solid #dde6f2; border-radius: 12px; background: #f8faff; }
+.home-page .player-account:first-child, .home-page .player-join[hidden] + .player-account { margin-top: 0; }
+.home-page .player-invitation:not([hidden]) ~ .player-account { margin-top: 18px; }
+.home-page .player-account-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 14px 17px; cursor: pointer; list-style: none; border-radius: 11px; }
+.home-page .player-account-summary::-webkit-details-marker { display: none; }
+.home-page .player-account-summary::after { content: '+'; flex-shrink: 0; color: #35629d; font-size: 21px; font-weight: 400; line-height: 1; }
+.home-page .player-account[open] > .player-account-summary::after { content: '−'; }
+.home-page .player-account-summary:hover { background: #f1f6fe; }
+.home-page .player-account-summary:focus-visible { outline: 3px solid #aac8ff; outline-offset: 3px; }
+.home-page .player-account-title { display: grid; gap: 4px; min-width: 0; }
+.home-page .player-account-title strong { color: #213d63; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.home-page .player-account-digest { color: #64758d; font-size: 11px; line-height: 1.5; }
+.home-page .player-account > .player-current { padding: 0 17px; }
+.home-page .player-stats { padding: 7px 0 14px; }
+.home-page .player-stats strong { font-size: 21px; }
+.home-page .player-identity { justify-content: flex-start; }
+.home-page .player-account > .player-history { margin: 10px 17px 0; }
+.home-page .player-account-actions { padding: 0 17px 12px; }
+.home-page .player-account-actions:has(> [hidden]:first-child):has(> [hidden]:last-child) { padding-bottom: 6px; }
+.home-page .player-board-expand { display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; font-size: 12px; }
+.home-page .player-table .player-rank { color: #49668f; font-size: 12px; font-weight: 600; }
+.home-page .player-table tbody > tr:first-child .player-rank { color: #0055df; }
+.home-page .player-table .score-time > span { color: #15345e; font-weight: 650; }
 @media (min-width: 900px) {
   .home-community .community-grid { grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); }
 }
@@ -85,6 +123,11 @@
   .player-table .player-rank { width: 24px; }
   .player-table small { font-size: 9px; }
   .player-attempt-heading { flex-wrap: wrap; }
+  .home-page .player-invitation { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .home-page .player-intro { max-width: none; }
+  .home-page .player-join-submit { width: auto; }
+  .home-page .player-join { padding: 15px; }
+  .home-page .player-account-summary { padding: 13px 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .player-profile *, .player-table * { scroll-behavior: auto; }

@@ -18,11 +18,11 @@ export function homeProgress(catalogue,read) {
 
 export function homeDestination(items) {
   const next=nextHomeRound(items),done=items.filter(item=>item.done).length;
-  if(!next||done===items.length)return {href:'./collection.html',label:'Revisit the collection',detail:'Every round complete. Revisit a favorite or try a timed round.'};
+  if(!next||done===items.length)return {href:'./collection.html',label:'Play another round',detail:'Every round complete. Revisit a favorite or try a timed round.'};
   const continuing=next.pieces>0;
   return {
     href:`./play.html?level=${next.round.number}`,
     label:continuing?`Continue round ${next.round.number}`:done?'Play your next puzzle':'Play your first puzzle',
-    detail:continuing?`${next.round.topic} · ${next.pieces} of 12 pieces placed.`:done?`${done} of ${items.length} rounds complete · Progress saved in this browser.`:`${items.length} rounds · No account required`,
+    detail:continuing?`${next.round.topic} · ${next.pieces} of 12 pieces placed.`:done?`${done} of ${items.length} rounds complete · Progress saved in this browser.`:`${items.length} rounds · 12 pieces each · No account required`,
   };
 }

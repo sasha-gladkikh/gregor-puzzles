@@ -281,3 +281,5 @@ body{background:var(--surface)}
  #game .clue-recap{margin-top:12px}
  #game .completion{margin-top:18px;padding-top:0}
 }
+
+.journey-progress{margin:12px 0 20px;padding:10px 14px;border-left:2px solid #0055ff;background:#edf3ff;color:#34557e;font-size:13px;line-height:1.5}

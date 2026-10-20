@@ -1,5 +1,6 @@
 import {getPlayer,getAttempts,joinPlayer,leaveLeaderboard,syncPlayer,getPlayerStatus} from './player.mjs';
 import {SUGGESTION_ENDPOINT} from './suggestions.mjs';
+import {homeProgress} from './home-state.mjs';
 
 const namePattern=/^[\p{L}\p{N} .'’_-]{2,32}$/u;
 const nonnegative=value=>Number.isFinite(value)&&value>=0;
@@ -67,6 +68,22 @@ export function summarizeAttempts(attempts,catalogue){
  return {attempts:attempts.length,roundsPlayed:played.size,roundsCompleted:completed.size,timedRounds:best.size,totalBestSeconds:best.size===allowed.size?[...best.values()].reduce((sum,attempt)=>sum+attempt.seconds,0):null};
 }
 
+export function nextTimedRound(catalogue,progress=[],attempts=[],selection='overall'){
+ const selected=catalogue.find(round=>round.number===selection);
+ if(selected)return selected;
+ const available=new Set(catalogue.map(round=>round.number));
+ const unfinished=progress.filter(item=>available.has(item.round?.number)&&!item.done);
+ const inProgress=unfinished.find(item=>item.pieces>0);
+ if(inProgress)return catalogue.find(round=>round.number===inProgress.round.number);
+ if(unfinished.length)return catalogue.find(round=>round.number===unfinished[0].round.number);
+ const best=new Map();
+ for(const attempt of attempts){
+  if(!available.has(attempt.roundNumber)||attempt.status!=='completed'||!attempt.eligible||attempt.mode!=='timed'||attempt.route!=='image'||!nonnegative(attempt.seconds))continue;
+  if(!best.has(attempt.roundNumber)||attempt.seconds<best.get(attempt.roundNumber))best.set(attempt.roundNumber,attempt.seconds);
+ }
+ return catalogue.find(round=>!best.has(round.number))??catalogue.slice().sort((a,b)=>best.get(b.number)-best.get(a.number))[0];
+}
+
 export function publicPlayers(payload,catalogue){
  if(payload?.ok!==true||payload.schema!=='gregor-player-board-v1'||!Array.isArray(payload.players))throw new Error('The leaderboard response is unavailable.');
  const allowed=new Set(catalogue.map(round=>round.number));
@@ -128,34 +145,42 @@ export function initPlayerUI(catalogue){
  const $=id=>document.getElementById(id);
  const host=$('playerProfile');
  if(!host||!catalogue.length)return;
- const intro=node('p','Choose a display name to join. Your attempts will save automatically.','player-intro');
+ const invitation=node('div',undefined,'player-invitation');
+ const join=button('Join the challenge','home-primary player-join-open');join.setAttribute('aria-expanded','false');join.setAttribute('aria-controls','playerJoinForm');
+ const intro=node('p',undefined,'player-intro');invitation.append(join,intro);
+ const account=node('details',undefined,'player-account');
+ const accountLabel=node('summary',undefined,'player-account-summary');
+ const accountTitle=node('span',undefined,'player-account-title'),name=node('strong'),digest=node('span',undefined,'player-account-digest');
+ accountTitle.append(name,digest);accountLabel.append(accountTitle);account.append(accountLabel);
  const profile=node('div',undefined,'player-current');
  const identity=node('div',undefined,'player-identity');
- const name=node('strong'),edit=button('Change name');name.tabIndex=-1;identity.append(name,edit);
+ const edit=button('Change name');identity.append(edit);
  const stats=node('div',undefined,'player-stats');
- const form=node('form',undefined,'player-join');form.noValidate=false;
+ const form=node('form',undefined,'player-join');form.id='playerJoinForm';form.noValidate=false;form.hidden=true;
  const label=node('label','Name on the leaderboard');label.htmlFor='playerDisplayName';
  const input=node('input');input.id='playerDisplayName';input.name='displayName';input.required=true;input.minLength=2;input.maxLength=32;input.autocomplete='nickname';input.spellcheck=false;input.placeholder='Your name or nickname';input.setAttribute('aria-describedby','playerPrivacy playerNameHelp');
  const fields=node('div',undefined,'player-join-fields');
  const submit=node('button','Join leaderboard','home-primary player-join-submit');submit.type='submit';
- fields.append(input,submit);
+ fields.append(input);
  const help=node('p','2–32 characters. No email address needed.','player-name-help');help.id='playerNameHelp';
- const cancel=button('Cancel');cancel.hidden=true;
- form.append(label,fields,help,cancel);
- const privacy=node('p','Your name, progress and activity dates are public. Attempts are saved privately for the GREGoR Puzzles team.','player-privacy');privacy.id='playerPrivacy';
+ const cancel=button('Cancel');
+ const privacy=node('p','Your display name, progress, times and activity dates will be public. Your detailed attempts are saved privately for the GREGoR Puzzles team. Joining is optional.','player-privacy');privacy.id='playerPrivacy';
+ const formActions=node('div',undefined,'player-form-actions');formActions.append(submit,cancel);
+ form.append(label,fields,help,privacy,formActions);
  const status=node('p',undefined,'player-status');status.setAttribute('role','status');
  const retry=button('Try syncing again');retry.hidden=true;
  const leave=button('Leave leaderboard');leave.classList.add('player-leave');
  const actions=node('div',undefined,'player-account-actions');actions.append(retry,leave);
- profile.append(identity,stats);
+ profile.append(stats,identity);
  const history=node('details',undefined,'player-history');
  const historyLabel=node('summary','Your attempt history');
  const historyNote=node('p','Your attempts on this device. Replays are recorded separately.','player-history-note');
  const historyList=node('ol',undefined,'player-history-list');
  const more=button('Show more attempts');more.hidden=true;
  history.append(historyLabel,historyNote,historyList,more);
- host.replaceChildren(intro,profile,form,privacy,status,actions,history);
- let editing=false,busy=false,message='',historyLimit=20,lastHistory='',boardLoaded=false;
+ account.append(profile,history,actions);
+ host.replaceChildren(invitation,form,account,status);
+ let editing=false,joining=false,busy=false,message='',historyLimit=20,lastHistory='',boardLoaded=false;
  const formatDate=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 
  function renderHistory(attempts){
@@ -198,20 +223,24 @@ export function initPlayerUI(catalogue){
  function renderProfile(){
   const player=getPlayer(),state=getPlayerStatus(),attempts=getAttempts(),summary=summarizeAttempts(attempts,catalogue);
   const joined=Boolean(player?.joined);
-  intro.hidden=joined;
-  profile.hidden=!joined;
-  form.hidden=joined&&!editing;
-  cancel.hidden=!joined;
+  invitation.hidden=joined||joining||Boolean(player?.pendingName);
+  intro.textContent=attempts.length?`${attempts.length} attempt${attempts.length===1?'':'s'} saved on this device. Add your name to keep your record online.`:'Choose a name. Keep your progress. No account required.';
+  join.disabled=busy||!state.available||Boolean(state.leavePending);
+  form.hidden=!(editing||joining||(!joined&&player?.pendingName));
+  join.setAttribute('aria-expanded',String(!form.hidden));
+  account.hidden=!(joined||attempts.length||player?.pendingName||state.leavePending);
+  identity.hidden=!joined;
+  profile.hidden=!joined&&!attempts.length;
   submit.textContent=busy?'Saving…':joined?'Save name':'Join leaderboard';
   submit.disabled=busy||!state.available||Boolean(state.leavePending);
   input.disabled=busy||!state.available||Boolean(state.leavePending);
   if(document.activeElement!==input&&!editing&&!joined&&player?.pendingName)input.value=player.pendingName;
-  name.textContent=player?.displayName||'';
+  name.textContent=joined?player.displayName:'Your saved attempts';
+  digest.textContent=state.error||state.leavePending?'Sync needs attention':joined?'Progress, history and settings':`${summary.roundsCompleted}/${catalogue.length} rounds complete · ${summary.attempts} attempt${summary.attempts===1?'':'s'}`;
   stats.replaceChildren();
   for(const [value,labelText] of [[`${summary.roundsCompleted}/${catalogue.length}`,'rounds complete'],[summary.roundsPlayed,'rounds played'],[summary.attempts,'attempts']]){
    const stat=node('div');stat.append(node('strong',String(value)),node('span',labelText));stats.append(stat);
   }
-  privacy.hidden=joined&&!editing;
   leave.hidden=!(joined||player?.pendingName)||busy;
   leave.textContent=joined?'Leave leaderboard':'Cancel joining';
   retry.hidden=busy||state.syncing||!(joined||player?.pendingName||state.leavePending)||!(state.error||state.pending||state.leavePending||player?.pendingName);
@@ -223,21 +252,25 @@ export function initPlayerUI(catalogue){
   else if(state.syncing)status.textContent='Saving your player record…';
   else if(state.error)status.textContent='Saved on this device. Your online record is waiting to sync.';
   else if(joined&&state.pending)status.textContent=`${state.pending} attempt${state.pending===1?'':'s'} waiting to sync.`;
-  else if(joined)status.textContent='Your player record is up to date.';
-  else status.textContent=attempts.length?'Your attempts are saved on this device. Join to add them to your player record.':'';
+  else status.textContent='';
   status.hidden=!status.textContent;
   renderHistory(attempts);
  }
+ join.addEventListener('click',()=>{joining=true;message='';renderProfile();input.focus();});
  edit.addEventListener('click',()=>{editing=true;message='';input.value=getPlayer()?.displayName||'';renderProfile();input.focus();});
- cancel.addEventListener('click',()=>{editing=false;message='';renderProfile();edit.focus();});
+ cancel.addEventListener('click',()=>{
+  const player=getPlayer();
+  if(!player?.joined&&player?.pendingName){leaveDialog.showModal();return;}
+  editing=false;joining=false;message='';renderProfile();(player?.joined?edit:join).focus();
+ });
  input.addEventListener('input',()=>input.setCustomValidity(''));
  form.addEventListener('submit',async event=>{
   event.preventDefault();const value=input.value.trim().replace(/\s+/g,' ');
   if(!namePattern.test(value)||!/[\p{L}\p{N}]/u.test(value)){input.setCustomValidity('Use 2–32 letters, numbers, spaces, apostrophes, hyphens, dots or underscores.');input.reportValidity();return;}
   busy=true;message='';renderProfile();
-  try{await joinPlayer(value);editing=false;message='';if(boardLoaded)void loadBoard();}
+  try{await joinPlayer(value);editing=false;joining=false;message='';account.open=false;if(boardLoaded)void loadBoard();}
   catch(error){message=error?.message||'Your name could not be saved yet. Try again.';}
-  finally{busy=false;renderProfile();if(!message)name.focus?.();}
+  finally{busy=false;renderProfile();if(!message)accountLabel.focus();}
  });
  retry.addEventListener('click',async()=>{
   busy=true;message='';renderProfile();
@@ -255,16 +288,21 @@ export function initPlayerUI(catalogue){
   leaveDialog.close();busy=true;message='';renderProfile();
   try{await leaveLeaderboard();message='You have left the public leaderboard.';if(boardLoaded)void loadBoard();}
   catch{message='Removal is waiting to sync. Your public entry may remain visible until it is confirmed.';}
-  finally{editing=false;busy=false;renderProfile();}
+  finally{editing=false;joining=false;busy=false;renderProfile();join.focus();}
  });
 
  const selection=$('leaderboardRound');
  selection.replaceChildren(new Option('Overall progress','overall'),...catalogue.map(round=>new Option(`${round.number} · ${round.topic}`,round.number)));
- let players=[],boardState='loading',boardLimit=10,loading=false,refreshQueued=false;
+ let players=[],boardState='loading',boardLimit=3,loading=false,refreshQueued=false;
+ function updateTimedDestination(){
+  const read=key=>{try{return localStorage.getItem(key);}catch{return null;}};
+  const round=nextTimedRound(catalogue,homeProgress(catalogue,read),getAttempts(),selection.value);
+  $('timedPlay').href=`./play.html?level=${round.number}&mode=timed`;
+  $('timedPlay').setAttribute('aria-label',`Play round ${round.number} in timed mode: ${round.topic}`);
+ }
  function renderBoard(){
   const result=$('leaderboardResults');result.replaceChildren();
-  const round=catalogue.find(round=>round.number===selection.value)??catalogue[0];
-  $('timedPlay').href=`./play.html?level=${round.number}&mode=timed`;
+  updateTimedDestination();
   $('refreshLeaderboard').disabled=loading;
   if(boardState==='loading'){result.append(node('p','Loading the leaderboard…','board-loading'));return;}
   if(boardState==='error'){
@@ -276,7 +314,7 @@ export function initPlayerUI(catalogue){
   if(!ranked.length){
    if(allocations.length){result.append(allocationEntries(allocations));return;}
    const empty=node('div',undefined,'leaderboard-empty');
-   empty.append(node('h4',selection.value==='overall'?'Be part of the first collection.':'Set the first time.'),node('p',selection.value==='overall'?'Join above, then play a round. Your progress will appear here.':'Finish this round in Timed mode while joined to the leaderboard.'));
+   empty.append(node('h4',selection.value==='overall'?'Start something worth sharing.':'Set the first time.'),node('p',selection.value==='overall'?'Join the challenge, then play a round. Your progress will appear here.':'Finish this round in timed mode to add your best time.'));
    result.append(empty);return;
   }
   const table=node('table',undefined,'leaderboard-table player-table');table.setAttribute('aria-label',selection.value==='overall'?'Overall player standings':`Round ${selection.value} best times`);
@@ -308,7 +346,11 @@ export function initPlayerUI(catalogue){
   }
   table.append(head,body);const scroll=node('div',undefined,'player-table-wrap');scroll.append(table);result.append(scroll);
   if(body.querySelector('time'))result.append(node('p','Dates and times are shown in your local time zone.','player-timezone-note'));
-  if(ranked.length>boardLimit){const morePlayers=button(`Show ${Math.min(10,ranked.length-boardLimit)} more players`);morePlayers.addEventListener('click',()=>{boardLimit+=10;renderBoard();});result.append(morePlayers);}
+  if(ranked.length>3){
+   const expanded=boardLimit>3;
+   const morePlayers=button(expanded?'Show top 3':`View all ${ranked.length} players`,'home-text-button player-board-expand');morePlayers.id='leaderboardExpand';morePlayers.setAttribute('aria-expanded',String(expanded));morePlayers.setAttribute('aria-controls','leaderboardResults');
+   morePlayers.addEventListener('click',()=>{boardLimit=expanded?3:ranked.length;renderBoard();$('leaderboardExpand')?.focus({preventScroll:true});});result.append(morePlayers);
+  }
   if(allocations.length)result.append(allocationEntries(allocations));
  }
  async function loadBoard(){
@@ -324,13 +366,13 @@ export function initPlayerUI(catalogue){
   }catch{boardState='error';$('leaderboardUpdated').hidden=true;}
   finally{clearTimeout(timeout);loading=false;renderBoard();if(refreshQueued){refreshQueued=false;void loadBoard();}}
  }
- selection.addEventListener('change',()=>{boardLimit=10;renderBoard();});
+ selection.addEventListener('change',()=>{boardLimit=3;renderBoard();});
  $('refreshLeaderboard').addEventListener('click',loadBoard);
  if('IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();void loadBoard();}},{rootMargin:'250px'});observer.observe($('leaderboard'));}
  else void loadBoard();
  let lastSyncing=false,refreshTimer;
  const changed=()=>{
-  renderProfile();const state=getPlayerStatus();
+  renderProfile();updateTimedDestination();const state=getPlayerStatus();
   if(lastSyncing&&!state.syncing&&!state.error&&boardLoaded){clearTimeout(refreshTimer);refreshTimer=setTimeout(loadBoard,500);}
   lastSyncing=Boolean(state.syncing);
  };

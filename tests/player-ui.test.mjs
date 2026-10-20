@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {summarizeAttempts,publicPlayers,rankPlayers,allocatedRoundTimes,leaderboardAttemptCount,playerTime,playerDateTime} from '../game/player-ui.mjs';
+import {summarizeAttempts,publicPlayers,rankPlayers,allocatedRoundTimes,leaderboardAttemptCount,playerTime,playerDateTime,nextTimedRound} from '../game/player-ui.mjs';
 
 const catalogue=Array.from({length:10},(_,index)=>({number:String(index+1).padStart(2,'0')}));
 const attempt=(roundNumber,overrides={})=>({roundNumber,status:'completed',mode:'timed',route:'image',eligible:true,seconds:60,...overrides});
@@ -14,6 +14,28 @@ test('repeat attempts add history without inflating distinct rounds and fastest 
  assert.deepEqual(summary,{attempts:6,roundsPlayed:4,roundsCompleted:3,timedRounds:1,totalBestSeconds:null});
  const complete=catalogue.map(round=>attempt(round.number));complete.push(attempt('01',{seconds:15}),attempt('02',{seconds:1,eligible:false}));
  assert.equal(summarizeAttempts(complete,catalogue).totalBestSeconds,555);
+});
+
+test('timed play follows the selected round or resumes unfinished progress',()=>{
+ const progress=catalogue.map(round=>({round,done:false,pieces:round.number==='06'?7:0}));
+ assert.equal(nextTimedRound(catalogue,progress,[],'04').number,'04');
+ assert.equal(nextTimedRound(catalogue,progress).number,'06');
+ progress[5].done=true;
+ progress[0].done=true;
+ assert.equal(nextTimedRound(catalogue,progress).number,'02');
+ assert.equal(nextTimedRound([],[],[]),undefined);
+});
+
+test('completed collections get a missing timed round, then their slowest personal best',()=>{
+ const progress=catalogue.map(round=>({round,done:true,pieces:12}));
+ const attempts=catalogue.map(round=>attempt(round.number,{seconds:Number(round.number)*10}));
+ attempts[4]=attempt('05',{mode:'practice',eligible:false});
+ assert.equal(nextTimedRound(catalogue,progress,attempts).number,'05');
+ attempts.push(attempt('05',{seconds:90}));
+ assert.equal(nextTimedRound(catalogue,progress,attempts).number,'10');
+ // A slower replay does not replace the personal best when choosing a challenge.
+ attempts.push(attempt('01',{seconds:300}));
+ assert.equal(nextTimedRound(catalogue,progress,attempts).number,'10');
 });
 
 test('overall partial progress ties irrespective of unequal round difficulty or repeated attempts',()=>{
